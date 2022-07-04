@@ -1,0 +1,40 @@
+use chrono::{Local, DateTime};
+use gtk::{Button, traits::{ButtonExt, WidgetExt, StyleContextExt}};
+use tokio::spawn;
+
+use super::Module;
+
+pub struct TimeModule {
+
+}
+
+fn get_wes_time() -> String {
+    let now: DateTime<Local> = Local::now();
+    now.format("%y-%m-%d %H:%M:%S").to_string()
+}
+
+impl Module<Button> for TimeModule {
+    fn into_widget(self) -> Button {
+        let date = gtk::Button::with_label(&get_wes_time());
+        date.style_context().add_class("block");
+
+        let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
+        spawn(async move {
+            loop {
+                let _date = Local::now();
+                let _ = tx.send(format!("{}", get_wes_time()));
+                tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+            }
+        });
+
+        {
+            let date = date.clone();
+            rx.attach(None, move |s| {
+                date.set_label(s.as_str());
+                glib::Continue(true)
+            });
+        }
+
+        date
+    }
+}
