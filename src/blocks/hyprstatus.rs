@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use gtk::{traits::{BoxExt, ButtonExt, ContainerExt, StyleContextExt, LabelExt}, Widget, Label};
+use gtk::{traits::{BoxExt, ButtonExt, ContainerExt, StyleContextExt}, Widget};
 use gtk::traits::WidgetExt;
 use hyprland::{data::{Workspaces, Monitor}, event_listener::WindowEventData};
 use hyprland::dispatch::{Dispatch, DispatchType, WorkspaceIdentifierWithSpecial};
@@ -9,6 +9,7 @@ use hyprland::event_listener;
 use hyprland::shared::WorkspaceType;
 use tokio::spawn;
 use tracing::info;
+use crate::utils;
 
 use super::Module;
 
@@ -21,7 +22,9 @@ pub struct HWS {
     pub name: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct HC {
+    pub class: String,
     pub name: String,
 }
 
@@ -38,17 +41,18 @@ impl Module<gtk::Box> for HyprStatus {
     fn into_widget(self) -> gtk::Box {
         let workspaces = Workspaces::get().unwrap();
 
-        let full_container = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+        let full_container = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         full_container.style_context().add_class("wm");
 
         let ws_container = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         ws_container.style_context().add_class("wss");
 
 
-        let title = Label::new(Some(""));
+        let title = gtk::Button::with_label("");
         title.style_context().add_class("wm-title");
         full_container.pack_start(&ws_container, false, false, 0);
         full_container.pack_start(&title, false, false, 0);
+        title.set_visible(false);
 
         for w in workspaces {
             let wb = create_workspace_button(w.name.to_string(), w.monitor.to_string());
@@ -86,8 +90,8 @@ impl Module<gtk::Box> for HyprStatus {
             {
                 let tx = tx.clone();
                 el.add_active_window_changed_handler(move |wed| {
-                    let wsn = get_client_name(&wed);
-                    tx.send(HyprlandEvent::CChange(HC{name: wsn.to_string()})).unwrap();
+                    let (wsn, wsc) = get_client_name(&wed);
+                    tx.send(HyprlandEvent::CChange(HC{class: wsc.to_string() ,name: wsn.to_string()})).unwrap();
                 });
             }
 
@@ -107,18 +111,16 @@ impl Module<gtk::Box> for HyprStatus {
                 });
             }
 
-
-
             el.start_listener().unwrap();
         });
-
-
 
         let mut last: Option<Widget> = None;
 
         {
             let container = ws_container.clone();
             let title = title.clone();
+            let mut last_window_class = String::new();
+            let mut icon_loader = utils::gtk_icon_loader::GtkIconLoader::new();
             rx.attach(None, move |we| {
                 match we {
                     HyprlandEvent::WSAdd(ws, monitor) => {
@@ -162,7 +164,17 @@ impl Module<gtk::Box> for HyprStatus {
                         }
                     },
                     HyprlandEvent::CChange(cn) => {
-                        title.set_text(&cn.name);
+                        if cn.class.is_empty() {
+                            title.set_visible(false);
+                        } else {
+                            title.set_visible(true);
+                            title.set_label(&cn.name);
+                            if cn.class != last_window_class {
+                                let image = icon_loader.load_from_name(&cn.class);
+                                title.set_image(image);
+                                last_window_class = cn.class;
+                            }
+                        }
                     },
                 }
                 reorder_workspaces(&container);
@@ -227,12 +239,13 @@ fn reorder_workspaces(wbb: &gtk::Box) {
     }
 }
 
-fn get_client_name(wed: &Option<WindowEventData>) -> &str {
+fn get_client_name(wed: &Option<WindowEventData>) -> (&str, &str) {
     let default = "";
     match wed {
         Some(w) => {
-            w.window_title.as_str()
+            (w.window_title.as_str(), w.window_class.as_str())
+
         },
-        None => default
+        None => (default, default)
     }
 }

@@ -1346,6 +1346,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "gdk",
+ "gdk-pixbuf",
  "glib",
  "gtk",
  "gtk-layer-shell",
