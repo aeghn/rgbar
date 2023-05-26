@@ -3,10 +3,10 @@
 #[macro_use]
 extern crate lazy_static;
 
-mod macros;
 mod constants;
 mod statusbar;
 mod blocks;
+mod utils;
 
 use std::path::{PathBuf};
 
