@@ -89,7 +89,7 @@ impl Module<gtk::Box> for HyprStatus {
 
             {
                 let tx = tx.clone();
-                el.add_active_window_changed_handler(move |wed| {
+                el.add_active_window_change_handler(move |wed| {
                     let (wsn, wsc) = get_client_name(&wed);
                     tx.send(HyprlandEvent::CChange(HC{class: wsc.to_string() ,name: wsn.to_string()})).unwrap();
                 });
