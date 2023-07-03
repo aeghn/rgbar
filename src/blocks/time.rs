@@ -1,5 +1,9 @@
 use chrono::{Local, DateTime};
-use gtk::{Button, traits::{ButtonExt, WidgetExt, StyleContextExt}};
+use gtk::traits::ButtonExt;
+use gtk::traits::WidgetExt;
+use gtk::traits::StyleContextExt;
+use gtk::traits::BoxExt;
+use gtk::Widget;
 use tokio::spawn;
 
 use super::Module;
@@ -13,8 +17,8 @@ fn get_wes_time() -> String {
     now.format("%y-%m-%d %H:%M:%S").to_string()
 }
 
-impl Module<Button> for TimeModule {
-    fn into_widget(self) -> Button {
+impl Module for TimeModule {
+    fn into_widget(&self) -> Widget {
         let date = gtk::Button::with_label(&get_wes_time());
         date.style_context().add_class("block");
 
@@ -35,6 +39,10 @@ impl Module<Button> for TimeModule {
             });
         }
 
-        date
+        glib::Cast::upcast::<gtk::Widget>(date)
+    }
+
+    fn put_into_bar(&self, bar: &gtk::Box) {
+        bar.pack_end(&self.into_widget(),  false, false, 0);
     }
 }

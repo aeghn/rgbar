@@ -2,8 +2,8 @@ use std::fs::File;
 use std::path::Path;
 use std::io;
 use std::io::BufRead;
-use gtk::Button;
-use gtk::traits::{ButtonExt, WidgetExt, StyleContextExt};
+use gtk::Widget;
+use gtk::traits::{ButtonExt, WidgetExt, StyleContextExt, BoxExt};
 use regex::Regex;
 use tokio::spawn;
 
@@ -69,8 +69,8 @@ fn get_total_all() -> (u64, u64) {
     return (total_download, total_upload)
 }
 
-impl Module<Button> for NetspeedModule {
-    fn into_widget(self) -> Button {
+impl Module for NetspeedModule {
+    fn into_widget(&self) -> Widget {
         let netspeed = gtk::Button::with_label("");
         netspeed.style_context().add_class("block");
 
@@ -103,6 +103,10 @@ impl Module<Button> for NetspeedModule {
             });
         }
 
-        netspeed
+        glib::Cast::upcast::<gtk::Widget>(netspeed)
+    }
+
+    fn put_into_bar(&self, bar: &gtk::Box) {
+        bar.pack_end(&self.into_widget(),  false, false, 0);
     }
 }

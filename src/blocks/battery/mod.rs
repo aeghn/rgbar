@@ -30,7 +30,10 @@ pub struct BatteryInfo {
 }
 
 
-use gtk::{Button, traits::{ButtonExt, WidgetExt, StyleContextExt}};
+use gtk::traits::ButtonExt;
+use gtk::traits::WidgetExt;
+use gtk::traits::StyleContextExt;
+use gtk::traits::BoxExt;
 use tokio::spawn;
 use super::Module;
 
@@ -65,8 +68,8 @@ fn get_battery() -> String {
     format!("{}{} {}%", icon, conservesion_mode, info.get_capacity())
 }
 
-impl Module<Button> for BatteryModule {
-    fn into_widget(self) -> Button {
+impl Module for BatteryModule {
+    fn into_widget(&self) -> gtk::Widget {
         let date = gtk::Button::with_label(&get_battery());
         date.style_context().add_class("block");
 
@@ -86,6 +89,10 @@ impl Module<Button> for BatteryModule {
             });
         }
 
-        date
+        glib::Cast::upcast::<gtk::Widget>(date)
+    }
+
+    fn put_into_bar(&self, bar: &gtk::Box) {
+        bar.pack_end(&self.into_widget(),  false, false, 0);
     }
 }
