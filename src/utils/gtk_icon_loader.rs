@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use gdk_pixbuf::Pixbuf;
-use gtk::{IconTheme, traits::IconThemeExt, Image};
+use gtk::traits::IconThemeExt;
+use gtk::Image;
 
 pub struct GtkIconLoader {
     cache: HashMap<String, gtk::Image>,

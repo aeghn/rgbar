@@ -37,8 +37,8 @@ pub enum HyprlandEvent {
 }
 
 
-impl Module<gtk::Box> for HyprStatus {
-    fn into_widget(self) -> gtk::Box {
+impl Module for HyprStatus {
+    fn into_widget(&self) -> gtk::Widget {
         let workspaces = Workspaces::get().unwrap();
 
         let full_container = gtk::Box::new(gtk::Orientation::Horizontal, 0);
@@ -182,7 +182,11 @@ impl Module<gtk::Box> for HyprStatus {
             });
         }
 
-        full_container
+        glib::Cast::upcast::<gtk::Widget>(full_container)
+    }
+
+    fn put_into_bar(&self, bar: &gtk::Box) {
+        bar.pack_start(&self.into_widget(),  false, false, 0);
     }
 }
 
