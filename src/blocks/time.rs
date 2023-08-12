@@ -1,10 +1,11 @@
+use std::time::Duration;
 use chrono::{Local, DateTime};
+use glib::MainContext;
 use gtk::traits::ButtonExt;
 use gtk::traits::WidgetExt;
 use gtk::traits::StyleContextExt;
 use gtk::traits::BoxExt;
 use gtk::Widget;
-use tokio::spawn;
 
 use super::Module;
 
@@ -18,16 +19,16 @@ fn get_wes_time() -> String {
 }
 
 impl Module for TimeModule {
-    fn into_widget(&self) -> Widget {
+    fn to_widget(&self) -> Widget {
         let date = gtk::Button::with_label(&get_wes_time());
         date.style_context().add_class("block");
 
         let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-        spawn(async move {
+        MainContext::ref_thread_default().spawn_local(async move {
             loop {
                 let _date = Local::now();
                 let _ = tx.send(format!("{}", get_wes_time()));
-                tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                async_std::task::sleep(Duration::from_secs(3)).await;
             }
         });
 
@@ -39,10 +40,10 @@ impl Module for TimeModule {
             });
         }
 
-        glib::Cast::upcast::<gtk::Widget>(date)
+        glib::Cast::upcast::<Widget>(date)
     }
 
     fn put_into_bar(&self, bar: &gtk::Box) {
-        bar.pack_end(&self.into_widget(),  false, false, 0);
+        bar.pack_end(&self.to_widget(), false, false, 0);
     }
 }

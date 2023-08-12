@@ -30,11 +30,12 @@ pub struct BatteryInfo {
 }
 
 
+use std::time::Duration;
+use glib::MainContext;
 use gtk::traits::ButtonExt;
 use gtk::traits::WidgetExt;
 use gtk::traits::StyleContextExt;
 use gtk::traits::BoxExt;
-use tokio::spawn;
 use super::Module;
 
 pub struct BatteryModule {
@@ -69,15 +70,15 @@ fn get_battery() -> String {
 }
 
 impl Module for BatteryModule {
-    fn into_widget(&self) -> gtk::Widget {
+    fn to_widget(&self) -> gtk::Widget {
         let date = gtk::Button::with_label(&get_battery());
         date.style_context().add_class("block");
 
         let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-        spawn(async move {
+        MainContext::ref_thread_default().spawn_local(async move {
             loop {
                 let _ = tx.send(get_battery());
-                tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+                async_std::task::sleep(Duration::from_secs(10)).await;
             }
         });
 
@@ -93,6 +94,6 @@ impl Module for BatteryModule {
     }
 
     fn put_into_bar(&self, bar: &gtk::Box) {
-        bar.pack_end(&self.into_widget(),  false, false, 0);
+        bar.pack_end(&self.to_widget(), false, false, 0);
     }
 }
