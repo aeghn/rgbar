@@ -2,12 +2,16 @@ use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use gdk::Monitor;
+use glib::Continue;
 
 use gtk::ApplicationWindow;
 use gtk::Orientation;
+use gtk::prelude::WidgetExtManual;
 use gtk::traits::ContainerExt;
 use gtk::traits::StyleContextExt;
 use gtk::traits::WidgetExt;
+use tracing::error;
 
 
 use crate::blocks;
@@ -26,7 +30,7 @@ impl StatusBar {
 
         let time_but = blocks::time::TimeModule{};
         vec.push(Box::new(time_but));
-         let hypr_box =  blocks::hyprstatus::HyprStatus{};
+        let hypr_box =  blocks::hyprstatus::HyprStatus{};
         vec.push(Box::new(hypr_box ));
         let bat_box = blocks::battery::BatteryModule{};
         vec.push(Box::new(bat_box));
@@ -50,21 +54,35 @@ impl StatusBar {
 
     pub fn handle_monitors(&mut self) {
         let screen = gdk::Screen::default().expect("Failed to get the default screen.");
-    
-        let monitor_count = screen.display().n_monitors();
-        self.check_monitors(monitor_count);
+
+        self.check_monitors(&screen);
     }
     
 
-    pub fn check_monitors(&mut self, monitor_count: i32) {
+    pub fn check_monitors(&mut self, screen: &gdk::Screen) {
+        let monitor_count = screen.display().n_monitors();
         for i in 0..monitor_count {
             if self.window_map.contains_key(&i) {
                 continue;
             }
 
+            error!("new window {:?}", i);
             let win = self.new_window(i);
 
             self.window_map.insert(i, win);
+        }
+
+        let new_keys: Vec<i32> = self.window_map.keys().map(|i| {i.clone()}).collect();
+        for key in new_keys {
+            match screen.display().monitor(key) {
+                None => unsafe {
+                    if let Some(win) = self.window_map.remove(&key) {
+                        error!("destroy: {:?}", key);
+                        win.destroy();
+                    }
+                }
+                Some(_) => {}
+            }
         }
     }
 
@@ -77,7 +95,11 @@ impl StatusBar {
         });
     
         window.add(&bar);
-    
-        window.show_all();
+
+        let window = window.clone();
+        glib::idle_add_local(move || {
+            window.show_all();
+            Continue(false)
+        });
     }
 }

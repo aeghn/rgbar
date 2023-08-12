@@ -2,10 +2,11 @@ use std::fs::File;
 use std::path::Path;
 use std::io;
 use std::io::BufRead;
+use std::time::Duration;
+use glib::MainContext;
 use gtk::Widget;
 use gtk::traits::{ButtonExt, WidgetExt, StyleContextExt, BoxExt};
 use regex::Regex;
-use tokio::spawn;
 
 use super::Module;
 
@@ -70,7 +71,7 @@ fn get_total_all() -> (u64, u64) {
 }
 
 impl Module for NetspeedModule {
-    fn into_widget(&self) -> Widget {
+    fn to_widget(&self) -> Widget {
         let netspeed = gtk::Button::with_label("");
         netspeed.style_context().add_class("block");
 
@@ -79,7 +80,7 @@ impl Module for NetspeedModule {
         (total_download, total_upload) = get_total_all();
 
         let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-        spawn(async move {
+        MainContext::ref_thread_default().spawn_local(async move {
             loop {
                 let t1 : u64;
                 let t2 : u64;
@@ -91,7 +92,7 @@ impl Module for NetspeedModule {
                 total_download = t1;
                 total_upload = t2;
                 let _ = tx.send(format!("{}{} KiB/s",  diff_upload_bytes / 1024, diff_download_bytes / 1024));
-                tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                async_std::task::sleep(Duration::from_secs(3)).await;
             }
         });
 
@@ -107,6 +108,6 @@ impl Module for NetspeedModule {
     }
 
     fn put_into_bar(&self, bar: &gtk::Box) {
-        bar.pack_end(&self.into_widget(),  false, false, 0);
+        bar.pack_end(&self.to_widget(), false, false, 0);
     }
 }

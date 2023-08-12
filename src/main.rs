@@ -46,7 +46,7 @@ async fn main() {
         screen.connect_monitors_changed(move |m| {
             warn!("monitor changed");
             let mut self_lock = self_arc.lock().unwrap();
-            (*self_lock).check_monitors(m.display().n_monitors());
+            (*self_lock).check_monitors(m);
         });
     });
 
