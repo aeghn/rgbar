@@ -1,9 +1,6 @@
-
 use glib::Continue;
 
-
 use std::collections::HashMap;
-
 
 use gtk::prelude::WidgetExtManual;
 use gtk::traits::ContainerExt;

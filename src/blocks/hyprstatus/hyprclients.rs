@@ -1,13 +1,21 @@
-
+use std::collections::HashMap;
 use std::process::Command;
 
-
-
-
+#[derive(Clone, Debug)]
 pub struct HyprWorkspace {
     pub id: i64,
-    pub monitor: i32,
+    pub monitor: String,
     pub name: String,
+}
+
+impl HyprWorkspace {
+    pub fn get_bar_name(&self) -> String {
+        if self.monitor != "eDP-1" {
+            format!(" {}", self.id)
+        } else {
+            self.id.to_string()
+        }
+    }
 }
 
 pub struct HyprWindowResult {
@@ -27,6 +35,8 @@ pub fn get_clients() -> Result<Vec<HyprWindowResult>, String> {
         .arg("-j")
         .output()
         .unwrap();
+
+    let monitors = get_monitors();
 
     let mut vec: Vec<HyprWindowResult> = vec![];
 
@@ -58,7 +68,7 @@ pub fn get_clients() -> Result<Vec<HyprWindowResult>, String> {
                         .unwrap()
                         .as_i64()
                         .unwrap(),
-                    monitor: monitor as i32,
+                    monitor: monitors.get(&monitor).unwrap().to_string(),
                     name: e
                         .get("workspace")
                         .unwrap()
@@ -96,4 +106,30 @@ pub fn get_active_window() -> Option<String> {
     } else {
         None
     }
+}
+
+pub fn get_monitors() -> HashMap<i64, String> {
+    let output = Command::new("hyprctl")
+        .arg("monitors")
+        .arg("-j")
+        .output()
+        .unwrap();
+
+    let _vec: Vec<HyprWindowResult> = vec![];
+
+    let out = String::from_utf8(output.stdout).unwrap();
+
+    let json = serde_json::from_str::<serde_json::Value>(out.as_str()).unwrap();
+
+    let mut map = HashMap::new();
+    if let Some(arr) = json.as_array() {
+        arr.iter().for_each(|e| {
+            map.insert(
+                e.get("id").unwrap().as_i64().unwrap(),
+                e.get("name").unwrap().as_str().unwrap().to_string(),
+            );
+        })
+    }
+
+    map
 }
