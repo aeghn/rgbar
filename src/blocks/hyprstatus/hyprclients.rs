@@ -1,8 +1,8 @@
-use std::fmt::Error;
+
 use std::process::Command;
 
-use gtk::pango::WrapMode::WordChar;
-use gtk::prelude::{GridExt, WidgetExt};
+
+
 
 pub struct HyprWorkspace {
     pub id: i64,
@@ -81,7 +81,7 @@ pub fn get_active_window() -> Option<String> {
         .output()
         .unwrap();
 
-    let mut vec: Vec<HyprWindowResult> = vec![];
+    let _vec: Vec<HyprWindowResult> = vec![];
 
     let out = String::from_utf8(output.stdout).unwrap();
 

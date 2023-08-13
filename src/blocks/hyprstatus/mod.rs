@@ -2,24 +2,23 @@ pub mod hyprclients;
 pub mod hyprevents;
 
 use async_std::io::prelude::BufReadExt;
-use async_std::io::{BufReader, ReadExt};
+use async_std::io::{BufReader};
 use async_std::os::unix::net::UnixListener;
 use glib::{Cast, MainContext};
 use std::cmp::Ordering;
-use std::env::VarError;
+
 use std::io::BufRead;
 use std::path::Path;
 
-use crate::blocks::hyprstatus::hyprclients::HyprWindowResult;
+
 use crate::utils;
-use crate::utils::gtk_icon_loader;
-use gtk::atk::Role::Label;
+
+
 use gtk::traits::WidgetExt;
 use gtk::{
     traits::{BoxExt, ButtonExt, ContainerExt, StyleContextExt},
-    Image, Widget,
 };
-use tracing::info;
+
 
 use super::Module;
 
@@ -71,7 +70,7 @@ async fn read_msgs() {
                 }
             }
         }
-        Err(e) => {}
+        Err(_e) => {}
     }
 }
 
@@ -109,7 +108,7 @@ impl Module for HyprStatus {
             })
             .collect::<Vec<(&str, &str, i64)>>();
 
-        let (class, title, wsid) = if vec.len() > 0 {
+        let (class, title, _wsid) = if vec.len() > 0 {
             vec.get(0).unwrap().clone()
         } else {
             ("", "", -1)
@@ -119,7 +118,7 @@ impl Module for HyprStatus {
             read_msgs().await;
         });
 
-        if (2 > 1) {
+        if 2 > 1 {
             return gtk::Label::new(Some(&"adasdasd")).upcast();
         }
 
