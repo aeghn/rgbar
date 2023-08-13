@@ -4,7 +4,6 @@ use gdk_pixbuf::Pixbuf;
 use gtk::traits::IconThemeExt;
 use gtk::Image;
 
-
 #[derive(Clone)]
 pub struct GtkIconLoader {
     cache: HashMap<String, gtk::Image>,
