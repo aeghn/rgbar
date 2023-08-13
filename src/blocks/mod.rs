@@ -1,8 +1,7 @@
-pub mod time;
 pub mod battery;
-pub mod netspeed;
 pub mod hyprstatus;
-
+pub mod netspeed;
+pub mod time;
 
 pub trait Module {
     fn to_widget(&self) -> gtk::Widget;

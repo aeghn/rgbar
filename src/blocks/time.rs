@@ -1,17 +1,15 @@
-use std::time::Duration;
-use chrono::{Local, DateTime};
+use chrono::{DateTime, Local};
 use glib::MainContext;
-use gtk::traits::ButtonExt;
-use gtk::traits::WidgetExt;
-use gtk::traits::StyleContextExt;
 use gtk::traits::BoxExt;
+use gtk::traits::ButtonExt;
+use gtk::traits::StyleContextExt;
+use gtk::traits::WidgetExt;
 use gtk::Widget;
+use std::time::Duration;
 
 use super::Module;
 
-pub struct TimeModule {
-
-}
+pub struct TimeModule {}
 
 fn get_wes_time() -> String {
     let now: DateTime<Local> = Local::now();
