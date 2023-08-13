@@ -1,26 +1,29 @@
 pub mod hyprclients;
 pub mod hyprevents;
 
+use async_std::io::prelude::BufReadExt;
+use async_std::io::{BufReader, ReadExt};
+use async_std::os::unix::net::UnixListener;
+use glib::{Cast, MainContext};
 use std::cmp::Ordering;
+use std::env::VarError;
+use std::io::BufRead;
+use std::path::Path;
 
-use gtk::{Image, traits::{BoxExt, ButtonExt, ContainerExt, StyleContextExt}, Widget};
-use gtk::traits::WidgetExt;
-use hyprland::{data::{Workspaces, Monitor}, event_listener::WindowEventData};
-use hyprland::dispatch::{Dispatch, DispatchType, WorkspaceIdentifierWithSpecial};
-use hyprland::prelude::*;
-use hyprland::event_listener;
-use hyprland::shared::WorkspaceType;
-use tokio::spawn;
-use tracing::info;
 use crate::blocks::hyprstatus::hyprclients::HyprWindowResult;
 use crate::utils;
 use crate::utils::gtk_icon_loader;
+use gtk::atk::Role::Label;
+use gtk::traits::WidgetExt;
+use gtk::{
+    traits::{BoxExt, ButtonExt, ContainerExt, StyleContextExt},
+    Image, Widget,
+};
+use tracing::info;
 
 use super::Module;
 
-pub struct HyprStatus {
-
-}
+pub struct HyprStatus {}
 
 #[derive(Debug, Clone)]
 pub struct HWS {
@@ -33,7 +36,6 @@ pub struct HC {
     pub name: String,
 }
 
-
 pub enum HyprlandEvent {
     WSAdd(HWS, String),
     WSRemove(HWS),
@@ -41,11 +43,40 @@ pub enum HyprlandEvent {
     CChange(HC),
 }
 
+async fn read_msgs() {
+    match std::env::var("HYPRLAND_INSTANCE_SIGNATURE") {
+        Ok(ins) => {
+            let socket = format!("/tmp/hypr/{}/.socket2.sock", ins);
+
+            let socket_path = Path::new(socket.as_str());
+            let listener = UnixListener::bind(socket_path).await.unwrap();
+
+            println!("Listening on: {:?}", socket_path);
+
+            while let Ok((mut stream, _)) = listener.accept().await {
+                println!("Accepted a new connection");
+
+                let mut buffer = String::new();
+                let mut reader = BufReader::new(&mut stream);
+
+                while let Ok(bytes_read) = reader.read_line(&mut buffer).await {
+                    if bytes_read == 0 {
+                        break; // End of stream
+                    }
+
+                    // Process the received line
+                    println!("Received line: {}", buffer.trim());
+
+                    buffer.clear();
+                }
+            }
+        }
+        Err(e) => {}
+    }
+}
 
 impl Module for HyprStatus {
     fn to_widget(&self) -> gtk::Widget {
-        let workspaces = Workspaces::get().unwrap();
-
         let full_container = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         full_container.style_context().add_class("wm");
 
@@ -56,26 +87,27 @@ impl Module for HyprStatus {
 
         let clients = hyprclients::get_clients();
         let clients = match clients {
-            Ok(vec) => {
-                vec
-            }
+            Ok(vec) => vec,
             Err(_) => {
                 vec![]
             }
         };
 
-        let id =  match hyprclients::get_active_window() {
-            None => {"".to_string()}
-            Some(id) => {id.as_str().to_string()}
+        let id = match hyprclients::get_active_window() {
+            None => "".to_string(),
+            Some(id) => id.as_str().to_string(),
         };
 
-        let vec = clients.iter().filter_map(|c| {
-            if c.address.eq(id.as_str()) {
-                Some((c.class.as_str(), c.title.as_str(), c.workspace.id))
-            } else {
-                None
-            }
-        }).collect::<Vec<(&str, &str, i64)>>();
+        let vec = clients
+            .iter()
+            .filter_map(|c| {
+                if c.address.eq(id.as_str()) {
+                    Some((c.class.as_str(), c.title.as_str(), c.workspace.id))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<(&str, &str, i64)>>();
 
         let (class, title, wsid) = if vec.len() > 0 {
             vec.get(0).unwrap().clone()
@@ -83,6 +115,13 @@ impl Module for HyprStatus {
             ("", "", -1)
         };
 
+        MainContext::ref_thread_default().spawn_local(async move {
+            read_msgs().await;
+        });
+
+        if (2 > 1) {
+            return gtk::Label::new(Some(&"adasdasd")).upcast();
+        }
 
         let mut title = gtk::Button::builder().label(title);
         if let Some(image) = icon_loader.load_from_name(class) {
@@ -95,174 +134,21 @@ impl Module for HyprStatus {
         full_container.pack_start(&title, false, false, 0);
         title.set_visible(false);
 
-        for w in workspaces {
-            let wb = create_workspace_button(w.name.to_string(), w.monitor.to_string());
-            ws_container.pack_start(&wb, false, false, 0);
-        }
-        reorder_workspaces(&ws_container);
+        // for w in workspaces {
+        //     let wb = create_workspace_button(w.name.to_string(), w.monitor.to_string());
+        //     ws_container.pack_start(&wb, false, false, 0);
+        // }
+        // reorder_workspaces(&ws_container);
 
-        let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-        spawn(async move {
-            let mut el = event_listener::EventListener::new();
-            {
-                let tx = tx.clone();
-                el.add_workspace_added_handler(move |wst| {
-                    let wsn = get_workspace_name(wst);
-                    let current_monitor = Monitor::get_active().ok().unwrap().name;
-                    tx.send(HyprlandEvent::WSAdd(HWS{name: wsn}, current_monitor)).unwrap();
-                });
-            }
+        // let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
 
-            {
-                let tx = tx.clone();
-                el.add_workspace_destroy_handler(move |wst| {
-                    let wsn = get_workspace_name(wst);
-                    tx.send(HyprlandEvent::WSRemove(HWS{name: wsn})).unwrap();
-                });
-            }
-            {
-                let tx = tx.clone();
-                el.add_workspace_change_handler(move |wst| {
-                    let wsn = get_workspace_name(wst);
-                    tx.send(HyprlandEvent::WSChange(HWS{name: wsn})).unwrap();
-                });
-            }
-
-            {
-                let tx = tx.clone();
-                el.add_active_window_change_handler(move |wed| {
-                    let (wsn, wsc) = get_client_name(&wed);
-                    tx.send(HyprlandEvent::CChange(HC{class: wsc.to_string() ,name: wsn.to_string()})).unwrap();
-                });
-            }
-
-            {
-                let tx = tx.clone();
-                el.add_workspace_moved_handler(move |med| {
-                    let wsn = get_workspace_name(med.workspace);
-                    tx.send(HyprlandEvent::WSChange(HWS{name: wsn})).unwrap();
-                });
-            }
-
-            {
-                let tx = tx.clone();
-                el.add_active_monitor_change_handler(move |med| {
-                    let wsn = get_workspace_name(med.workspace);
-                    tx.send(HyprlandEvent::WSChange(HWS{name: wsn})).unwrap();
-                });
-            }
-
-            el.start_listener().unwrap();
-        });
-
-        let mut last: Option<Widget> = None;
-
-        {
-            let mut icon_loader = icon_loader.clone();
-            let container = ws_container.clone();
-            let title = title.clone();
-            let mut last_window_class = String::new();
-            rx.attach(None, move |we| {
-                match we {
-                    HyprlandEvent::WSAdd(ws, monitor) => {
-                        let ws = create_workspace_button(ws.name.to_string(), monitor);
-                        container.add(&ws);
-                        ws.show();
-                    }
-                    HyprlandEvent::WSRemove(ws) => {
-                        let cc = container.children();
-                        for c in cc {
-                            let c = c.clone();
-                            if c.widget_name() == ws.name {
-                                container.remove(&c);
-                            }
-                        }
-                    },
-                    HyprlandEvent::WSChange(ws) => {
-                        let cc = container.children();
-                        {
-                            match &last {
-                                Some(l) => {
-                                    let sc = l.style_context();
-                                    if sc.has_class("ws-focus") {
-                                        sc.remove_class("ws-focus");
-                                    }
-                                },
-                                None => {},
-                            }
-
-                        }
-                        for c in cc {
-                            let c = c.clone();
-                            if c.widget_name() == ws.name {
-                                let sc = c.style_context();
-                                if !sc.has_class("ws-focus") {
-                                    sc.add_class("ws-focus");
-                                }
-                                last = Some(c);
-                            }
-
-                        }
-                    },
-                    HyprlandEvent::CChange(cn) => {
-                        if cn.class.is_empty() {
-                            title.set_visible(false);
-                        } else {
-                            title.set_visible(true);
-                            title.set_label(&cn.name);
-                            if cn.class != last_window_class {
-                                let image = icon_loader.load_from_name(&cn.class);
-                                title.set_image(image);
-                                last_window_class = cn.class;
-                            }
-                        }
-                    },
-                }
-                reorder_workspaces(&container);
-                glib::Continue(true)
-            });
-        }
-
-        glib::Cast::upcast::<gtk::Widget>(full_container)
+        return gtk::Label::new(Some(&"adasdasd")).upcast();
     }
 
     fn put_into_bar(&self, bar: &gtk::Box) {
-        bar.pack_start(&self.to_widget(),  false, false, 0);
+        bar.pack_start(&self.to_widget(), false, false, 0);
     }
 }
-
-fn get_workspace_name(name: WorkspaceType) -> String {
-    match name {
-        WorkspaceType::Regular(name) => name,
-        WorkspaceType::Special(name) => name.unwrap_or_default(),
-    }
-}
-
-fn create_workspace_button(name: String, monitor: String) -> gtk::Button {
-    let mut label = name.clone();
-    if monitor != "eDP-1" {
-        info!("{:?}, {:?}", name, monitor);
-        label.push_str(&monitor.as_str()[0..1]);
-    }
-    let wb = gtk::Button::with_label(&label);
-
-    wb.set_widget_name(&name);
-    wb.style_context().add_class("ws");
-
-    wb.connect_clicked(move |_| {
-        match Dispatch::call(DispatchType::Workspace(
-            WorkspaceIdentifierWithSpecial::Name(name.as_str()),
-        )) {
-            Ok(x) => {
-                println!("finished: {:?}", x);
-            },
-            Err(_) => todo!(),
-        }
-    });
-
-    wb
-}
-
 
 fn reorder_workspaces(wbb: &gtk::Box) {
     let mut buttons = wbb
@@ -281,16 +167,5 @@ fn reorder_workspaces(wbb: &gtk::Box) {
 
     for (i, (_, button)) in buttons.into_iter().enumerate() {
         wbb.reorder_child(&button, i as i32);
-    }
-}
-
-fn get_client_name(wed: &Option<WindowEventData>) -> (&str, &str) {
-    let default = "";
-    match wed {
-        Some(w) => {
-            (w.window_title.as_str(), w.window_class.as_str())
-
-        },
-        None => (default, default)
     }
 }

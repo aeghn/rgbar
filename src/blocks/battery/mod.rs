@@ -6,15 +6,15 @@ pub enum PowerStatus {
     NotCharging = 1,
     Discharging = 2,
     Charging = 3,
-    Unknown = 4
+    Unknown = 4,
 }
 
 #[derive(Debug)]
 pub struct BatteryInfo {
-    name : String,
-    status : PowerStatus,
-    present : u8,
-    technology : String,
+    name: String,
+    status: PowerStatus,
+    present: u8,
+    technology: String,
     cycle_count: u32,
     voltage_min_design: u32,
     voltage_now: u32,
@@ -25,22 +25,19 @@ pub struct BatteryInfo {
     capacity: u8,
     capacity_level: String,
     model_name: String,
-    manufacturer : String,
+    manufacturer: String,
     serial_numer: String,
 }
 
-
-use std::time::Duration;
-use glib::MainContext;
-use gtk::traits::ButtonExt;
-use gtk::traits::WidgetExt;
-use gtk::traits::StyleContextExt;
-use gtk::traits::BoxExt;
 use super::Module;
+use glib::MainContext;
+use gtk::traits::BoxExt;
+use gtk::traits::ButtonExt;
+use gtk::traits::StyleContextExt;
+use gtk::traits::WidgetExt;
+use std::time::Duration;
 
-pub struct BatteryModule {
-
-}
+pub struct BatteryModule {}
 
 fn get_battery() -> String {
     let conservesion_mode;
@@ -49,11 +46,10 @@ fn get_battery() -> String {
     } else {
         conservesion_mode = "";
     }
-    
-    
+
     let info = common::read_battery_info();
     let status = info.get_status();
-    let icon : &str;
+    let icon: &str;
     if *status == PowerStatus::Charging {
         icon = "";
     } else if *status == PowerStatus::Discharging {

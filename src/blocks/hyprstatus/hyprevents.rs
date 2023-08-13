@@ -1,3 +1,1 @@
-pub async fn read_events() {
-
-}
+pub async fn read_events() {}

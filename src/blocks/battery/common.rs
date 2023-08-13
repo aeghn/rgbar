@@ -1,14 +1,12 @@
+use super::PowerStatus::{Charging, Discharging, NotCharging, Unknown};
 use std::fs::File;
 use std::io;
 use std::io::BufRead;
 use std::path::Path;
-use super::PowerStatus::{Charging, Discharging, NotCharging, Unknown};
 
 use super::{BatteryInfo, PowerStatus};
 
-static POWER_INFO_PATH : &str = "/sys/class/power_supply/BAT0/uevent";
-
-
+static POWER_INFO_PATH: &str = "/sys/class/power_supply/BAT0/uevent";
 
 impl BatteryInfo {
     pub fn get_capacity(&self) -> u8 {
@@ -24,11 +22,11 @@ pub fn read_battery_info() -> BatteryInfo {
     read_event(POWER_INFO_PATH)
 }
 
-fn read_event(_path : &str) -> BatteryInfo {
-    let mut name : String = "".to_string();
-    let mut status : PowerStatus = PowerStatus::Unknown;
-    let mut present : u8 = 0;
-    let mut technology : String = "".to_string();
+fn read_event(_path: &str) -> BatteryInfo {
+    let mut name: String = "".to_string();
+    let mut status: PowerStatus = PowerStatus::Unknown;
+    let mut present: u8 = 0;
+    let mut technology: String = "".to_string();
     let mut cycle_count: u32 = 0;
     let mut voltage_min_design: u32 = 0;
     let mut voltage_now: u32 = 0;
@@ -39,9 +37,8 @@ fn read_event(_path : &str) -> BatteryInfo {
     let mut capacity: u8 = 0;
     let mut capacity_level: String = "".to_string();
     let mut model_name: String = "".to_string();
-    let mut manufacturer : String = "".to_string();
+    let mut manufacturer: String = "".to_string();
     let mut serial_numer: String = "".to_string();
-
 
     // File hosts must exist in current path before this produces output
     if let Ok(lines) = read_lines(POWER_INFO_PATH) {
@@ -119,7 +116,9 @@ fn read_event(_path : &str) -> BatteryInfo {
 // The output is wrapped in a Result to allow matching on errors
 // Returns an Iterator to the Reader of the lines of the file.
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-    where P: AsRef<Path>, {
+where
+    P: AsRef<Path>,
+{
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
 }

@@ -12,7 +12,9 @@ pub struct GtkIconLoader {
 
 impl GtkIconLoader {
     pub fn new() -> Self {
-        GtkIconLoader { cache: HashMap::new() }
+        GtkIconLoader {
+            cache: HashMap::new(),
+        }
     }
 
     fn map_name(key: &str) -> &str {
@@ -24,7 +26,7 @@ impl GtkIconLoader {
             key
         }
     }
- 
+
     pub fn load_from_name(&mut self, key: &str) -> Option<&Image> {
         let key = Self::map_name(key);
         if self.cache.contains_key(key) {

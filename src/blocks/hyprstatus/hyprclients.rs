@@ -1,7 +1,6 @@
 use std::fmt::Error;
 use std::process::Command;
 
-
 use gtk::pango::WrapMode::WordChar;
 use gtk::prelude::{GridExt, WidgetExt};
 
@@ -22,8 +21,7 @@ pub struct HyprWindowResult {
     pub workspace: HyprWorkspace,
 }
 
-
-pub fn get_clients() -> Result<Vec<HyprWindowResult>,  String> {
+pub fn get_clients() -> Result<Vec<HyprWindowResult>, String> {
     let output = Command::new("hyprctl")
         .arg("clients")
         .arg("-j")
@@ -53,13 +51,21 @@ pub fn get_clients() -> Result<Vec<HyprWindowResult>,  String> {
                 pid: e.get("pid").unwrap().as_i64().unwrap(),
                 xwayland: e.get("xwayland").unwrap().as_bool().unwrap(),
                 workspace: HyprWorkspace {
-                    id: e.get("workspace").unwrap()
-                        .get("id").unwrap()
-                        .as_i64().unwrap(),
+                    id: e
+                        .get("workspace")
+                        .unwrap()
+                        .get("id")
+                        .unwrap()
+                        .as_i64()
+                        .unwrap(),
                     monitor: monitor as i32,
-                    name: e.get("workspace").unwrap()
-                        .get("name").unwrap()
-                        .as_str().unwrap()
+                    name: e
+                        .get("workspace")
+                        .unwrap()
+                        .get("name")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
                         .to_string(),
                 },
             })
@@ -82,7 +88,11 @@ pub fn get_active_window() -> Option<String> {
     let json = serde_json::from_str::<serde_json::Value>(out.as_str()).unwrap();
 
     if let Some(obj) = json.as_object() {
-        Some(obj.get("address").unwrap().as_str().unwrap().to_string())
+        if let Some(address) = obj.get("address") {
+            Some(address.as_str().unwrap().to_string())
+        } else {
+            None
+        }
     } else {
         None
     }

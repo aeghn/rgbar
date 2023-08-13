@@ -12,16 +12,15 @@ use std::sync::{Arc, Mutex};
 use gdk_pixbuf::gio::ApplicationFlags;
 use tracing_subscriber::prelude::*;
 
+use crate::statusbar::StatusBar;
 use gtk::gdk::*;
 use gtk::prelude::*;
 use gtk::*;
 use tracing::{info, warn};
-use crate::statusbar::StatusBar;
 
 /// Called upon application startup.
 #[no_mangle]
-#[tokio::main]
-async fn main() {
+fn main() {
     tracing_subscriber::registry()
         .with(tracing_tree::HierarchicalLayer::new(2))
         .with(tracing_subscriber::EnvFilter::from_default_env())
@@ -49,8 +48,6 @@ async fn main() {
             (*self_lock).check_monitors(m);
         });
     });
-
-
 
     info!("Start.");
     application.run();
