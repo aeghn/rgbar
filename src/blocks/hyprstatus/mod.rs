@@ -98,16 +98,30 @@ fn handle_events(
                     }
                     activate_window_button.set_label(title.as_str());
                     let c = class.clone();
-                    if let Some(lc) = current_class.replace(class) {
-                        if lc != c {
-                            let image = icon_loader.load_from_name(c.as_str());
-                            activate_window_button.set_image(image);
-                        }
+                    let lc = current_class.replace(class);
+                    if lc.is_none() || lc.unwrap() != c {
+                        let image = icon_loader.load_from_name(c.as_str());
+                        activate_window_button.set_image(image);
                     }
                 }
             }
-            ParsedEventType::ActiveMonitorChanged(monitor, _ws) => {
+            ParsedEventType::ActiveMonitorChanged(monitor, ws) => {
                 current_monitor.replace(monitor);
+                let id = ws.parse::<i32>().unwrap();
+                if let Some(cws_but) = grid.child_at(id.clone(), 0) {
+                    if let Ok(but) = cws_but.downcast::<gtk::Button>() {
+                        change_ws_button(&but, ButtonType::Normal);
+                    }
+                } else {
+                    get_ws_button(
+                        &grid,
+                        &HyprWorkspace {
+                            id: id as i64,
+                            monitor: current_monitor.clone().unwrap().to_string(),
+                            name: "".to_string(),
+                        },
+                    );
+                }
             }
             _ => {}
         }
@@ -123,6 +137,7 @@ async fn read_socket(tx: &glib::Sender<ParsedEventType>) {
 
             println!("Listening on: {:?}", socket_path);
             let regexes = hyprevents::get_event_regex();
+            // gio::UnixInputStream::create_source_future()
 
             while let Ok(mut stream) = UnixStream::connect(socket_path).await {
                 println!("Accepted a new connection");
@@ -153,11 +168,11 @@ impl Module for HyprStatus {
         let full_container = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         full_container.style_context().add_class("wm");
 
-        let active_window_button = get_active_window_button();
-        full_container.pack_start(&active_window_button, false, false, 0);
-
         let ws_container = get_ws_container();
         full_container.pack_start(&ws_container, false, false, 0);
+
+        let active_window_button = get_active_window_button();
+        full_container.pack_start(&active_window_button, false, false, 0);
 
         handle_events(rx, &ws_container, &active_window_button);
 
@@ -172,9 +187,7 @@ impl Module for HyprStatus {
             .collect::<HashSet<HyprWorkspace>>();
 
         let active_hypr_client: Option<HyprClient> = hyprclients::get_active_window_address()
-            .and_then(|address| {
-                clients.iter().find(|&c| c.address == address).cloned()
-            });
+            .and_then(|address| clients.iter().find(|&c| c.address == address).cloned());
 
         for x in workspaces {
             let _ = tx.send(ParsedEventType::ActiveMonitorChanged(
@@ -184,11 +197,7 @@ impl Module for HyprStatus {
         }
         if let Some(active_client) = active_hypr_client {
             let workspace = &active_client.workspace;
-            let _ = tx.send(ParsedEventType::ActiveMonitorChanged(
-                workspace.monitor.to_string(),
-                workspace.id.to_string(),
-            ));
-
+            let _ = tx.send(ParsedEventType::WorkspaceChanged(workspace.id.to_string()));
             let _ = tx.send(ParsedEventType::ActiveWindowChangedV1(
                 active_client.class.to_string(),
                 active_client.title.to_string(),
