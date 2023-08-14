@@ -4,7 +4,7 @@ pub mod hyprevents;
 use async_std::io::prelude::BufReadExt;
 use async_std::io::BufReader;
 use async_std::os::unix::net::UnixStream;
-use glib::{Cast, MainContext};
+use glib::{Cast, Continue, MainContext};
 
 use std::collections::HashSet;
 
@@ -15,49 +15,114 @@ use std::str::FromStr;
 
 use crate::utils;
 
+use super::Module;
+use crate::blocks::hyprstatus::hyprclients::{HyprClient, HyprWorkspace};
 use gtk::prelude::GridExt;
 use gtk::traits::WidgetExt;
-use gtk::{
-    traits::{BoxExt, ButtonExt, StyleContextExt},
-    Button,
-};
-
-use crate::blocks::hyprstatus::hyprclients::HyprWorkspace;
-use crate::blocks::hyprstatus::ButtonType::{Focus, Hide, Normal};
-
-use super::Module;
+use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
 
 pub struct HyprStatus {}
 
-#[derive(Debug, Clone)]
-pub struct HWS {
-    pub name: String,
+pub enum ButtonType {
+    Hide,
+    Focus,
+    Normal,
 }
 
-#[derive(Debug, Clone)]
-pub struct HC {
-    pub class: String,
-    pub name: String,
-}
-
-async fn read_msgs(
+fn handle_events(
+    receiver: glib::Receiver<ParsedEventType>,
     grid: &gtk::Grid,
-    activate_window: &gtk::Button,
-    icon_loader: &mut utils::gtk_icon_loader::GtkIconLoader,
-    monitor: &str,
+    activate_window_button: &gtk::Button,
 ) {
+    let mut icon_loader = utils::gtk_icon_loader::GtkIconLoader::new();
+
+    let mut current_workspace: Option<String> = None;
+    let mut current_monitor: Option<String> = None;
+    let mut current_class: Option<String> = None;
+
+    let grid = grid.clone();
+    let activate_window_button = activate_window_button.clone();
+    receiver.attach(None, move |event| {
+        match event {
+            ParsedEventType::WorkspaceChanged(ws) => {
+                if let Some(cws_but) = grid.child_at(i32::from_str(ws.as_str()).unwrap(), 0) {
+                    if let Ok(but) = cws_but.downcast::<gtk::Button>() {
+                        change_ws_button(&but, ButtonType::Focus);
+                    }
+                } else {
+                }
+
+                if let Some(lws) = current_workspace.replace(ws) {
+                    if let Some(lws_but) = grid.child_at(i32::from_str(lws.as_str()).unwrap(), 0) {
+                        if let Ok(but) = lws_but.downcast::<gtk::Button>() {
+                            change_ws_button(&but, ButtonType::Normal);
+                        }
+                    }
+                }
+            }
+            ParsedEventType::WorkspaceDeleted(ws) => {
+                let id = ws.parse::<i32>().unwrap();
+                if let Some(cws_but) = grid.child_at(id, 0) {
+                    if let Ok(but) = cws_but.downcast::<gtk::Button>() {
+                        change_ws_button(&but, ButtonType::Hide);
+                    }
+                }
+            }
+            ParsedEventType::WorkspaceAdded(ws) => {
+                let id = ws.parse::<i32>().unwrap();
+                if let Some(cws_but) = grid.child_at(id.clone(), 0) {
+                    if let Ok(but) = cws_but.downcast::<gtk::Button>() {
+                        change_ws_button(&but, ButtonType::Normal);
+                    }
+                } else {
+                    get_ws_button(
+                        &grid,
+                        &HyprWorkspace {
+                            id: id as i64,
+                            monitor: current_monitor.clone().unwrap().to_string(),
+                            name: "".to_string(),
+                        },
+                    );
+                }
+            }
+            ParsedEventType::WorkspaceMoved(_ws, _m) => {}
+            ParsedEventType::ActiveWindowChangedV1(class, title) => {
+                let visable = activate_window_button.get_visible();
+                if class.is_empty() {
+                    if visable {
+                        activate_window_button.set_visible(false);
+                    }
+                } else {
+                    if !visable {
+                        activate_window_button.set_visible(true);
+                    }
+                    activate_window_button.set_label(title.as_str());
+                    let c = class.clone();
+                    if let Some(lc) = current_class.replace(class) {
+                        if lc != c {
+                            let image = icon_loader.load_from_name(c.as_str());
+                            activate_window_button.set_image(image);
+                        }
+                    }
+                }
+            }
+            ParsedEventType::ActiveMonitorChanged(monitor, _ws) => {
+                current_monitor.replace(monitor);
+            }
+            _ => {}
+        }
+        Continue(true)
+    });
+}
+
+async fn read_socket(tx: &glib::Sender<ParsedEventType>) {
     match std::env::var("HYPRLAND_INSTANCE_SIGNATURE") {
         Ok(ins) => {
             let socket = format!("/tmp/hypr/{}/.socket2.sock", ins);
-
             let socket_path = Path::new(socket.as_str());
 
             println!("Listening on: {:?}", socket_path);
-
             let regexes = hyprevents::get_event_regex();
-            let mut current_workspace: Option<String> = None;
-            let mut current_monitor: Option<String> = Some(monitor.to_string());
-            let mut current_class: Option<String> = None;
 
             while let Ok(mut stream) = UnixStream::connect(socket_path).await {
                 println!("Accepted a new connection");
@@ -67,82 +132,11 @@ async fn read_msgs(
 
                 while let Ok(bytes_read) = reader.read_line(&mut buffer).await {
                     if bytes_read == 0 {
-                        break; // End of stream
+                        break;
                     }
 
                     let event = hyprevents::convert_line_to_event(&regexes, buffer.as_str());
-                    match event {
-                        ParsedEventType::WorkspaceChanged(ws) => {
-                            if let Some(cws_but) =
-                                grid.child_at(i32::from_str(ws.as_str()).unwrap(), 0)
-                            {
-                                if let Ok(but) = cws_but.downcast::<Button>() {
-                                    change_button(&but, Focus);
-                                }
-                            } else {
-                            }
-
-                            if let Some(lws) = current_workspace.replace(ws) {
-                                if let Some(lws_but) =
-                                    grid.child_at(i32::from_str(lws.as_str()).unwrap(), 0)
-                                {
-                                    if let Ok(but) = lws_but.downcast::<Button>() {
-                                        change_button(&but, Normal);
-                                    }
-                                }
-                            }
-                        }
-                        ParsedEventType::WorkspaceDeleted(ws) => {
-                            let id = ws.parse::<i32>().unwrap();
-                            if let Some(cws_but) = grid.child_at(id, 0) {
-                                if let Ok(but) = cws_but.downcast::<Button>() {
-                                    change_button(&but, Hide);
-                                }
-                            }
-                        }
-                        ParsedEventType::WorkspaceAdded(ws) => {
-                            let id = ws.parse::<i32>().unwrap();
-                            if let Some(cws_but) = grid.child_at(id.clone(), 0) {
-                                if let Ok(but) = cws_but.downcast::<Button>() {
-                                    change_button(&but, Normal);
-                                }
-                            } else {
-                                get_workspace_button(
-                                    grid,
-                                    &HyprWorkspace {
-                                        id: id as i64,
-                                        monitor: current_monitor.clone().unwrap().to_string(),
-                                        name: "".to_string(),
-                                    },
-                                );
-                            }
-                        }
-                        ParsedEventType::WorkspaceMoved(_ws, _m) => {}
-                        ParsedEventType::ActiveWindowChangedV1(class, title) => {
-                            let visable = activate_window.get_visible();
-                            if class.is_empty() {
-                                if visable {
-                                    activate_window.set_visible(false);
-                                }
-                            } else {
-                                if !visable {
-                                    activate_window.set_visible(true);
-                                }
-                                activate_window.set_label(title.as_str());
-                                let c = class.clone();
-                                if let Some(lc) = current_class.replace(class) {
-                                    if lc != c {
-                                        let image = icon_loader.load_from_name(c.as_str());
-                                        activate_window.set_image(image);
-                                    }
-                                }
-                            }
-                        }
-                        ParsedEventType::ActiveMonitorChanged(monitor, _ws) => {
-                            current_monitor.replace(monitor);
-                        }
-                        _ => {}
-                    }
+                    tx.send(event).unwrap();
 
                     buffer.clear();
                 }
@@ -154,72 +148,55 @@ async fn read_msgs(
 
 impl Module for HyprStatus {
     fn to_widget(&self) -> gtk::Widget {
-        let mut icon_loader = utils::gtk_icon_loader::GtkIconLoader::new();
+        let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
 
         let full_container = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         full_container.style_context().add_class("wm");
+
+        let active_window_button = get_active_window_button();
+        full_container.pack_start(&active_window_button, false, false, 0);
+
+        let ws_container = get_ws_container();
+        full_container.pack_start(&ws_container, false, false, 0);
+
+        handle_events(rx, &ws_container, &active_window_button);
 
         let clients = match hyprclients::get_clients() {
             Ok(vec) => vec,
             Err(_) => vec![],
         };
 
-        let id = match hyprclients::get_active_window() {
-            None => "".to_string(),
-            Some(id) => id.as_str().to_string(),
-        };
-
-        let vec = clients
+        let workspaces = clients
             .iter()
-            .filter_map(|c| {
-                if c.address.eq(id.as_str()) {
-                    Some((
-                        c.class.as_str(),
-                        c.title.as_str(),
-                        c.workspace.id.clone(),
-                        c.workspace.monitor.to_string(),
-                    ))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<(&str, &str, i64, String)>>();
+            .map(|e| e.workspace.clone())
+            .collect::<HashSet<HyprWorkspace>>();
 
-        let (class, title, _wsid, monitor) = if vec.len() > 0 {
-            vec.get(0).unwrap().clone()
-        } else {
-            ("", "", -1, "".to_string())
-        };
+        let active_hypr_client: Option<HyprClient> = hyprclients::get_active_window_address()
+            .and_then(|address| {
+                clients.iter().find(|&c| c.address == address).cloned()
+            });
 
-        let ws_container = gtk::Grid::builder().build();
-        ws_container.style_context().add_class("wss");
-        full_container.pack_start(&ws_container, false, false, 0);
-
-        let mut workspace_id_set: HashSet<i64> = HashSet::new();
-        clients.iter().for_each(|w| {
-            if !workspace_id_set.insert(w.workspace.id.clone()) {
-                return;
-            }
-
-            let _ = get_workspace_button(&ws_container, &w.workspace);
-        });
-
-        let mut title = gtk::Button::builder().label(title);
-        if let Some(image) = icon_loader.load_from_name(class) {
-            title = title.image(image);
+        for x in workspaces {
+            let _ = tx.send(ParsedEventType::ActiveMonitorChanged(
+                x.monitor.to_string(),
+                x.id.to_string(),
+            ));
         }
-        let active_window = title.visible(false).build();
-        active_window.style_context().add_class("wm-title");
-        full_container.pack_start(&active_window, false, false, 0);
+        if let Some(active_client) = active_hypr_client {
+            let workspace = &active_client.workspace;
+            let _ = tx.send(ParsedEventType::ActiveMonitorChanged(
+                workspace.monitor.to_string(),
+                workspace.id.to_string(),
+            ));
+
+            let _ = tx.send(ParsedEventType::ActiveWindowChangedV1(
+                active_client.class.to_string(),
+                active_client.title.to_string(),
+            ));
+        }
 
         MainContext::ref_thread_default().spawn_local(async move {
-            read_msgs(
-                &ws_container,
-                &active_window,
-                &mut icon_loader,
-                monitor.as_str(),
-            )
-            .await;
+            read_socket(&tx).await;
         });
 
         full_container.upcast()
@@ -230,7 +207,21 @@ impl Module for HyprStatus {
     }
 }
 
-fn create_workspace_button(ws: &HyprWorkspace) -> gtk::Button {
+fn get_ws_container() -> gtk::Grid {
+    let ws_container = gtk::Grid::builder().build();
+    ws_container.style_context().add_class("wss");
+
+    ws_container
+}
+
+fn get_active_window_button() -> gtk::Button {
+    let active_window = gtk::Button::builder().build();
+    active_window.style_context().add_class("wm-title");
+
+    active_window
+}
+
+fn create_ws_button(ws: &HyprWorkspace) -> gtk::Button {
     let label = ws.get_bar_name();
 
     let wb = gtk::Button::builder()
@@ -245,24 +236,18 @@ fn create_workspace_button(ws: &HyprWorkspace) -> gtk::Button {
     wb
 }
 
-fn get_workspace_button(grid: &gtk::Grid, ws: &HyprWorkspace) -> Button {
+fn get_ws_button(grid: &gtk::Grid, ws: &HyprWorkspace) -> gtk::Button {
     match grid.child_at(ws.id.clone() as i32, 0) {
         None => {
-            let wb = create_workspace_button(ws);
+            let wb = create_ws_button(ws);
             grid.attach(&wb, ws.id.clone() as i32, 0, 1, 1);
             wb
         }
-        Some(button) => button.downcast::<Button>().unwrap(),
+        Some(button) => button.downcast::<gtk::Button>().unwrap(),
     }
 }
 
-pub enum ButtonType {
-    Hide,
-    Focus,
-    Normal,
-}
-
-fn change_button(button: &Button, msg: ButtonType) {
+fn change_ws_button(button: &gtk::Button, msg: ButtonType) {
     match msg {
         ButtonType::Hide => button.hide(),
         ButtonType::Focus => {

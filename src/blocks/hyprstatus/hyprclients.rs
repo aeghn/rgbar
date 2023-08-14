@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::process::Command;
 
 #[derive(Clone, Debug)]
@@ -7,6 +8,20 @@ pub struct HyprWorkspace {
     pub monitor: String,
     pub name: String,
 }
+
+impl Hash for HyprWorkspace {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl PartialEq<Self> for HyprWorkspace {
+    fn eq(&self, other: &Self) -> bool {
+        return self.id == other.id;
+    }
+}
+
+impl Eq for HyprWorkspace {}
 
 impl HyprWorkspace {
     pub fn get_bar_name(&self) -> String {
@@ -18,7 +33,8 @@ impl HyprWorkspace {
     }
 }
 
-pub struct HyprWindowResult {
+#[derive(Clone)]
+pub struct HyprClient {
     pub class: String,
     pub title: String,
     pub address: String,
@@ -29,7 +45,7 @@ pub struct HyprWindowResult {
     pub workspace: HyprWorkspace,
 }
 
-pub fn get_clients() -> Result<Vec<HyprWindowResult>, String> {
+pub fn get_clients() -> Result<Vec<HyprClient>, String> {
     let output = Command::new("hyprctl")
         .arg("clients")
         .arg("-j")
@@ -38,7 +54,7 @@ pub fn get_clients() -> Result<Vec<HyprWindowResult>, String> {
 
     let monitors = get_monitors();
 
-    let mut vec: Vec<HyprWindowResult> = vec![];
+    let mut vec: Vec<HyprClient> = vec![];
 
     let out = String::from_utf8(output.stdout).unwrap();
 
@@ -52,7 +68,7 @@ pub fn get_clients() -> Result<Vec<HyprWindowResult>, String> {
                 continue;
             }
 
-            vec.push(HyprWindowResult {
+            vec.push(HyprClient {
                 class: class.to_string(),
                 title: e.get("title").unwrap().as_str().unwrap().to_string(),
                 address: e.get("address").unwrap().as_str().unwrap().to_string(),
@@ -84,14 +100,14 @@ pub fn get_clients() -> Result<Vec<HyprWindowResult>, String> {
     Ok(vec)
 }
 
-pub fn get_active_window() -> Option<String> {
+pub fn get_active_window_address() -> Option<String> {
     let output = Command::new("hyprctl")
         .arg("activewindow")
         .arg("-j")
         .output()
         .unwrap();
 
-    let _vec: Vec<HyprWindowResult> = vec![];
+    let _vec: Vec<HyprClient> = vec![];
 
     let out = String::from_utf8(output.stdout).unwrap();
 
@@ -115,7 +131,7 @@ pub fn get_monitors() -> HashMap<i64, String> {
         .output()
         .unwrap();
 
-    let _vec: Vec<HyprWindowResult> = vec![];
+    let _vec: Vec<HyprClient> = vec![];
 
     let out = String::from_utf8(output.stdout).unwrap();
 
