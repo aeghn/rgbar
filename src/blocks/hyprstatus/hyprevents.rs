@@ -10,7 +10,7 @@ type TitleType = String;
 type ClassType = String;
 type AddressType = String;
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Debug)]
 pub enum ParsedEventType {
     WorkspaceChanged(WorkspaceType),
     WorkspaceDeleted(WorkspaceType),
