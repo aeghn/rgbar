@@ -30,7 +30,7 @@ pub struct BatteryInfo {
 }
 
 use super::Module;
-use glib::MainContext;
+use glib::{Continue, MainContext};
 use gtk::traits::BoxExt;
 use gtk::traits::ButtonExt;
 use gtk::traits::StyleContextExt;
@@ -71,11 +71,9 @@ impl Module for BatteryModule {
         date.style_context().add_class("block");
 
         let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-        MainContext::ref_thread_default().spawn_local(async move {
-            loop {
-                let _ = tx.send(get_battery());
-                async_std::task::sleep(Duration::from_secs(10)).await;
-            }
+        glib::timeout_add_seconds_local(10, move || {
+            let _ = tx.send(get_battery());
+            Continue(true)
         });
 
         {
