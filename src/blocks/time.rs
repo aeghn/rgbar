@@ -1,5 +1,5 @@
 use chrono::{DateTime, Local};
-use glib::MainContext;
+use glib::{Continue, MainContext};
 use gtk::traits::BoxExt;
 use gtk::traits::ButtonExt;
 use gtk::traits::StyleContextExt;
@@ -22,12 +22,10 @@ impl Module for TimeModule {
         date.style_context().add_class("block");
 
         let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-        MainContext::ref_thread_default().spawn_local(async move {
-            loop {
-                let _date = Local::now();
-                let _ = tx.send(format!("{}", get_wes_time()));
-                async_std::task::sleep(Duration::from_secs(3)).await;
-            }
+        glib::timeout_add_seconds_local(3, move ||{
+            let _date = Local::now();
+            let _ = tx.send(format!("{}", get_wes_time()));
+            Continue(true)
         });
 
         {

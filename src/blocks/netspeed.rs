@@ -1,4 +1,4 @@
-use glib::MainContext;
+use glib::{Continue, MainContext};
 use gtk::traits::{BoxExt, ButtonExt, StyleContextExt, WidgetExt};
 use gtk::Widget;
 use regex::Regex;
@@ -78,29 +78,24 @@ impl Module for NetspeedModule {
         let netspeed = gtk::Button::with_label("");
         netspeed.style_context().add_class("block");
 
-        let mut total_download: u64;
-        let mut total_upload: u64;
-        (total_download, total_upload) = get_total_all();
+        let (mut total_download, mut total_upload) = get_total_all();
 
         let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-        MainContext::ref_thread_default().spawn_local(async move {
-            loop {
-                let t1: u64;
-                let t2: u64;
-                (t1, t2) = get_total_all();
 
-                let diff_download_bytes = t1 - total_download;
-                let diff_upload_bytes = t2 - total_upload;
+        glib::timeout_add_seconds_local(1, move ||{
+            let (mut t1, mut t2) = get_total_all();
 
-                total_download = t1;
-                total_upload = t2;
-                let _ = tx.send(format!(
-                    "{}{} KiB/s",
-                    diff_upload_bytes / 1024,
-                    diff_download_bytes / 1024
-                ));
-                async_std::task::sleep(Duration::from_secs(3)).await;
-            }
+            let diff_download_bytes = t1 - total_download;
+            let diff_upload_bytes = t2 - total_upload;
+
+            total_download = t1;
+            total_upload = t2;
+            let _ = tx.send(format!(
+                "{}{} KiB/s",
+                diff_upload_bytes / 1024,
+                diff_download_bytes / 1024
+            ));
+            Continue(true)
         });
 
         {
