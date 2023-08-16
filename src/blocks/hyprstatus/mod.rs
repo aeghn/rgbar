@@ -4,14 +4,20 @@ pub mod hyprevents;
 use async_std::io::prelude::BufReadExt;
 use async_std::io::BufReader;
 use async_std::os::unix::net::UnixStream;
-use glib::{Cast, Continue, MainContext};
+use glib::{Cast, Continue, Error, GString, MainContext, Priority, PRIORITY_DEFAULT_IDLE};
 
 use std::collections::HashSet;
+use std::env::VarError;
+use std::io;
 
 use hyprevents::ParsedEventType;
 use std::io::BufRead;
 use std::path::Path;
 use std::str::FromStr;
+use async_io::Async;
+use gio::{DataInputStream, IOStreamAsyncReadWrite, SocketClient, SocketConnection};
+use gio::prelude::{DataInputStreamExtManual, InputStreamExtManual, IOStreamExtManual};
+use gio::traits::{IOStreamExt, SocketClientExt};
 
 use crate::utils;
 
@@ -20,6 +26,8 @@ use crate::blocks::hyprstatus::hyprclients::{HyprClient, HyprWorkspace};
 use gtk::prelude::GridExt;
 use gtk::traits::WidgetExt;
 use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
+use tracing::error;
+
 
 pub struct HyprStatus {}
 
@@ -137,27 +145,31 @@ async fn read_socket(tx: &glib::Sender<ParsedEventType>) {
 
             println!("Listening on: {:?}", socket_path);
             let regexes = hyprevents::get_event_regex();
-            // gio::UnixInputStream::create_source_future()
 
-            while let Ok(mut stream) = UnixStream::connect(socket_path).await {
-                println!("Accepted a new connection");
+            let socket_address = gio::UnixSocketAddress::new(socket_path);
+            let client = SocketClient::new();
+            let connection_result = client.connect(&gio::SocketConnectable::from(socket_address),
+                                      None::<&gio::Cancellable>);
 
-                let mut buffer = String::new();
-                let mut reader = BufReader::new(&mut stream);
-
-                while let Ok(bytes_read) = reader.read_line(&mut buffer).await {
-                    if bytes_read == 0 {
-                        break;
+            if let Ok(conn) = connection_result {
+                let dis = DataInputStream::new(&conn.input_stream());
+                let tx = tx.clone();
+                MainContext::ref_thread_default().spawn_local_with_priority(PRIORITY_DEFAULT_IDLE, async move {
+                    loop {
+                        let future = dis.read_line_utf8_future(PRIORITY_DEFAULT_IDLE);
+                        match future.await {
+                            Ok(Some(line)) => {
+                                let event = hyprevents::convert_line_to_event(&regexes, line.as_str());
+                                tx.send(event).unwrap();
+                            }
+                            _ => {}
+                        }
                     }
 
-                    let event = hyprevents::convert_line_to_event(&regexes, buffer.as_str());
-                    tx.send(event).unwrap();
-
-                    buffer.clear();
-                }
+                });
             }
         }
-        Err(_e) => {}
+        _ => {}
     }
 }
 
