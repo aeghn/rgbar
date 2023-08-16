@@ -15,8 +15,8 @@ use std::io::BufRead;
 use std::path::Path;
 use std::str::FromStr;
 use async_io::Async;
-use gio::{DataInputStream, IOStreamAsyncReadWrite, SocketClient, SocketConnection};
-use gio::prelude::{DataInputStreamExtManual, InputStreamExtManual, IOStreamExtManual};
+use gio::{DataInputStream, IOStreamAsyncReadWrite, PollableInputStream, SocketClient, SocketConnection};
+use gio::prelude::{DataInputStreamExtManual, InputStreamExtManual, IOStreamExtManual, PollableInputStreamExtManual};
 use gio::traits::{IOStreamExt, SocketClientExt};
 
 use crate::utils;
@@ -152,18 +152,25 @@ async fn read_socket(tx: &glib::Sender<ParsedEventType>) {
                                       None::<&gio::Cancellable>);
 
             if let Ok(conn) = connection_result {
-                let dis = DataInputStream::new(&conn.input_stream());
+                error!("begin to read result");
+                let dis = DataInputStream::new(&conn.input_stream()
+                    .dynamic_cast::<PollableInputStream>()
+                    .ok()
+                    .and_then(|s| s.into_async_read().ok()));
                 let tx = tx.clone();
                 MainContext::ref_thread_default().spawn_local_with_priority(PRIORITY_DEFAULT_IDLE, async move {
                     loop {
                         let future = dis.read_line_utf8_future(PRIORITY_DEFAULT_IDLE);
+                        error!("begin to listen path");
                         match future.await {
                             Ok(Some(line)) => {
+                                error!("mid to listen path");
                                 let event = hyprevents::convert_line_to_event(&regexes, line.as_str());
                                 tx.send(event).unwrap();
                             }
                             _ => {}
                         }
+                        error!("end to listen path");
                     }
 
                 });
