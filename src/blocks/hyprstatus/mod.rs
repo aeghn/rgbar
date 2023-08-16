@@ -1,9 +1,6 @@
 pub mod hyprclients;
 pub mod hyprevents;
 
-use async_std::io::prelude::BufReadExt;
-use async_std::io::BufReader;
-use async_std::os::unix::net::UnixStream;
 use glib::{Cast, Continue, Error, GString, MainContext, Priority, PRIORITY_DEFAULT_IDLE};
 
 use std::collections::HashSet;
@@ -14,7 +11,6 @@ use hyprevents::ParsedEventType;
 use std::io::BufRead;
 use std::path::Path;
 use std::str::FromStr;
-use async_io::Async;
 use gio::{DataInputStream, IOStreamAsyncReadWrite, PollableInputStream, SocketClient, SocketConnection};
 use gio::prelude::{DataInputStreamExtManual, InputStreamExtManual, IOStreamExtManual, PollableInputStreamExtManual};
 use gio::traits::{IOStreamExt, SocketClientExt};
@@ -27,6 +23,7 @@ use gtk::prelude::GridExt;
 use gtk::traits::WidgetExt;
 use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
 use tracing::error;
+use tracing::info;
 
 
 pub struct HyprStatus {}
@@ -57,8 +54,7 @@ fn handle_events(
                     if let Ok(but) = cws_but.downcast::<gtk::Button>() {
                         change_ws_button(&but, ButtonType::Focus);
                     }
-                } else {
-                }
+                } else {}
 
                 if let Some(lws) = current_workspace.replace(ws) {
                     if let Some(lws_but) = grid.child_at(i32::from_str(lws.as_str()).unwrap(), 0) {
@@ -137,46 +133,48 @@ fn handle_events(
     });
 }
 
-async fn read_socket(tx: &glib::Sender<ParsedEventType>) {
-    match std::env::var("HYPRLAND_INSTANCE_SIGNATURE") {
-        Ok(ins) => {
-            let socket = format!("/tmp/hypr/{}/.socket2.sock", ins);
-            let socket_path = Path::new(socket.as_str());
+fn read_socket(tx: &glib::Sender<ParsedEventType>) {
+    if let Ok(ins) = std::env::var("HYPRLAND_INSTANCE_SIGNATURE") {
+        let socket = format!("/tmp/hypr/{}/.socket2.sock", ins);
+        let socket_path = Path::new(socket.as_str());
 
-            println!("Listening on: {:?}", socket_path);
-            let regexes = hyprevents::get_event_regex();
+        info!("Listening on: {:?}", socket_path);
+        let regexes = hyprevents::get_event_regex();
+        let socket_address = gio::UnixSocketAddress::new(socket_path);
+        let tx = tx.clone();
 
-            let socket_address = gio::UnixSocketAddress::new(socket_path);
-            let client = SocketClient::new();
-            let connection_result = client.connect(&gio::SocketConnectable::from(socket_address),
-                                      None::<&gio::Cancellable>);
+        MainContext::ref_thread_default().spawn_local_with_priority(PRIORITY_DEFAULT_IDLE, async move {
+            loop {
+                let client = SocketClient::new();
+                let connection_result = client.connect(&gio::SocketConnectable::from(socket_address.clone()),
+                                                       None::<&gio::Cancellable>);
 
-            if let Ok(conn) = connection_result {
-                error!("begin to read result");
-                let dis = DataInputStream::new(&conn.input_stream()
-                    .dynamic_cast::<PollableInputStream>()
-                    .ok()
-                    .and_then(|s| s.into_async_read().ok()));
-                let tx = tx.clone();
-                MainContext::ref_thread_default().spawn_local_with_priority(PRIORITY_DEFAULT_IDLE, async move {
+                if let Ok(conn) = connection_result {
+                    let arw = conn.into_async_read_write().unwrap();
+                    let dis = DataInputStream::new(arw.input_stream());
+
                     loop {
                         let future = dis.read_line_utf8_future(PRIORITY_DEFAULT_IDLE);
-                        error!("begin to listen path");
                         match future.await {
                             Ok(Some(line)) => {
-                                error!("mid to listen path");
                                 let event = hyprevents::convert_line_to_event(&regexes, line.as_str());
                                 tx.send(event).unwrap();
                             }
-                            _ => {}
+                            Ok(None) => {
+                                error!("receive events none.");
+                                break;
+                            }
+                            Err(err) => {
+                                error!("receive events error: {:?}", err);
+                                break;
+                            }
                         }
-                        error!("end to listen path");
                     }
-
-                });
+                }
             }
-        }
-        _ => {}
+        });
+    } else {
+        error!("Is Hyprland running now?");
     }
 }
 
@@ -223,9 +221,8 @@ impl Module for HyprStatus {
             ));
         }
 
-        MainContext::ref_thread_default().spawn_local(async move {
-            read_socket(&tx).await;
-        });
+
+        read_socket(&tx);
 
         full_container.upcast()
     }

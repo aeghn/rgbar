@@ -79,22 +79,30 @@ impl Module for NetspeedModule {
         netspeed.style_context().add_class("block");
 
         let (mut total_download, mut total_upload) = get_total_all();
+        let mut last_update_time = None;
 
         let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
 
         glib::timeout_add_seconds_local(1, move ||{
             let (mut t1, mut t2) = get_total_all();
+            let now = std::time::SystemTime::now();
+            if let Some(last) = last_update_time.replace(now) {
+                let diff_download_bytes = t1 - total_download;
+                let diff_upload_bytes = t2 - total_upload;
 
-            let diff_download_bytes = t1 - total_download;
-            let diff_upload_bytes = t2 - total_upload;
+                let diff = now.duration_since(last);
+                if let Ok(dur) = diff {
+                    total_download = t1;
+                    total_upload = t2;
+                    let sec = dur.as_millis() as f64;
+                    let _ = tx.send(format!(
+                        "{:.1}{:.1} KiB/s",
+                        diff_upload_bytes as f64 / 1024.0 / sec * 1000.0,
+                        diff_download_bytes as f64 / 1024.0 / sec * 1000.0
+                    ));
+                }
+            }
 
-            total_download = t1;
-            total_upload = t2;
-            let _ = tx.send(format!(
-                "{}{} KiB/s",
-                diff_upload_bytes / 1024,
-                diff_download_bytes / 1024
-            ));
             Continue(true)
         });
 
