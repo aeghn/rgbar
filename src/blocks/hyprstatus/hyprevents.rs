@@ -82,6 +82,12 @@ pub fn convert_line_to_event(regex_set: &Vec<Regex>, line: &str) -> ParsedEventT
                         caps["monitor"].to_string(),
                     )
                 }
+                4 => {
+                    return ParsedEventType::ActiveMonitorChanged(
+                        caps["monitor"].to_string(),
+                        caps["workspace"].to_string(),
+                    )
+                }
                 5 => {
                     return ActiveWindowChangedV1(
                         caps["class"].to_string(),
