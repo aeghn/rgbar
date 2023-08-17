@@ -110,18 +110,26 @@ fn handle_events(
                 }
             }
             ParsedEventType::ActiveMonitorChanged(monitor, ws) => {
-                current_monitor.replace(monitor);
+                current_monitor.replace(monitor.clone());
+                if let Some(old_ws) = current_workspace.replace(ws.clone()) {
+                    if let Some(cws_but) = grid.child_at(i32::from_str(old_ws.as_str()).unwrap(), 0) {
+                        if let Ok(but) = cws_but.downcast::<gtk::Button>() {
+                            change_ws_button(&but, ButtonType::Normal);
+                        }
+                    }
+                }
+
                 let id = ws.parse::<i32>().unwrap();
                 if let Some(cws_but) = grid.child_at(id.clone(), 0) {
                     if let Ok(but) = cws_but.downcast::<gtk::Button>() {
-                        change_ws_button(&but, ButtonType::Normal);
+                        change_ws_button(&but, ButtonType::Focus);
                     }
                 } else {
                     get_ws_button(
                         &grid,
                         &HyprWorkspace {
                             id: id as i64,
-                            monitor: current_monitor.clone().unwrap().to_string(),
+                            monitor: monitor.to_string(),
                             name: "".to_string(),
                         },
                     );
