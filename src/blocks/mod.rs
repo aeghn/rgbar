@@ -2,6 +2,7 @@ pub mod battery;
 pub mod hyprstatus;
 pub mod netspeed;
 pub mod time;
+mod audio;
 
 pub trait Module {
     fn to_widget(&self) -> gtk::Widget;

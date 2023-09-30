@@ -2,7 +2,7 @@ use glib::Continue;
 
 use std::collections::HashMap;
 
-use gtk::prelude::WidgetExtManual;
+use gtk::prelude::{GtkWindowExt, WidgetExtManual};
 use gtk::traits::ContainerExt;
 use gtk::traits::StyleContextExt;
 use gtk::traits::WidgetExt;
@@ -69,10 +69,10 @@ impl StatusBar {
         let new_keys: Vec<i32> = self.window_map.keys().map(|i| i.clone()).collect();
         for key in new_keys {
             match screen.display().monitor(key) {
-                None => unsafe {
+                None => {
                     if let Some(win) = self.window_map.remove(&key) {
                         error!("destroy: {:?}", key);
-                        win.destroy();
+                        win.close();
                     }
                 },
                 Some(_) => {}
