@@ -1,12 +1,10 @@
 use chrono::{DateTime, Local};
-use glib::{Continue, MainContext};
+use glib::Continue;
 use gtk::traits::BoxExt;
 use gtk::traits::ButtonExt;
 use gtk::traits::StyleContextExt;
 use gtk::traits::WidgetExt;
 use gtk::Widget;
-use std::time::Duration;
-
 use super::Module;
 
 pub struct TimeModule {}

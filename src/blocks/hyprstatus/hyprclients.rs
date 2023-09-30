@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::process::Command;
 
+use tracing::error;
+
 #[derive(Clone, Debug)]
 pub struct HyprWorkspace {
     pub id: i64,
@@ -51,7 +53,7 @@ pub fn get_clients() -> Result<Vec<HyprClient>, String> {
         .arg("-j")
         .output()
         .unwrap();
-
+    error!("hypr clients: {:?}", output);
     let monitors = get_monitors();
 
     let mut vec: Vec<HyprClient> = vec![];
@@ -148,4 +150,31 @@ pub fn get_monitors() -> HashMap<i64, String> {
     }
 
     map
+}
+
+
+pub fn get_workspaces() -> anyhow::Result<Vec<HyprWorkspace>> {
+    let output = Command::new("hyprctl")
+        .arg("workspaces")
+        .arg("-j")
+        .output()?;
+
+    let out = String::from_utf8(output.stdout)?;
+
+    let json = serde_json::from_str::<serde_json::Value>(out.as_str())?;
+
+    let mut vec = vec![];
+    if let Some(arr) = json.as_array() {
+        arr.iter().for_each(|e| {
+            vec.push(
+                HyprWorkspace {
+                    id: e.get("id").unwrap().as_i64().unwrap(),
+                    monitor: e.get("monitor").unwrap().as_str().unwrap().to_string(),
+                    name: e.get("name").unwrap().as_str().unwrap().to_string(),
+                }
+            );
+        })
+    }
+
+    Ok(vec)
 }

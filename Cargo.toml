@@ -20,3 +20,7 @@ gdk-pixbuf = "0.17.10"
 gtk = "0.17.1"
 gdk = "0.17.1"
 gio = "0.17.10"
+
+anyhow = "*"
+
+pulsectl-rs = "0.3.2"

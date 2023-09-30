@@ -1,19 +1,14 @@
 pub mod hyprclients;
 pub mod hyprevents;
 
-use glib::{Cast, Continue, Error, GString, MainContext, Priority, PRIORITY_DEFAULT_IDLE};
-
-use std::collections::HashSet;
-use std::env::VarError;
-use std::io;
-
+use glib::{Cast, Continue, MainContext, PRIORITY_DEFAULT_IDLE};
 use hyprevents::ParsedEventType;
-use std::io::BufRead;
 use std::path::Path;
 use std::str::FromStr;
-use gio::{DataInputStream, IOStreamAsyncReadWrite, PollableInputStream, SocketClient, SocketConnection};
-use gio::prelude::{DataInputStreamExtManual, InputStreamExtManual, IOStreamExtManual, PollableInputStreamExtManual};
-use gio::traits::{IOStreamExt, SocketClientExt};
+use gio::{DataInputStream, SocketClient};
+use gio::prelude::{DataInputStreamExtManual, IOStreamExtManual};
+use gio::traits::SocketClientExt;
+use gio::traits::IOStreamExt;
 
 use crate::utils;
 
@@ -201,15 +196,10 @@ impl Module for HyprStatus {
 
         handle_events(rx, &ws_container, &active_window_button);
 
-        let clients = match hyprclients::get_clients() {
-            Ok(vec) => vec,
-            Err(_) => vec![],
-        };
+        let clients = hyprclients::get_clients().unwrap_or_else(|_| vec![]);
 
-        let workspaces = clients
-            .iter()
-            .map(|e| e.workspace.clone())
-            .collect::<HashSet<HyprWorkspace>>();
+        let workspaces = hyprclients::get_workspaces().unwrap();
+
 
         let active_hypr_client: Option<HyprClient> = hyprclients::get_active_window_address()
             .and_then(|address| clients.iter().find(|&c| c.address == address).cloned());
