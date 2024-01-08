@@ -1,7 +1,7 @@
 mod common;
 mod ideapad;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum PowerStatus {
     NotCharging = 1,
     Discharging = 2,
@@ -9,85 +9,101 @@ pub enum PowerStatus {
     Unknown = 4,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct BatteryInfo {
-    name: String,
-    status: PowerStatus,
-    present: u8,
-    technology: String,
-    cycle_count: u32,
-    voltage_min_design: u32,
-    voltage_now: u32,
-    power_now: u32,
-    energy_full_design: u32,
-    energy_full: u32,
-    energy_now: u32,
-    capacity: u8,
-    capacity_level: String,
-    model_name: String,
-    manufacturer: String,
-    serial_numer: String,
+    pub name: String,
+    pub status: PowerStatus,
+    pub present: u8,
+    pub technology: String,
+    pub cycle_count: u32,
+    pub voltage_min_design: u32,
+    pub voltage_now: u32,
+    pub power_now: u32,
+    pub energy_full_design: u32,
+    pub energy_full: u32,
+    pub energy_now: u32,
+    pub capacity: u8,
+    pub capacity_level: String,
+    pub model_name: String,
+    pub manufacturer: String,
+    pub serial_numer: String,
 }
 
-use super::Module;
-use glib::{Continue, MainContext};
-use gtk::traits::BoxExt;
-use gtk::traits::ButtonExt;
-use gtk::traits::StyleContextExt;
-use gtk::traits::WidgetExt;
-use std::time::Duration;
+use crate::datahodler::channel::DualChannel;
+use crate::datahodler::channel::MReceiver;
+use crate::datahodler::channel::SSender;
 
-pub struct BatteryModule {}
+use self::common::get_battery_info;
+use self::ideapad::get_conservation_mode;
+use self::ideapad::ConvervationMode;
 
-fn get_battery() -> String {
-    let conservesion_mode;
-    if ideapad::is_conservation_mode() {
-        conservesion_mode = "";
-    } else {
-        conservesion_mode = "";
-    }
+use super::Block;
+use glib::clone;
+use glib::MainContext;
+use tracing::warn;
 
-    let info = common::read_battery_info();
-    let status = info.get_status();
-    let icon: &str;
-    if *status == PowerStatus::Charging {
-        icon = "";
-    } else if *status == PowerStatus::Discharging {
-        icon = "";
-    } else if *status == PowerStatus::Unknown {
-        icon = "";
-    } else if *status == PowerStatus::NotCharging {
-        icon = "";
-    } else {
-        icon = ""
-    }
-
-    format!("{}{} {}%", icon, conservesion_mode, info.get_capacity())
+#[derive(Clone)]
+pub enum BatteryWM {
+    ConvervationMode(ConvervationMode),
+    PowerStatus(PowerStatus),
+    BatteryInfo(BatteryInfo),
+    UnknownBatteryInfo,
 }
 
-impl Module for BatteryModule {
-    fn to_widget(&self) -> gtk::Widget {
-        let date = gtk::Button::with_label(&get_battery());
-        date.style_context().add_class("block");
+#[derive(Clone)]
+pub enum BatteryBM {}
 
-        let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-        glib::timeout_add_seconds_local(10, move || {
-            let _ = tx.send(get_battery());
-            Continue(true)
-        });
+pub struct BatteryModule {
+    dualchannel: DualChannel<BatteryWM, BatteryBM>,
+}
 
-        {
-            let date = date.clone();
-            rx.attach(None, move |s| {
-                date.set_label(s.as_str());
+impl BatteryModule {
+    fn new() -> Self {
+        let dualchannel = DualChannel::new(100);
+
+        Self { dualchannel }
+    }
+}
+
+impl Block for BatteryModule {
+    type WM = BatteryWM;
+    type BM = BatteryBM;
+
+    fn loop_receive(&mut self) {
+        let sender = self.dualchannel.get_out_sender();
+        glib::timeout_add_seconds(
+            1,
+            clone!(@strong sender => move || {
+                match get_battery_info() {
+                    Ok(info) => sender.send(Self::WM::BatteryInfo(info)).expect("msg"),
+                    Err(_) => sender.send(Self::WM::UnknownBatteryInfo).expect("todo"),
+                };
+
+                sender.send(BatteryWM::ConvervationMode(get_conservation_mode()));
+
                 glib::Continue(true)
-            });
-        }
+            }),
+        );
 
-        glib::Cast::upcast::<gtk::Widget>(date)
+        let receiver = self.dualchannel.get_in_recevier();
+        MainContext::ref_thread_default().spawn_local(async move {
+            loop {
+                match receiver.recv().await {
+                    Ok(_) => {}
+                    Err(msg) => {
+                        warn!("got error msg: {}", msg)
+                    }
+                }
+            }
+        });
     }
 
-    fn put_into_bar(&self, bar: &gtk::Box) {
-        bar.pack_end(&self.to_widget(), false, false, 0);
+    fn get_channel(&self) -> (&SSender<Self::BM>, &MReceiver<Self::WM>) {
+        self.dualchannel.get_reveled()
+    }
+
+    fn widget(&self) -> gtk::Widget {
+        todo!()
     }
 }

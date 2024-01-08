@@ -8,11 +8,10 @@ use std::str::FromStr;
 use gio::{DataInputStream, SocketClient};
 use gio::prelude::{DataInputStreamExtManual, IOStreamExtManual};
 use gio::traits::SocketClientExt;
-use gio::traits::IOStreamExt;
 
 use crate::utils;
 
-use super::Module;
+use super::BlockWidget;
 use crate::blocks::hyprstatus::hyprclients::{HyprClient, HyprWorkspace};
 use gtk::prelude::GridExt;
 use gtk::traits::WidgetExt;
@@ -181,8 +180,8 @@ fn read_socket(tx: &glib::Sender<ParsedEventType>) {
     }
 }
 
-impl Module for HyprStatus {
-    fn to_widget(&self) -> gtk::Widget {
+impl BlockWidget for HyprStatus {
+    fn widget(&self) -> gtk::Widget {
         let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
 
         let full_container = gtk::Box::new(gtk::Orientation::Horizontal, 0);
@@ -226,7 +225,7 @@ impl Module for HyprStatus {
     }
 
     fn put_into_bar(&self, bar: &gtk::Box) {
-        bar.pack_start(&self.to_widget(), false, false, 0);
+        bar.pack_start(&self.widget(), false, false, 0);
     }
 }
 

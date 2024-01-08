@@ -23,4 +23,8 @@ gio = "0.17.10"
 
 anyhow = "*"
 
-pulsectl-rs = "0.3.2"
+wireplumber = "*"
+
+async-broadcast = "*"
+async-channel = "2.1.1"
+human_bytes = "*"

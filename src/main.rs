@@ -5,6 +5,8 @@ mod constants;
 mod statusbar;
 mod utils;
 mod window;
+mod widgets;
+mod datahodler;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -50,7 +52,8 @@ fn main() {
     });
 
     info!("Start.");
-    application.run();
+    let _args: Vec<String> = vec![];
+    application.run_with_args(&_args);
 }
 
 pub fn load_css() {

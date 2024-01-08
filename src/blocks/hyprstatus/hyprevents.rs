@@ -11,6 +11,7 @@ type ClassType = String;
 type AddressType = String;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
+#[allow(dead_code)]
 pub enum ParsedEventType {
     WorkspaceChanged(WorkspaceType),
     WorkspaceDeleted(WorkspaceType),
