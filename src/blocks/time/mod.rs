@@ -5,7 +5,7 @@ use gtk::traits::ButtonExt;
 use gtk::traits::StyleContextExt;
 use gtk::traits::WidgetExt;
 use gtk::Widget;
-use super::Module;
+use super::BlockWidget;
 
 pub struct TimeModule {}
 
@@ -14,13 +14,13 @@ fn get_wes_time() -> String {
     now.format("%y-%m-%d %H:%M:%S").to_string()
 }
 
-impl Module for TimeModule {
-    fn to_widget(&self) -> Widget {
+impl BlockWidget for TimeModule {
+    fn widget(&self) -> Widget {
         let date = gtk::Button::with_label(&get_wes_time());
         date.style_context().add_class("block");
 
         let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-        glib::timeout_add_seconds_local(3, move ||{
+        glib::timeout_add_seconds_local(1, move ||{
             let _date = Local::now();
             let _ = tx.send(format!("{}", get_wes_time()));
             Continue(true)
@@ -38,6 +38,6 @@ impl Module for TimeModule {
     }
 
     fn put_into_bar(&self, bar: &gtk::Box) {
-        bar.pack_end(&self.to_widget(), false, false, 0);
+        bar.pack_end(&self.widget(), false, false, 0);
     }
 }
