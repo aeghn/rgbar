@@ -7,7 +7,7 @@ use gtk::prelude::{GtkWindowExt, WidgetExtManual, BoxExt};
 use gtk::traits::ContainerExt;
 use gtk::traits::StyleContextExt;
 use gtk::traits::WidgetExt;
-use gtk::ApplicationWindow;
+use gtk::{ApplicationWindow, false_};
 use gtk::Orientation;
 use tracing::error;
 
@@ -22,14 +22,7 @@ pub struct StatusBar {
 }
 
 impl StatusBar {
-    pub fn new(application: &gtk::Application) -> Self {
-        let mut vec: Vec<Box<dyn BlockWidget>> = vec![];
-
-        let time_but = blocks::time::TimeModule {};
-        vec.push(Box::new(time_but));
-       // let hypr_box = blocks::hyprstatus::HyprStatus {};
-       // vec.push(Box::new(hypr_box));
-       
+    pub fn new(application: &gtk::Application) -> Self {       
        let block_manager = BlockManager::launch();
 
         StatusBar {
@@ -84,39 +77,18 @@ impl StatusBar {
         let bar = gtk::Box::new(Orientation::Horizontal, 10);
         bar.style_context().add_class("bar");
 
-        let netspeed = self.block_manager.netspeed_worker.widget();
-        bar.pack_start(&netspeed, false, false, 3);
+        let time = self.block_manager.time_block.widget();
+        bar.pack_end(&time, false, false,0);
 
-/*         let upload_serie = Series::new("upload", 3000, 120, RGBA::new(1.0, 0., 0., 0.), SeriesType::Line);
-        
-        {
-            let usender = upload_serie.sender.clone();
-            let (utx, urx) = flume::unbounded();
-            let (dtx, drx) = flume::unbounded();
-            blocks::netspeed(&utx, &dtx);
+        let netspeed = self.block_manager.net_block.widget();
+        bar.pack_end(&netspeed, false, false,0);
 
-            glib::MainContext::ref_thread_default().spawn_local(async move {
-                loop {
-                    match urx.recv_async().await {
-                        Ok(msg) => {
-                            usender.send(widgets::chart::SeriesMsg::AddValue(msg)).unwrap();
-                        },
-                        Err(_) => todo!(),
-                    }
-                }
-            });
-        }
+        /*
+        let cpu = self.block_manager.cpu_block.widget();
+        bar.pack_end(&cpu, false, false,0);
 
-        {
-            let us = upload_serie.clone();
-
-            glib::MainContext::ref_thread_default().spawn_local(async move {
-                us.loop_receive().await
-            });
-        } */
-/* 
-        let net_box = widgets::chart::Chart::new(vec![upload_serie]);
-        bar.pack_end(&net_box.drawing_area, false, true, 0); */
+        let battery = self.block_manager.battery_block.widget();
+        bar.pack_end(&battery, false, false, 0); */
 
         window.add(&bar);
 

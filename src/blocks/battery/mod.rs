@@ -30,6 +30,12 @@ pub struct BatteryInfo {
     pub serial_numer: String,
 }
 
+impl BatteryInfo {
+    pub fn get_percent(&self) -> u8 {
+        (self.energy_now * 100 / self.energy_full).try_into().unwrap()
+    }
+}
+
 use crate::datahodler::channel::DualChannel;
 use crate::datahodler::channel::MReceiver;
 use crate::datahodler::channel::SSender;
@@ -39,14 +45,17 @@ use self::ideapad::get_conservation_mode;
 use self::ideapad::ConvervationMode;
 
 use super::Block;
+use glib::Cast;
 use glib::clone;
 use glib::MainContext;
+use gtk::false_;
+use gtk::prelude::BoxExt;
+use gtk::prelude::LabelExt;
 use tracing::warn;
 
 #[derive(Clone)]
 pub enum BatteryWM {
     ConvervationMode(ConvervationMode),
-    PowerStatus(PowerStatus),
     BatteryInfo(BatteryInfo),
     UnknownBatteryInfo,
 }
@@ -59,7 +68,7 @@ pub struct BatteryModule {
 }
 
 impl BatteryModule {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let dualchannel = DualChannel::new(100);
 
         Self { dualchannel }
@@ -70,7 +79,7 @@ impl Block for BatteryModule {
     type WM = BatteryWM;
     type BM = BatteryBM;
 
-    fn loop_receive(&mut self) {
+    fn loop_receive(&mut self) -> anyhow::Result<()> {
         let sender = self.dualchannel.get_out_sender();
         glib::timeout_add_seconds(
             1,
@@ -80,7 +89,7 @@ impl Block for BatteryModule {
                     Err(_) => sender.send(Self::WM::UnknownBatteryInfo).expect("todo"),
                 };
 
-                sender.send(BatteryWM::ConvervationMode(get_conservation_mode()));
+                sender.send(BatteryWM::ConvervationMode(get_conservation_mode())).unwrap();
 
                 glib::Continue(true)
             }),
@@ -97,6 +106,8 @@ impl Block for BatteryModule {
                 }
             }
         });
+
+        Ok(())
     }
 
     fn get_channel(&self) -> (&SSender<Self::BM>, &MReceiver<Self::WM>) {
@@ -104,6 +115,60 @@ impl Block for BatteryModule {
     }
 
     fn widget(&self) -> gtk::Widget {
-        todo!()
+        let holder = gtk::Box::builder().orientation(gtk::Orientation::Vertical).build();
+
+        let label_status = gtk::Label::builder().build();
+        holder.pack_end(&label_status, false, false, 0);
+        let label_cm = gtk::Label::builder().build();
+        holder.pack_end(&label_cm, false, false, 0);
+        let value = gtk::Label::builder().build();
+        holder.pack_end(&value, false, false, 0);
+
+        let mut receiver = self.dualchannel.get_out_receiver();
+        let mut percent = 0;
+        let mut cm_str = String::new();
+        let mut status_str = String::new();
+
+        MainContext::ref_thread_default().spawn_local(async move {
+            if let Ok(msg) = receiver.recv().await {
+                match msg {
+                    BatteryWM::ConvervationMode(cm) => {
+                        let status = match cm {
+                            ConvervationMode::Enable => "CMON",
+                            ConvervationMode::Disable => "CMDA",
+                            ConvervationMode::Unknown => "UKN",
+                        };
+
+                        if AsRef::<str>::as_ref(&cm_str) != status {
+                            label_cm.set_label(status);
+                            cm_str = status.to_string();
+                        }
+                    },
+                    BatteryWM::BatteryInfo(bi) => {
+                        let status = bi.get_percent();
+
+                        if status != percent {
+                            value.set_label(format!("{}", status).as_str());
+                            percent = status;
+                        }
+
+                        let status = match bi.status {
+                            PowerStatus::NotCharging => "NOT CGR",
+                            PowerStatus::Discharging => "DISCGR",
+                            PowerStatus::Charging => "CHRGNG",
+                            PowerStatus::Unknown => "UNKNWN",
+                        };
+
+                        if AsRef::<str>::as_ref(&status_str) != status {
+                            label_status.set_label(status);
+                            status_str = status.to_string();
+                        }      
+                    },
+                    BatteryWM::UnknownBatteryInfo => todo!(),
+                }
+            }
+        });
+
+        holder.upcast()
     }
 }

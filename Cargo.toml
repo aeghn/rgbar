@@ -27,4 +27,7 @@ wireplumber = "*"
 
 async-broadcast = "*"
 async-channel = "2.1.1"
+
 human_bytes = "*"
+chinese-lunisolar-calendar = "0.2.0"
+log = "0.4.20"

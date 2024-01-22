@@ -6,6 +6,7 @@ pub mod netspeed;
 pub mod time;
 mod audio;
 pub mod manager;
+pub mod cpu;
 
 pub trait BlockWidget {
     fn widget(&self) -> gtk::Widget;
@@ -16,7 +17,7 @@ pub trait Block {
     type WM;
     type BM;
 
-    fn loop_receive(&mut self);
+    fn loop_receive(&mut self) -> anyhow::Result<()>;
 
     fn get_channel(&self) -> (&SSender<Self::BM>, &MReceiver<Self::WM>);
 

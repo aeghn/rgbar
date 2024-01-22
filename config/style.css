@@ -50,3 +50,28 @@ button {}
     border: none;
     margin: 3px;
 }
+
+.netspeed-label {
+    font-size: 10px;
+    color: #fff;
+}
+
+.time-chinese {
+    font-size: 10px;
+    border: #505050 1px solid;
+    border-radius: 5px;
+    background: #aa0000;
+    padding: 1px 2px 1px 2px;
+    margin: 2px 2px 2px 2px;
+}
+
+.time-date {
+    font-size: 12px;
+    margin: 2px 2px 2px 2px;
+}
+
+.time-time {
+    font-size: 10px;
+    margin: 3px 3px 3px 3px;
+}
+
