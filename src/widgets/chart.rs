@@ -1,17 +1,24 @@
 use core::f64;
-use std::{cell::RefCell, cmp, marker::PhantomData};
+use std::marker::PhantomData;
 
 use gdk::RGBA;
-use glib::{Continue, MainContext};
-use gtk::{prelude::WidgetExt, subclass::drawing_area, true_, Inhibit};
+use glib::Continue;
+use gtk::{prelude::WidgetExt, Inhibit};
+use gtk::ResponseType::No;
+use log::{error, info};
 
 use crate::datahodler::ring::Ring;
 
 #[derive(Clone)]
-pub enum SeriesType {
+pub enum LineType {
     Line,
-    Bar,
     Pillar,
+}
+
+#[derive(Clone)]
+pub enum DrawDirection {
+    TopDown,
+    DownTop
 }
 
 #[derive(Clone)]
@@ -20,7 +27,6 @@ pub struct Series<E: Into<f64> + Clone> {
     max_value: E,
     ring: Ring<E>,
     color: RGBA,
-    draw_type: SeriesType,
     vari_height: bool,
 }
 
@@ -30,15 +36,13 @@ impl<E: Into<f64> + Clone> Series<E> {
         max_value: E,
         ring_size: usize,
         color: RGBA,
-        draw_type: SeriesType,
         vari_height: bool,
     ) -> Self {
         Series {
             id: id.to_string(),
-            max_value: max_value,
+            max_value,
             ring: Ring::new(ring_size),
             color,
-            draw_type,
             vari_height,
         }
     }
@@ -55,37 +59,31 @@ struct Point {
 
 pub struct Chart<E: Into<f64> + Clone> {
     pub drawing_area: gtk::DrawingArea,
+    max_points: Option<usize>,
+    line_type: Option<LineType>,
     phondata: PhantomData<E>,
 }
 
 impl<E: Into<f64> + Clone + 'static> Chart<E> {
-    pub fn new(series: Vec<Series<E>>, height: i32) -> Self {
-        let drawing_area = gtk::DrawingArea::builder()
-            .height_request(height)
-            .width_request(100)
-            .build();
+    fn new(series: Vec<(Series<E>, DrawDirection)>, max_point: Option<usize>, line_type: LineType) -> Self {
+        let drawing_area = gtk::DrawingArea::builder().vexpand(false).hexpand(true).build();
 
-        drawing_area.connect_draw(glib::clone!(@strong series => move |da, cr| {
-            Self::draw(&series, da, cr);
+
+        drawing_area.connect_draw(glib::clone!(@strong series, @strong max_point => move |da, cr| {
+            Self::draw_pillar(&series, max_point, da, cr);
 
             Inhibit(false)
         }));
 
-        {
-            let drawing_area = drawing_area.clone();
-            glib::timeout_add_seconds_local(1, move || {
-                drawing_area.queue_draw();
-                Continue(true)
-            });
-        }
-
         Self {
             drawing_area,
-            phondata: Default::default(),
+            max_points: None,
+            line_type: None,
+            phondata: Default::default()
         }
     }
 
-    fn draw(series: &Vec<Series<E>>, da: &gtk::DrawingArea, cr: &gdk::cairo::Context) {
+    fn draw_pillar(series: &Vec<(Series<E>, DrawDirection)>, max_point: Option<usize>, da: &gtk::DrawingArea, cr: &gdk::cairo::Context) {
         let alloc = da.allocation();
 
         let width = alloc.width();
@@ -96,11 +94,56 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         cr.set_source_rgba(0. / 255.0, 0. / 255.0, 0. / 255.0, 0.0);
         cr.paint().unwrap();
 
-        cr.set_line_width(0.01);
+        let drawlen = max_point.as_ref().unwrap_or(&series.iter().map(|e| {e.0.ring.size}).max().unwrap_or(60)).clone();
+        cr.set_line_width(1. / 2. / drawlen as f64);
+
+        let slen = series.len();
+
+        let onelen = drawlen / slen;
+        let interval = 1. / drawlen as f64;
+
+        for i in 0..slen {
+            let serie = &series[i];
+            cr.set_source_rgb(serie.0.color.red(), serie.0.color.green(),
+                              serie.0.color.blue());
+            let points: Vec<Point> = Self::scale(&serie.0, &serie.1).into_iter().take(onelen).collect();
+            for (j, ele) in points.iter().enumerate() {
+                let x = (j * slen + i) as f64 * interval;
+                cr.move_to(x, match serie.1 {
+                    DrawDirection::TopDown => {0.05}
+                    DrawDirection::DownTop => {0.95}
+                });
+                cr.line_to(x, ele.y);
+            }
+            cr.stroke().unwrap();
+        }
+    }
+	
+    pub fn draw_in_seconds(&self, secs: u32) {
+        let drawing_area = self.drawing_area.clone();
+        glib::timeout_add_seconds_local(secs, move || {
+            drawing_area.queue_draw();
+            Continue(true)
+        });
+    }
+
+    fn draw(series: &Vec<(Series<E>, DrawDirection)>, da: &gtk::DrawingArea, cr: &gdk::cairo::Context) {
+        let alloc = da.allocation();
+
+        let width = alloc.width();
+        let height = alloc.height();
+
+        cr.scale(width as f64, height as f64);
+
+        cr.set_source_rgba(0. / 255.0, 0. / 255.0, 0. / 255.0, 0.0);
+        cr.fill().unwrap();
+        cr.translate(50., 50.);
+
+        cr.set_line_width(1. / height as f64);
 
         for serie in series {
-            let point_vec = Self::scale(serie);
-            cr.set_source_rgb(serie.color.red(), serie.color.green(), serie.color.blue());
+            let point_vec = Self::scale(&serie.0, &serie.1);
+            cr.set_source_rgb(serie.0.color.red(), serie.0.color.green(), serie.0.color.blue());
 
             if point_vec.len() <= 1 {
                 continue;
@@ -116,7 +159,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         }
     }
 
-    fn scale(series: &Series<E>) -> Vec<Point> {
+    fn scale(series: &Series<E>, draw_direction: &DrawDirection) -> Vec<Point> {
         let maw: f64 = series.ring.size as f64;
 
         let all: Vec<f64> = series
@@ -142,7 +185,14 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
                 let sh = h / mah;
                 Point {
                     x: id as f64 / maw,
-                    y: 1. - (if sh > 1 as f64 { 1f64 } else { sh }),
+                    y: match draw_direction {
+                        DrawDirection::TopDown => {
+                            0.1 + f64::min(1., sh) * 0.5
+                        }
+                        DrawDirection::DownTop => {
+                            0.9 - f64::min(1., sh) * 0.5
+                        }
+                    },
                 }
             })
             .collect()
@@ -150,38 +200,76 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
 
     pub fn builder() -> ChartBuilder<E> {
         ChartBuilder {
-            heiget: 20,
-            width: 80,
+            height: None,
+            width: None,
             series: vec![],
+            line_type: None,
+            max_points: None
         }
     }
 }
 
+
 pub struct ChartBuilder<E: Into<f64> + Clone> {
-    heiget: i32,
-    width: i32,
-    series: Vec<Series<E>>,
+    height: Option<i32>,
+    width: Option<i32>,
+    series: Vec<(Series<E>, DrawDirection)>,
+    line_type: Option<LineType>,
+    max_points: Option<usize>
 }
 
 impl<E: Into<f64> + Clone + 'static> ChartBuilder<E> {
     pub fn height(mut self, height: i32) -> Self {
-        self.heiget = height;
+        self.height.replace(height);
         self
     }
 
     pub fn width(mut self, width: i32) -> Self {
-        self.width = width;
+        self.width.replace(width);
         self
     }
 
-    pub fn with_series(mut self, series: Series<E>) -> Self {
-        self.series.push(series);
+    pub fn with_series(mut self, series: Series<E>, dir: DrawDirection) -> Self {
+        self.series.push((series, dir));
+        self
+    }
+
+    pub fn max_points(mut self, size: usize) -> Self {
+        self.max_points.replace(size);
+
+        self
+    }
+
+    pub fn line_type(mut self, line_type: LineType) -> Self {
+        self.line_type.replace(line_type);
+
         self
     }
 
     pub fn build(self) -> Chart<E> {
-        let chart = Chart::new(self.series, self.heiget);
-        chart.drawing_area.set_width_request(self.width);
+        let line_type = match self.line_type {
+            None => {
+                LineType::Line
+            }
+            Some(t) => {
+                t
+            }
+        };
+
+        let mut chart = Chart::new(self.series, self.max_points, line_type);
+        if let Some(h) = self.height {
+            chart.drawing_area.set_height_request(h);
+        }
+
+        if let Some(w) = self.width {
+            chart.drawing_area.set_width_request(w);
+        }
+
+        if let Some(mp) = self.max_points {
+            chart.max_points.replace(mp);
+        }
+
+
 
         chart
     }
