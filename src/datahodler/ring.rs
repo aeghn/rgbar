@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc, sync::atomic::AtomicU32};
+use std::{cell::RefCell, rc::Rc};
 
 #[derive(Clone)]
 pub struct Ring<E>

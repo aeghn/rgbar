@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+
 
 use anyhow::anyhow;
 use async_broadcast::{Receiver, Sender};
@@ -13,7 +13,7 @@ pub struct DualChannel<OutMsg: Clone, InMsg> {
 impl<OutMsg: Clone, InMsg> DualChannel<OutMsg, InMsg> {
     pub fn new(cap: usize) -> Self {
         let (mut otx, orx) = async_broadcast::broadcast(cap);
-        let (mut itx, irx) = async_channel::unbounded();
+        let (itx, irx) = async_channel::unbounded();
         otx.set_overflow(true);
 
         Self {
@@ -73,7 +73,7 @@ impl<Msg: Clone> From<async_broadcast::Sender<Msg>> for MSender<Msg> {
     }
 }
 
-pub type MReceiver<Msg: Clone> = async_broadcast::Receiver<Msg>;
+pub type MReceiver<Msg> = async_broadcast::Receiver<Msg>;
 
 pub type SReceiver<Msg> = async_channel::Receiver<Msg>;
 pub type SSender<Msg> = async_channel::Sender<Msg>;

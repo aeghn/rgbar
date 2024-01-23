@@ -1,15 +1,12 @@
 use std::{
-    fs::{self, File},
-    io::BufReader,
-    ops::Add,
+    fs::{self},
     str::FromStr,
 };
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{anyhow, Result};
 use gdk::RGBA;
 use glib::{Cast, MainContext};
 use gtk::{
-    false_,
     prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt},
 };
 
@@ -115,8 +112,8 @@ impl Block for CpuBlock {
         label.style_context().add_class("cpu-mem-label");
 
         let prefix = "CPU: ";
-        let mut turbo_str = String::new();
-        let mut freq = String::new();
+        let _turbo_str = String::new();
+        let _freq = String::new();
         let mut label_str = String::new();
 
         let mut receiver = self.dualchannel.get_out_receiver();
@@ -150,7 +147,7 @@ impl Block for CpuBlock {
                             }
                             label_str = new;
                         }
-                        CpuWM::Frequencies(freq) => {}
+                        CpuWM::Frequencies(_freq) => {}
                         CpuWM::UtilizationAvg(avg) => {
                             series.add_value(avg * 100.);
                         }
