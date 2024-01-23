@@ -2,11 +2,11 @@
 
 mod blocks;
 mod constants;
+mod datahodler;
 mod statusbar;
 mod utils;
-mod window;
 mod widgets;
-mod datahodler;
+mod window;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};

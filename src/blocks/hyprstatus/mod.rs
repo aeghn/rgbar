@@ -1,13 +1,13 @@
 pub mod hyprclients;
 pub mod hyprevents;
 
-use glib::{Cast, Continue, MainContext, PRIORITY_DEFAULT_IDLE};
+use gio::prelude::{DataInputStreamExtManual, IOStreamExtManual};
+use gio::traits::SocketClientExt;
+use gio::{DataInputStream, SocketClient};
+use glib::{Cast, MainContext, Priority};
 use hyprevents::ParsedEventType;
 use std::path::Path;
 use std::str::FromStr;
-use gio::{DataInputStream, SocketClient};
-use gio::prelude::{DataInputStreamExtManual, IOStreamExtManual};
-use gio::traits::SocketClientExt;
 
 use crate::utils;
 
@@ -18,7 +18,6 @@ use gtk::traits::WidgetExt;
 use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
 use tracing::error;
 use tracing::info;
-
 
 pub struct HyprStatus {}
 
@@ -48,7 +47,8 @@ fn handle_events(
                     if let Ok(but) = cws_but.downcast::<gtk::Button>() {
                         change_ws_button(&but, ButtonType::Focus);
                     }
-                } else {}
+                } else {
+                }
 
                 if let Some(lws) = current_workspace.replace(ws) {
                     if let Some(lws_but) = grid.child_at(i32::from_str(lws.as_str()).unwrap(), 0) {
@@ -106,7 +106,8 @@ fn handle_events(
             ParsedEventType::ActiveMonitorChanged(monitor, ws) => {
                 current_monitor.replace(monitor.clone());
                 if let Some(old_ws) = current_workspace.replace(ws.clone()) {
-                    if let Some(cws_but) = grid.child_at(i32::from_str(old_ws.as_str()).unwrap(), 0) {
+                    if let Some(cws_but) = grid.child_at(i32::from_str(old_ws.as_str()).unwrap(), 0)
+                    {
                         if let Ok(but) = cws_but.downcast::<gtk::Button>() {
                             change_ws_button(&but, ButtonType::Normal);
                         }
@@ -131,7 +132,7 @@ fn handle_events(
             }
             _ => {}
         }
-        Continue(true)
+        glib::ControlFlow::Continue
     });
 }
 
@@ -145,36 +146,42 @@ fn read_socket(tx: &glib::Sender<ParsedEventType>) {
         let socket_address = gio::UnixSocketAddress::new(socket_path);
         let tx = tx.clone();
 
-        MainContext::ref_thread_default().spawn_local_with_priority(PRIORITY_DEFAULT_IDLE, async move {
-            loop {
-                let client = SocketClient::new();
-                let connection_result = client.connect(&gio::SocketConnectable::from(socket_address.clone()),
-                                                       None::<&gio::Cancellable>);
+        MainContext::ref_thread_default().spawn_local_with_priority(
+            Priority::DEFAULT,
+            async move {
+                loop {
+                    let client = SocketClient::new();
+                    let connection_result = client.connect(
+                        &gio::SocketConnectable::from(socket_address.clone()),
+                        None::<&gio::Cancellable>,
+                    );
 
-                if let Ok(conn) = connection_result {
-                    let arw = conn.into_async_read_write().unwrap();
-                    let dis = DataInputStream::new(arw.input_stream());
+                    if let Ok(conn) = connection_result {
+                        let arw = conn.into_async_read_write().unwrap();
+                        let dis = DataInputStream::new(arw.input_stream());
 
-                    loop {
-                        let future = dis.read_line_utf8_future(PRIORITY_DEFAULT_IDLE);
-                        match future.await {
-                            Ok(Some(line)) => {
-                                let event = hyprevents::convert_line_to_event(&regexes, line.as_str());
-                                tx.send(event).unwrap();
-                            }
-                            Ok(None) => {
-                                error!("receive events none.");
-                                break;
-                            }
-                            Err(err) => {
-                                error!("receive events error: {:?}", err);
-                                break;
+                        loop {
+                            let future = dis.read_line_utf8_future(Priority::DEFAULT);
+                            match future.await {
+                                Ok(Some(line)) => {
+                                    let event =
+                                        hyprevents::convert_line_to_event(&regexes, line.as_str());
+                                    tx.send(event).unwrap();
+                                }
+                                Ok(None) => {
+                                    error!("receive events none.");
+                                    break;
+                                }
+                                Err(err) => {
+                                    error!("receive events error: {:?}", err);
+                                    break;
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            },
+        );
     } else {
         error!("Is Hyprland running now?");
     }
@@ -199,7 +206,6 @@ impl BlockWidget for HyprStatus {
 
         let workspaces = hyprclients::get_workspaces().unwrap();
 
-
         let active_hypr_client: Option<HyprClient> = hyprclients::get_active_window_address()
             .and_then(|address| clients.iter().find(|&c| c.address == address).cloned());
 
@@ -217,7 +223,6 @@ impl BlockWidget for HyprStatus {
                 active_client.title.to_string(),
             ));
         }
-
 
         read_socket(&tx);
 

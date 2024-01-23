@@ -1,2 +1,2 @@
-pub mod ring;
 pub mod channel;
+pub mod ring;

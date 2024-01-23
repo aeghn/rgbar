@@ -1,20 +1,27 @@
 use std::{
     fs::{self, File},
     io::BufReader,
-    str::FromStr, ops::Add,
+    ops::Add,
+    str::FromStr,
 };
 
 use anyhow::{anyhow, Error, Result};
 use gdk::RGBA;
-use glib::{Continue, MainContext, Cast};
-use gtk::{false_, prelude::{BoxExt, LabelExt}};
+use glib::{Cast, MainContext};
+use gtk::{
+    false_,
+    prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt},
+};
 
+use crate::utils::gtk_icon_loader;
+use crate::utils::gtk_icon_loader::IconName;
+use crate::widgets::chart::DrawDirection;
 use crate::{
     constants::TriBool,
     datahodler::channel::{DualChannel, MReceiver, SSender},
-    utils::fileutils, widgets::chart::{Chart, Series, LineType},
+    utils::fileutils,
+    widgets::chart::{Chart, LineType, Series},
 };
-use crate::widgets::chart::DrawDirection;
 
 use super::Block;
 
@@ -85,7 +92,8 @@ impl Block for CpuBlock {
                 ))
                 .unwrap();
 
-            Continue(true)
+            glib::ControlFlow::Continue
+            
         });
 
         Ok(())
@@ -96,9 +104,15 @@ impl Block for CpuBlock {
     }
 
     fn widget(&self) -> gtk::Widget {
-        let holder = gtk::Box::builder().orientation(gtk::Orientation::Horizontal).build();
+        let holder = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .hexpand(false)
+            .build();
+
+        let image = gtk_icon_loader::load_image(IconName::CPU);
 
         let label = gtk::Label::builder().label("CPU: ").build();
+        label.style_context().add_class("cpu-mem-label");
 
         let prefix = "CPU: ";
         let mut turbo_str = String::new();
@@ -106,11 +120,18 @@ impl Block for CpuBlock {
         let mut label_str = String::new();
 
         let mut receiver = self.dualchannel.get_out_receiver();
-        
-        let series = Series::new("cpu", 100., 60, RGBA::WHITE, false);
-        let chart = Chart::builder().height(20).width(60).with_series(series.clone(), DrawDirection::DownTop).build();
-        holder.pack_start(&label, false, false, 0);
-        holder.pack_end(&chart.drawing_area, false, false, 0);
+
+        let series = Series::new("cpu", 100., 30, RGBA::new(1.0, 0.4, 0.4, 1.0), false);
+        let chart = Chart::builder()
+            .width(60)
+            .line_width(2)
+            .with_series(series.clone(), DrawDirection::DownTop)
+            .line_type(LineType::Line)
+            .build();
+        chart.draw_in_seconds(1);
+        chart.drawing_box.style_context().add_class("chart-border");
+        holder.pack_start(&image, false, false, 0);
+        holder.pack_end(&chart.drawing_box, false, false, 0);
 
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
@@ -119,8 +140,8 @@ impl Block for CpuBlock {
                         CpuWM::Turbo(turbo) => {
                             let new = match turbo {
                                 TriBool::True => "T",
-                                TriBool::False => "",
-                                TriBool::Unknown => "TError",
+                                TriBool::False => "N",
+                                TriBool::Unknown => "",
                             };
 
                             let new = format!("{} {}", prefix, new);
@@ -128,14 +149,12 @@ impl Block for CpuBlock {
                                 label.set_label(&new);
                             }
                             label_str = new;
-                        },
-                        CpuWM::Frequencies(freq) => {
-
-                        },
+                        }
+                        CpuWM::Frequencies(freq) => {}
                         CpuWM::UtilizationAvg(avg) => {
-                            series.add_value(avg * 100.);                            
-                        },
-                        CpuWM::Utilizations(_) => {},
+                            series.add_value(avg * 100.);
+                        }
+                        CpuWM::Utilizations(_) => {}
                     }
                 }
             }

@@ -1,12 +1,12 @@
-use crate::datahodler::channel::{SSender, MReceiver};
+use crate::datahodler::channel::{MReceiver, SSender};
 
+mod audio;
 pub mod battery;
-pub mod hyprstatus;
+pub mod cpu;
+pub mod manager;
+pub mod memory;
 pub mod netspeed;
 pub mod time;
-mod audio;
-pub mod manager;
-pub mod cpu;
 
 pub trait BlockWidget {
     fn widget(&self) -> gtk::Widget;
