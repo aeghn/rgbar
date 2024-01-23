@@ -1,34 +1,33 @@
 use gdk::RGBA;
-use glib::Continue;
 
 use std::collections::HashMap;
 
-use gtk::prelude::{GtkWindowExt, WidgetExtManual, BoxExt};
+use gtk::prelude::{BoxExt, GtkWindowExt, WidgetExtManual};
 use gtk::traits::ContainerExt;
 use gtk::traits::StyleContextExt;
 use gtk::traits::WidgetExt;
-use gtk::{ApplicationWindow, false_};
 use gtk::Orientation;
+use gtk::{false_, ApplicationWindow};
 use tracing::error;
 
 use crate::blocks::manager::BlockManager;
+use crate::blocks::{Block, BlockWidget};
 use crate::{blocks, widgets};
-use crate::blocks::{BlockWidget, Block};
 
 pub struct StatusBar {
     window_map: HashMap<i32, ApplicationWindow>,
     application: gtk::Application,
-    block_manager: BlockManager
+    block_manager: BlockManager,
 }
 
 impl StatusBar {
-    pub fn new(application: &gtk::Application) -> Self {       
-       let block_manager = BlockManager::launch();
+    pub fn new(application: &gtk::Application) -> Self {
+        let block_manager = BlockManager::launch();
 
         StatusBar {
             window_map: HashMap::new(),
             application: application.clone(),
-            block_manager
+            block_manager,
         }
     }
 
@@ -67,7 +66,7 @@ impl StatusBar {
                         error!("destroy: {:?}", key);
                         win.close();
                     }
-                },
+                }
                 Some(_) => {}
             }
         }
@@ -78,24 +77,26 @@ impl StatusBar {
         bar.style_context().add_class("bar");
 
         let time = self.block_manager.time_block.widget();
-        bar.pack_end(&time, false, false,0);
-
-        let netspeed = self.block_manager.net_block.widget();
-        bar.pack_end(&netspeed, false, false,0);
-
-        /*
-        let cpu = self.block_manager.cpu_block.widget();
-        bar.pack_end(&cpu, false, false,0);
+        bar.pack_end(&time, false, false, 0);
 
         let battery = self.block_manager.battery_block.widget();
-        bar.pack_end(&battery, false, false, 0); */
+        bar.pack_end(&battery, false, false, 0);
+
+        let cpu = self.block_manager.cpu_block.widget();
+        let memory = self.block_manager.memory_block.widget();
+
+        bar.pack_end(&cpu, false, false, 0);
+        bar.pack_end(&memory, false, false, 0);
+
+        let netspeed = self.block_manager.net_block.widget();
+        bar.pack_end(&netspeed, false, false, 0);
 
         window.add(&bar);
 
         let window = window.clone();
         glib::idle_add_local(move || {
             window.show_all();
-            Continue(false)
+            glib::ControlFlow::Break
         });
     }
 }

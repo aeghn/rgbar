@@ -7,19 +7,19 @@ edition = "2021"
 
 [dependencies]
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
-tracing-tree = "0.2.2"
+tracing-tree = "0.3.0"
 tracing = "0.1.37"
 
 regex = "1"
 chrono = "0.4"
 serde_json = "1.0.96"
 
-gtk-layer-shell = "0.6.1"
-glib = "0.17.10"
-gdk-pixbuf = "0.17.10"
-gtk = "0.17.1"
-gdk = "0.17.1"
-gio = "0.17.10"
+gtk-layer-shell = "0.8.0"
+glib = "0.18.5"
+gdk-pixbuf = "0.18.5"
+gtk = "0.18.1"
+gdk = "0.18.0"
+gio = "0.18.4"
 
 anyhow = "*"
 
@@ -31,3 +31,7 @@ async-channel = "2.1.1"
 human_bytes = "*"
 chinese-lunisolar-calendar = "0.2.0"
 log = "0.4.20"
+lazy_static = "1.4.0"
+fragile = "2.0.0"
+
+libpulse-binding = { version = "2.0", default-features = false }

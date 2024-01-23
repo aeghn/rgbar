@@ -152,7 +152,6 @@ pub fn get_monitors() -> HashMap<i64, String> {
     map
 }
 
-
 pub fn get_workspaces() -> anyhow::Result<Vec<HyprWorkspace>> {
     let output = Command::new("hyprctl")
         .arg("workspaces")
@@ -166,13 +165,11 @@ pub fn get_workspaces() -> anyhow::Result<Vec<HyprWorkspace>> {
     let mut vec = vec![];
     if let Some(arr) = json.as_array() {
         arr.iter().for_each(|e| {
-            vec.push(
-                HyprWorkspace {
-                    id: e.get("id").unwrap().as_i64().unwrap(),
-                    monitor: e.get("monitor").unwrap().as_str().unwrap().to_string(),
-                    name: e.get("name").unwrap().as_str().unwrap().to_string(),
-                }
-            );
+            vec.push(HyprWorkspace {
+                id: e.get("id").unwrap().as_i64().unwrap(),
+                monitor: e.get("monitor").unwrap().as_str().unwrap().to_string(),
+                name: e.get("name").unwrap().as_str().unwrap().to_string(),
+            });
         })
     }
 

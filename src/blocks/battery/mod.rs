@@ -32,7 +32,8 @@ pub struct BatteryInfo {
 
 impl BatteryInfo {
     pub fn get_percent(&self) -> u8 {
-        (self.energy_now * 100 / self.energy_full).try_into().unwrap()
+        // (self.energy_now * 100 / self.energy_full).try_into().unwrap()
+        return self.capacity;
     }
 }
 
@@ -45,12 +46,16 @@ use self::ideapad::get_conservation_mode;
 use self::ideapad::ConvervationMode;
 
 use super::Block;
-use glib::Cast;
+use crate::utils::gtk_icon_loader;
+use crate::utils::gtk_icon_loader::IconName;
 use glib::clone;
+use glib::Cast;
 use glib::MainContext;
-use gtk::false_;
-use gtk::prelude::BoxExt;
+use gtk::prelude::ContainerExt;
 use gtk::prelude::LabelExt;
+use gtk::prelude::StyleContextExt;
+use gtk::prelude::WidgetExt;
+use gtk::prelude::{BoxExt, ImageExt};
 use tracing::warn;
 
 #[derive(Clone)]
@@ -63,11 +68,11 @@ pub enum BatteryWM {
 #[derive(Clone)]
 pub enum BatteryBM {}
 
-pub struct BatteryModule {
+pub struct BatteryBlock {
     dualchannel: DualChannel<BatteryWM, BatteryBM>,
 }
 
-impl BatteryModule {
+impl BatteryBlock {
     pub fn new() -> Self {
         let dualchannel = DualChannel::new(100);
 
@@ -75,7 +80,7 @@ impl BatteryModule {
     }
 }
 
-impl Block for BatteryModule {
+impl Block for BatteryBlock {
     type WM = BatteryWM;
     type BM = BatteryBM;
 
@@ -91,7 +96,7 @@ impl Block for BatteryModule {
 
                 sender.send(BatteryWM::ConvervationMode(get_conservation_mode())).unwrap();
 
-                glib::Continue(true)
+                glib::ControlFlow::Continue
             }),
         );
 
@@ -115,56 +120,98 @@ impl Block for BatteryModule {
     }
 
     fn widget(&self) -> gtk::Widget {
-        let holder = gtk::Box::builder().orientation(gtk::Orientation::Vertical).build();
+        let holder = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .build();
 
-        let label_status = gtk::Label::builder().build();
-        holder.pack_end(&label_status, false, false, 0);
-        let label_cm = gtk::Label::builder().build();
-        holder.pack_end(&label_cm, false, false, 0);
-        let value = gtk::Label::builder().build();
-        holder.pack_end(&value, false, false, 0);
+        let battery_status_image =
+            gtk::Image::from_pixbuf(Some(&gtk_icon_loader::load_pixbuf(IconName::BatteryUnk)));
+
+        let battery_percent_value = gtk::Label::builder().build();
+        battery_percent_value
+            .style_context()
+            .add_class("battery-label");
+
+        let convervation_image = gtk::Image::from_pixbuf(Some(&gtk_icon_loader::load_pixbuf_at(
+            IconName::BatteryCMUnk,
+            10,
+        )));
+        let power_status_image = gtk::Image::from_pixbuf(Some(&gtk_icon_loader::load_pixbuf_at(
+            IconName::BatteryPSDisconnected,
+            10,
+        )));
+
+        let vbox = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .vexpand(true)
+            .valign(gtk::Align::Center)
+            .build();
+        vbox.add(&power_status_image);
+        vbox.add(&convervation_image);
+
+        holder.pack_start(&battery_status_image, false, false, 0);
+        holder.pack_start(&vbox, false, false, 0);
+        holder.pack_start(&battery_percent_value, false, false, 0);
+
+        let mut percent = 0;
+        let mut cm_status = ConvervationMode::Unknown;
+        let mut power_status = PowerStatus::Unknown;
 
         let mut receiver = self.dualchannel.get_out_receiver();
-        let mut percent = 0;
-        let mut cm_str = String::new();
-        let mut status_str = String::new();
 
         MainContext::ref_thread_default().spawn_local(async move {
-            if let Ok(msg) = receiver.recv().await {
-                match msg {
-                    BatteryWM::ConvervationMode(cm) => {
-                        let status = match cm {
-                            ConvervationMode::Enable => "CMON",
-                            ConvervationMode::Disable => "CMDA",
-                            ConvervationMode::Unknown => "UKN",
-                        };
-
-                        if AsRef::<str>::as_ref(&cm_str) != status {
-                            label_cm.set_label(status);
-                            cm_str = status.to_string();
+            loop {
+                if let Ok(msg) = receiver.recv().await {
+                    match msg {
+                        BatteryWM::ConvervationMode(cm) => {
+                            if cm_status != cm {
+                                cm_status = cm;
+                                let mapped = match cm_status {
+                                    ConvervationMode::Enable => IconName::BatteryCMOn,
+                                    ConvervationMode::Disable => IconName::BatteryCMOff,
+                                    ConvervationMode::Unknown => IconName::BatteryCMUnk,
+                                };
+                                convervation_image
+                                    .set_from_pixbuf(Some(&gtk_icon_loader::load_pixbuf_at(mapped, 10)));
+                            }
                         }
-                    },
-                    BatteryWM::BatteryInfo(bi) => {
-                        let status = bi.get_percent();
+                        BatteryWM::BatteryInfo(bi) => {
+                            let status = bi.get_percent();
 
-                        if status != percent {
-                            value.set_label(format!("{}", status).as_str());
-                            percent = status;
+                            if status != percent {
+                                let mapped = match status {
+                                    0..=9 => IconName::BatteryEmpty,
+                                    10..=30 => IconName::BatteryLow,
+                                    31..=60 => IconName::BatteryMid,
+                                    61..=99 => IconName::BatteryHigh,
+                                    _ => IconName::BatteryFull,
+                                };
+
+                                battery_status_image
+                                    .set_from_pixbuf(Some(&gtk_icon_loader::load_pixbuf(mapped)));
+
+                                percent = status;
+                            }
+
+                            battery_percent_value.set_label(format!("{}%", status).as_str());
+
+                            let pstatus = bi.status;
+
+                            if power_status != pstatus {
+                                power_status = pstatus;
+                                let mapped = match power_status {
+                                    PowerStatus::NotCharging => IconName::BatteryPSNotCharging,
+                                    PowerStatus::Discharging => IconName::BatteryPSDisconnected,
+                                    PowerStatus::Charging => IconName::BattetyPSCharging,
+                                    PowerStatus::Unknown => IconName::BatteryPSUnk,
+                                };
+
+                                power_status_image
+                                    .set_from_pixbuf(Some(&gtk_icon_loader::load_pixbuf_at(mapped, 10)));
+                            }
                         }
-
-                        let status = match bi.status {
-                            PowerStatus::NotCharging => "NOT CGR",
-                            PowerStatus::Discharging => "DISCGR",
-                            PowerStatus::Charging => "CHRGNG",
-                            PowerStatus::Unknown => "UNKNWN",
-                        };
-
-                        if AsRef::<str>::as_ref(&status_str) != status {
-                            label_status.set_label(status);
-                            status_str = status.to_string();
-                        }      
-                    },
-                    BatteryWM::UnknownBatteryInfo => todo!(),
+                        BatteryWM::UnknownBatteryInfo => todo!(),
+                    }
                 }
             }
         });
