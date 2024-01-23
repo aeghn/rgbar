@@ -4,8 +4,7 @@ use std::marker::PhantomData;
 use gdk::RGBA;
 use gtk::prelude::BoxExt;
 
-use gtk::{prelude::WidgetExt};
-
+use gtk::prelude::WidgetExt;
 
 use crate::datahodler::ring::Ring;
 

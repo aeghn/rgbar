@@ -6,9 +6,7 @@ use std::{
 use anyhow::{anyhow, Result};
 use gdk::RGBA;
 use glib::{Cast, MainContext};
-use gtk::{
-    prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt},
-};
+use gtk::prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
 
 use crate::utils::gtk_icon_loader;
 use crate::utils::gtk_icon_loader::IconName;
@@ -90,7 +88,6 @@ impl Block for CpuBlock {
                 .unwrap();
 
             glib::ControlFlow::Continue
-            
         });
 
         Ok(())

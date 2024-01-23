@@ -51,7 +51,9 @@ impl Block for MemoryBlock {
             // htop and such only display equivalent of `mem_used`
             let mem_total_used = mem_total - mem_free;
 
-            sender.send(MemoryWM::MemoryInfo(mem_total, mem_total_used)).unwrap();
+            sender
+                .send(MemoryWM::MemoryInfo(mem_total, mem_total_used))
+                .unwrap();
 
             // dev note: difference between avail and free:
             // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=34e431b0ae398fc54ea69ff85ec700722c9da773

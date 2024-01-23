@@ -10,7 +10,6 @@ use gtk::traits::StyleContextExt;
 use gtk::traits::WidgetExt;
 use std::cell::RefCell;
 
-
 use super::Block;
 
 #[derive(Clone)]
@@ -76,7 +75,9 @@ impl Block for TimeBlock {
             let oldt = hour.replace(h);
 
             if oldt != h && h >= 11 {
-                sender.send(TimeWM::Chinese(Self::get_chinese_date())).unwrap();
+                sender
+                    .send(TimeWM::Chinese(Self::get_chinese_date()))
+                    .unwrap();
             }
 
             glib::ControlFlow::Continue
