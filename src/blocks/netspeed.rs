@@ -1,4 +1,3 @@
-
 use gdk::RGBA;
 use glib::{Cast, MainContext};
 

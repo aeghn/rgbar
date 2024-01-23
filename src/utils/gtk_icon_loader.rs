@@ -1,4 +1,3 @@
-
 use std::collections::HashMap;
 
 use gdk_pixbuf::Pixbuf;
@@ -7,7 +6,6 @@ use glib::Bytes;
 
 use gtk::traits::IconThemeExt;
 use gtk::Image;
-
 
 #[derive(Clone)]
 pub struct GtkIconLoader {

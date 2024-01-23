@@ -2,9 +2,7 @@ use crate::utils::fileutils;
 
 use super::PowerStatus::{Charging, Discharging, NotCharging, Unknown};
 
-
 use std::io::BufRead;
-
 
 use super::{BatteryInfo, PowerStatus};
 

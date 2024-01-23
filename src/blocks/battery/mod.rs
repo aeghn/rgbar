@@ -171,8 +171,9 @@ impl Block for BatteryBlock {
                                     ConvervationMode::Disable => IconName::BatteryCMOff,
                                     ConvervationMode::Unknown => IconName::BatteryCMUnk,
                                 };
-                                convervation_image
-                                    .set_from_pixbuf(Some(&gtk_icon_loader::load_pixbuf_at(mapped, 10)));
+                                convervation_image.set_from_pixbuf(Some(
+                                    &gtk_icon_loader::load_pixbuf_at(mapped, 10),
+                                ));
                             }
                         }
                         BatteryWM::BatteryInfo(bi) => {
@@ -206,8 +207,9 @@ impl Block for BatteryBlock {
                                     PowerStatus::Unknown => IconName::BatteryPSUnk,
                                 };
 
-                                power_status_image
-                                    .set_from_pixbuf(Some(&gtk_icon_loader::load_pixbuf_at(mapped, 10)));
+                                power_status_image.set_from_pixbuf(Some(
+                                    &gtk_icon_loader::load_pixbuf_at(mapped, 10),
+                                ));
                             }
                         }
                         BatteryWM::UnknownBatteryInfo => todo!(),
