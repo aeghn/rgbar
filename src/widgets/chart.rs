@@ -3,9 +3,9 @@ use std::marker::PhantomData;
 
 use gdk::RGBA;
 use gtk::prelude::BoxExt;
-use gtk::ResponseType::No;
+
 use gtk::{prelude::WidgetExt};
-use log::{error, info};
+
 
 use crate::datahodler::ring::Ring;
 
@@ -256,7 +256,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         }
     }
 
-    fn scale(series: &Series<E>, draw_direction: &DrawDirection) -> Vec<Point> {
+    fn scale(series: &Series<E>, _draw_direction: &DrawDirection) -> Vec<Point> {
         let maw: f64 = series.ring.size as f64;
 
         let all: Vec<f64> = series

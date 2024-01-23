@@ -1,13 +1,13 @@
-use fragile::Fragile;
+
 use std::collections::HashMap;
 
 use gdk_pixbuf::Pixbuf;
-use gio::InputStream;
+
 use glib::Bytes;
-use gtk::prelude::WidgetExt;
+
 use gtk::traits::IconThemeExt;
 use gtk::Image;
-use lazy_static::lazy_static;
+
 
 #[derive(Clone)]
 pub struct GtkIconLoader {

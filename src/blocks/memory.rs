@@ -51,12 +51,12 @@ impl Block for MemoryBlock {
             // htop and such only display equivalent of `mem_used`
             let mem_total_used = mem_total - mem_free;
 
-            sender.send(MemoryWM::MemoryInfo(mem_total, mem_total_used));
+            sender.send(MemoryWM::MemoryInfo(mem_total, mem_total_used)).unwrap();
 
             // dev note: difference between avail and free:
             // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=34e431b0ae398fc54ea69ff85ec700722c9da773
             // same logic as htop
-            let mem_avail = if mem_state.mem_available != 0 {
+            let _mem_avail = if mem_state.mem_available != 0 {
                 min(mem_state.mem_available, mem_state.mem_total)
             } else {
                 mem_state.mem_free
@@ -66,7 +66,7 @@ impl Block for MemoryBlock {
             let swap_total = mem_state.swap_total * 1024;
             let swap_free = mem_state.swap_free * 1024;
             let swap_cached = mem_state.swap_cached * 1024;
-            let swap_used = swap_total - swap_free - swap_cached;
+            let _swap_used = swap_total - swap_free - swap_cached;
 
             glib::ControlFlow::Continue
         });
@@ -94,7 +94,7 @@ impl Block for MemoryBlock {
         let label = gtk::Label::builder().label("MEM: ").build();
         label.style_context().add_class("cpu-mem-label");
 
-        let mut label_str = String::new();
+        let _label_str = String::new();
 
         let mut receiver = self.dualchannel.get_out_receiver();
 

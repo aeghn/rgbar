@@ -1,7 +1,7 @@
-use gdk::keys::constants::{ch, Start};
+
 use gdk::RGBA;
 use glib::{Cast, MainContext};
-use gtk::false_;
+
 use gtk::prelude::{GridExt, LabelExt, StyleContextExt, WidgetExt};
 use human_bytes::human_bytes;
 use regex::Regex;

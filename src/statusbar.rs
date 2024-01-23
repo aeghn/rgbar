@@ -1,18 +1,18 @@
-use gdk::RGBA;
+
 
 use std::collections::HashMap;
 
-use gtk::prelude::{BoxExt, GtkWindowExt, WidgetExtManual};
+use gtk::prelude::{BoxExt, GtkWindowExt};
 use gtk::traits::ContainerExt;
 use gtk::traits::StyleContextExt;
 use gtk::traits::WidgetExt;
 use gtk::Orientation;
-use gtk::{false_, ApplicationWindow};
+use gtk::{ApplicationWindow};
 use tracing::error;
 
 use crate::blocks::manager::BlockManager;
 use crate::blocks::{Block, BlockWidget};
-use crate::{blocks, widgets};
+
 
 pub struct StatusBar {
     window_map: HashMap<i32, ApplicationWindow>,
