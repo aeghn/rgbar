@@ -1,7 +1,7 @@
 use gdk::RGBA;
 use glib::{Cast, MainContext};
 
-use gtk::prelude::{GridExt, LabelExt, StyleContextExt, WidgetExt};
+use gtk::prelude::{GridExt, LabelExt, StyleContextExt, WidgetExt, ContainerExt};
 use human_bytes::human_bytes;
 use regex::Regex;
 
@@ -15,15 +15,15 @@ use super::Block;
 const NET_DEV: &str = "/proc/net/dev";
 
 #[derive(Clone)]
-pub enum NetspeedBM {}
+pub enum NetspeedIn {}
 
 #[derive(Clone)]
-pub enum NetspeedWM {
+pub enum NetspeedOut {
     NetspeedDiff(f64, f64),
 }
 
 pub struct NetspeedBlock {
-    dualchannel: DualChannel<NetspeedWM, NetspeedBM>,
+    dualchannel: DualChannel<NetspeedOut, NetspeedIn>,
 }
 
 impl NetspeedBlock {
@@ -84,10 +84,10 @@ impl NetspeedBlock {
 }
 
 impl Block for NetspeedBlock {
-    type BM = NetspeedBM;
-    type WM = NetspeedWM;
+    type In = NetspeedIn;
+    type Out = NetspeedOut;
 
-    fn loop_receive(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> anyhow::Result<()> {
         let (mut last_total_download, mut last_total_upload) = Self::read_total_bytes();
         let mut last_update_time = None;
 
@@ -110,7 +110,7 @@ impl Block for NetspeedBlock {
                     let convert = |bytes: u64| -> f64 { bytes as f64 / secs };
 
                     sender
-                        .send(Self::WM::NetspeedDiff(
+                        .send(Self::Out::NetspeedDiff(
                             convert(diff_upload_bytes),
                             convert(diff_download_bytes),
                         ))
@@ -124,28 +124,24 @@ impl Block for NetspeedBlock {
         Ok(())
     }
 
-    fn get_channel(&self) -> (&SSender<Self::BM>, &MReceiver<Self::WM>) {
+    fn get_channel(&self) -> (&SSender<Self::In>, &MReceiver<Self::Out>) {
         self.dualchannel.get_reveled()
     }
 
     fn widget(&self) -> gtk::Widget {
-        let holder = gtk::Grid::builder().vexpand(false).hexpand(false).build();
+        let holder = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .hexpand(false)
+            .build();
 
         let image = gtk_icon_loader::load_image(IconName::WIFI);
 
-        let uplabel: gtk::Label = gtk::Label::builder()
-            .expand(true)
-            .halign(gtk::Align::Start)
+        let speed_label: gtk::Label = gtk::Label::builder()
+            .hexpand(false)
             .xalign(0.)
             .build();
-        uplabel.style_context().add_class("netspeed-label");
-        let downlabel = gtk::Label::builder()
-            .expand(true)
-            .halign(gtk::Align::Start)
-            .xalign(0.)
-            .build();
-        downlabel.style_context().add_class("netspeed-label");
-
+        speed_label.style_context().add_class("netspeed-label");
+        
         let up_series = Series::new("up", 5_000_000., 60, RGBA::new(0.9, 0.5, 0.5, 1.0), true);
         let down_series = Series::new("down", 5_000_000., 60, RGBA::new(0.5, 0.9, 0.5, 1.0), true);
         let chart = Chart::builder()
@@ -160,21 +156,20 @@ impl Block for NetspeedBlock {
         chart.drawing_box.style_context().add_class("chart-border");
         chart.draw_in_seconds(1);
 
-        holder.attach(&image, 0, 0, 1, 2);
-        holder.attach(&uplabel, 2, 0, 1, 1);
-        holder.attach(&downlabel, 2, 1, 1, 1);
-        holder.attach(&chart.drawing_box, 1, 0, 1, 2);
+        holder.add(&image);
+        holder.add(&chart.drawing_box);     
+
+        holder.add(&speed_label);
 
         let mut mreceiver = self.dualchannel.get_out_receiver();
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
                 match mreceiver.recv().await {
                     Ok(msg) => match msg {
-                        NetspeedWM::NetspeedDiff(up, down) => {
+                        NetspeedOut::NetspeedDiff(up, down) => {
                             up_series.add_value(up.clone());
                             down_series.add_value(down.clone());
-                            uplabel.set_label(format!("U: {} ", human_bytes(up)).as_str());
-                            downlabel.set_label(format!("D: {} ", human_bytes(down)).as_str());
+                            speed_label.set_label(format!("{}\n{} ", human_bytes(up), human_bytes(down)).as_str());
                         }
                     },
                     Err(_) => {}

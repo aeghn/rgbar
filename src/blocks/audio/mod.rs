@@ -2,6 +2,7 @@ use libpulse_binding::volume::ChannelVolumes;
 
 use crate::datahodler::channel::DualChannel;
 
+#[derive(Clone)]
 pub enum PulseBM {
     Mute,
     SetVolume(u8),

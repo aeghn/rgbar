@@ -52,7 +52,7 @@
 }
 
 .netspeed-label {
-    font-size: 10px;
+    font-size: 12px;
     color: #fff;
     min-width: 65px;
 }
@@ -79,4 +79,8 @@
     border-radius: 3px;
     min-height: 20px;
     background: #181818;
+}
+
+.dborder {
+    border: 1px #aa0000 solid;
 }

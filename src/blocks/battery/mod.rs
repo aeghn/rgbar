@@ -1,3 +1,24 @@
+use crate::datahodler::channel::DualChannel;
+use crate::datahodler::channel::MReceiver;
+use crate::datahodler::channel::SSender;
+
+use self::common::get_battery_info;
+use self::ideapad::get_conservation_mode;
+use self::ideapad::ConvervationMode;
+
+use super::Block;
+use crate::utils::gtk_icon_loader;
+use crate::utils::gtk_icon_loader::IconName;
+use glib::clone;
+use glib::Cast;
+use glib::MainContext;
+use gtk::prelude::ContainerExt;
+use gtk::prelude::LabelExt;
+use gtk::prelude::StyleContextExt;
+use gtk::prelude::WidgetExt;
+use gtk::prelude::{BoxExt, ImageExt};
+use tracing::warn;
+
 mod common;
 mod ideapad;
 
@@ -37,39 +58,20 @@ impl BatteryInfo {
     }
 }
 
-use crate::datahodler::channel::DualChannel;
-use crate::datahodler::channel::MReceiver;
-use crate::datahodler::channel::SSender;
 
-use self::common::get_battery_info;
-use self::ideapad::get_conservation_mode;
-use self::ideapad::ConvervationMode;
-
-use super::Block;
-use crate::utils::gtk_icon_loader;
-use crate::utils::gtk_icon_loader::IconName;
-use glib::clone;
-use glib::Cast;
-use glib::MainContext;
-use gtk::prelude::ContainerExt;
-use gtk::prelude::LabelExt;
-use gtk::prelude::StyleContextExt;
-use gtk::prelude::WidgetExt;
-use gtk::prelude::{BoxExt, ImageExt};
-use tracing::warn;
 
 #[derive(Clone)]
-pub enum BatteryWM {
+pub enum BatteryOut {
     ConvervationMode(ConvervationMode),
     BatteryInfo(BatteryInfo),
     UnknownBatteryInfo,
 }
 
 #[derive(Clone)]
-pub enum BatteryBM {}
+pub enum BatteryIn {}
 
 pub struct BatteryBlock {
-    dualchannel: DualChannel<BatteryWM, BatteryBM>,
+    dualchannel: DualChannel<BatteryOut, BatteryIn>,
 }
 
 impl BatteryBlock {
@@ -81,20 +83,20 @@ impl BatteryBlock {
 }
 
 impl Block for BatteryBlock {
-    type WM = BatteryWM;
-    type BM = BatteryBM;
+    type Out = BatteryOut;
+    type In = BatteryIn;
 
-    fn loop_receive(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> anyhow::Result<()> {
         let sender = self.dualchannel.get_out_sender();
         glib::timeout_add_seconds(
             1,
             clone!(@strong sender => move || {
                 match get_battery_info() {
-                    Ok(info) => sender.send(Self::WM::BatteryInfo(info)).expect("msg"),
-                    Err(_) => sender.send(Self::WM::UnknownBatteryInfo).expect("todo"),
+                    Ok(info) => sender.send(Self::Out::BatteryInfo(info)).expect("msg"),
+                    Err(_) => sender.send(Self::Out::UnknownBatteryInfo).expect("todo"),
                 };
 
-                sender.send(BatteryWM::ConvervationMode(get_conservation_mode())).unwrap();
+                sender.send(BatteryOut::ConvervationMode(get_conservation_mode())).unwrap();
 
                 glib::ControlFlow::Continue
             }),
@@ -115,7 +117,7 @@ impl Block for BatteryBlock {
         Ok(())
     }
 
-    fn get_channel(&self) -> (&SSender<Self::BM>, &MReceiver<Self::WM>) {
+    fn get_channel(&self) -> (&SSender<Self::In>, &MReceiver<Self::Out>) {
         self.dualchannel.get_reveled()
     }
 
@@ -163,7 +165,7 @@ impl Block for BatteryBlock {
             loop {
                 if let Ok(msg) = receiver.recv().await {
                     match msg {
-                        BatteryWM::ConvervationMode(cm) => {
+                        BatteryOut::ConvervationMode(cm) => {
                             if cm_status != cm {
                                 cm_status = cm;
                                 let mapped = match cm_status {
@@ -176,7 +178,7 @@ impl Block for BatteryBlock {
                                 ));
                             }
                         }
-                        BatteryWM::BatteryInfo(bi) => {
+                        BatteryOut::BatteryInfo(bi) => {
                             let status = bi.get_percent();
 
                             if status != percent {
@@ -212,7 +214,7 @@ impl Block for BatteryBlock {
                                 ));
                             }
                         }
-                        BatteryWM::UnknownBatteryInfo => todo!(),
+                        BatteryOut::UnknownBatteryInfo => todo!(),
                     }
                 }
             }

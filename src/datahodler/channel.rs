@@ -1,14 +1,15 @@
 use anyhow::anyhow;
 use async_broadcast::{Receiver, Sender};
 
-pub struct DualChannel<OutMsg: Clone, InMsg> {
+#[derive(Clone)]
+pub struct DualChannel<OutMsg: Clone, InMsg: Clone> {
     pub out_sender: Sender<OutMsg>,
     pub out_recevier: Receiver<OutMsg>,
     pub in_sender: async_channel::Sender<InMsg>,
     pub in_recevier: async_channel::Receiver<InMsg>,
 }
 
-impl<OutMsg: Clone, InMsg> DualChannel<OutMsg, InMsg> {
+impl<OutMsg: Clone, InMsg: Clone> DualChannel<OutMsg, InMsg> {
     pub fn new(cap: usize) -> Self {
         let (mut otx, orx) = async_broadcast::broadcast(cap);
         let (itx, irx) = async_channel::unbounded();
@@ -49,6 +50,10 @@ impl<OutMsg: Clone, InMsg> DualChannel<OutMsg, InMsg> {
 
     pub fn get_in_recevier(&self) -> SReceiver<InMsg> {
         self.in_recevier.clone()
+    }
+
+    pub fn get_in_sender(&self) -> SSender<InMsg> {
+        self.in_sender.clone()
     }
 }
 

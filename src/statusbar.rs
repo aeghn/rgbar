@@ -9,7 +9,7 @@ use gtk::Orientation;
 use tracing::error;
 
 use crate::blocks::manager::BlockManager;
-use crate::blocks::{Block, BlockWidget};
+use crate::blocks::Block;
 
 pub struct StatusBar {
     window_map: HashMap<i32, ApplicationWindow>,
@@ -49,7 +49,6 @@ impl StatusBar {
                 continue;
             }
 
-            error!("new window {:?}", i);
             let win = self.new_window(i);
 
             self.window_map.insert(i, win);
@@ -80,20 +79,20 @@ impl StatusBar {
         bar.pack_end(&battery, false, false, 0);
 
         let cpu = self.block_manager.cpu_block.widget();
-        let memory = self.block_manager.memory_block.widget();
-
         bar.pack_end(&cpu, false, false, 0);
+
+        let memory = self.block_manager.memory_block.widget();
         bar.pack_end(&memory, false, false, 0);
 
         let netspeed = self.block_manager.net_block.widget();
         bar.pack_end(&netspeed, false, false, 0);
 
+        let hyprstatus = self.block_manager.hypr_block.widget();
+        bar.pack_start(&hyprstatus, false, false, 0);
+
         window.add(&bar);
 
         let window = window.clone();
-        glib::idle_add_local(move || {
-            window.show_all();
-            glib::ControlFlow::Break
-        });
+        glib::idle_add_local_once(move || { window.show_all(); });
     }
 }
