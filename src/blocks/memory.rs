@@ -14,15 +14,15 @@ use crate::widgets::chart::{Chart, DrawDirection, LineType, Series};
 use super::Block;
 
 #[derive(Clone)]
-pub enum MemoryWM {
+pub enum MemoryOut {
     MemoryInfo(u64, u64), // USED / TOTAL
 }
 
 #[derive(Clone)]
-pub enum MemoryBM {}
+pub enum MemoryIn {}
 
 pub struct MemoryBlock {
-    dualchannel: DualChannel<MemoryWM, MemoryBM>,
+    dualchannel: DualChannel<MemoryOut, MemoryIn>,
 }
 
 impl MemoryBlock {
@@ -34,11 +34,11 @@ impl MemoryBlock {
 }
 
 impl Block for MemoryBlock {
-    type WM = MemoryWM;
+    type Out = MemoryOut;
 
-    type BM = MemoryBM;
+    type In = MemoryIn;
 
-    fn loop_receive(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> anyhow::Result<()> {
         let sender = self.dualchannel.get_out_sender();
 
         glib::timeout_add_seconds_local(1, move || {
@@ -52,7 +52,7 @@ impl Block for MemoryBlock {
             let mem_total_used = mem_total - mem_free;
 
             sender
-                .send(MemoryWM::MemoryInfo(mem_total, mem_total_used))
+                .send(MemoryOut::MemoryInfo(mem_total, mem_total_used))
                 .unwrap();
 
             // dev note: difference between avail and free:
@@ -79,8 +79,8 @@ impl Block for MemoryBlock {
     fn get_channel(
         &self,
     ) -> (
-        &crate::datahodler::channel::SSender<Self::BM>,
-        &crate::datahodler::channel::MReceiver<Self::WM>,
+        &crate::datahodler::channel::SSender<Self::In>,
+        &crate::datahodler::channel::MReceiver<Self::Out>,
     ) {
         todo!()
     }
@@ -100,7 +100,7 @@ impl Block for MemoryBlock {
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
-        let series = Series::new("mem", 100., 30, RGBA::new(1.0, 1.0, 0.3, 1.), false);
+        let series = Series::new("mem", 100., 40, RGBA::new(1.0, 1.0, 0.3, 1.), false);
         let chart = Chart::builder()
             .width(60)
             .line_width(2)
@@ -117,7 +117,7 @@ impl Block for MemoryBlock {
             loop {
                 if let Ok(msg) = receiver.recv().await {
                     match msg {
-                        MemoryWM::MemoryInfo(total, used) => {
+                        MemoryOut::MemoryInfo(total, used) => {
                             series.add_value((used * 100 / total) as f64);
                         }
                     }

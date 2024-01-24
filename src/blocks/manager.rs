@@ -1,6 +1,5 @@
 use super::{
-    battery::BatteryBlock, cpu::CpuBlock, memory::MemoryBlock, netspeed::NetspeedBlock,
-    time::TimeBlock, Block,
+    battery::BatteryBlock, cpu::CpuBlock, hyprstatus::HyprBlock, memory::MemoryBlock, netspeed::NetspeedBlock, time::TimeBlock, Block
 };
 
 pub struct BlockManager {
@@ -9,24 +8,28 @@ pub struct BlockManager {
     pub cpu_block: CpuBlock,
     pub battery_block: BatteryBlock,
     pub memory_block: MemoryBlock,
+    pub hypr_block: HyprBlock,
 }
 
 impl BlockManager {
     pub fn launch() -> BlockManager {
         let mut net_block = NetspeedBlock::new();
-        net_block.loop_receive().unwrap();
+        net_block.run().unwrap();
 
         let mut time_block = TimeBlock::new();
-        time_block.loop_receive().unwrap();
+        time_block.run().unwrap();
 
         let mut cpu_block = CpuBlock::new();
-        cpu_block.loop_receive().unwrap();
+        cpu_block.run().unwrap();
 
         let mut battery_block = BatteryBlock::new();
-        battery_block.loop_receive().unwrap();
+        battery_block.run().unwrap();
 
         let mut memory_block = MemoryBlock::new();
-        memory_block.loop_receive().unwrap();
+        memory_block.run().unwrap();
+
+        let mut hypr_block = HyprBlock::new();
+        hypr_block.run().unwrap();
 
         BlockManager {
             net_block,
@@ -34,6 +37,7 @@ impl BlockManager {
             cpu_block,
             battery_block,
             memory_block,
+            hypr_block,
         }
     }
 }

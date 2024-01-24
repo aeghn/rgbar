@@ -24,10 +24,10 @@ const CPU_BOOST_PATH: &str = "/sys/devices/system/cpu/cpufreq/boost";
 const CPU_NO_TURBO_PATH: &str = "/sys/devices/system/cpu/intel_pstate/no_turbo";
 
 #[derive(Clone)]
-pub enum CpuBM {}
+pub enum CpuIn {}
 
 #[derive(Clone)]
-pub enum CpuWM {
+pub enum CpuOut {
     Turbo(TriBool),
     Frequencies(Vec<f64>),
     UtilizationAvg(f64),
@@ -35,7 +35,7 @@ pub enum CpuWM {
 }
 
 pub struct CpuBlock {
-    dualchannel: DualChannel<CpuWM, CpuBM>,
+    dualchannel: DualChannel<CpuOut, CpuIn>,
 }
 
 impl CpuBlock {
@@ -47,11 +47,11 @@ impl CpuBlock {
 }
 
 impl Block for CpuBlock {
-    type WM = CpuWM;
+    type Out = CpuOut;
 
-    type BM = CpuBM;
+    type In = CpuIn;
 
-    fn loop_receive(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> anyhow::Result<()> {
         let sender = self.dualchannel.get_out_sender();
 
         let mut cputime = read_proc_stat()?;
@@ -63,24 +63,24 @@ impl Block for CpuBlock {
 
         glib::timeout_add_seconds_local(1, move || {
             let freqs = read_frequencies().expect("unable to read frequencies");
-            sender.send(CpuWM::Frequencies(freqs)).unwrap();
+            sender.send(CpuOut::Frequencies(freqs)).unwrap();
 
             // Compute utilizations
             let new_cputime = read_proc_stat().unwrap();
             let utilization_avg = new_cputime.0.utilization(cputime.0);
-            sender.send(CpuWM::UtilizationAvg(utilization_avg)).unwrap();
+            sender.send(CpuOut::UtilizationAvg(utilization_avg)).unwrap();
             let mut utilizations = Vec::new();
             if new_cputime.1.len() != cores {}
             for i in 0..cores {
                 utilizations.push(new_cputime.1[i].utilization(cputime.1[i]));
             }
-            sender.send(CpuWM::Utilizations(utilizations)).unwrap();
+            sender.send(CpuOut::Utilizations(utilizations)).unwrap();
 
             cputime = new_cputime;
 
             // Read boost state on intel CPUs
             sender
-                .send(CpuWM::Turbo(
+                .send(CpuOut::Turbo(
                     boost_status()
                         .map(|e| if e { TriBool::True } else { TriBool::False })
                         .unwrap_or(TriBool::Unknown),
@@ -93,7 +93,7 @@ impl Block for CpuBlock {
         Ok(())
     }
 
-    fn get_channel(&self) -> (&SSender<Self::BM>, &MReceiver<Self::WM>) {
+    fn get_channel(&self) -> (&SSender<Self::In>, &MReceiver<Self::Out>) {
         self.dualchannel.get_reveled()
     }
 
@@ -108,7 +108,6 @@ impl Block for CpuBlock {
         let label = gtk::Label::builder().label("CPU: ").build();
         label.style_context().add_class("cpu-mem-label");
 
-        let prefix = "CPU: ";
         let _turbo_str = String::new();
         let _freq = String::new();
         let mut label_str = String::new();
@@ -131,24 +130,24 @@ impl Block for CpuBlock {
             loop {
                 if let Ok(msg) = receiver.recv().await {
                     match msg {
-                        CpuWM::Turbo(turbo) => {
+                        CpuOut::Turbo(turbo) => {
                             let new = match turbo {
                                 TriBool::True => "T",
                                 TriBool::False => "N",
                                 TriBool::Unknown => "",
                             };
 
-                            let new = format!("{} {}", prefix, new);
+                            let new = format!("{}", new);
                             if new.as_str() != label_str.as_str() {
                                 label.set_label(&new);
                             }
                             label_str = new;
                         }
-                        CpuWM::Frequencies(_freq) => {}
-                        CpuWM::UtilizationAvg(avg) => {
+                        CpuOut::Frequencies(_freq) => {}
+                        CpuOut::UtilizationAvg(avg) => {
                             series.add_value(avg * 100.);
                         }
-                        CpuWM::Utilizations(_) => {}
+                        CpuOut::Utilizations(_) => {}
                     }
                 }
             }

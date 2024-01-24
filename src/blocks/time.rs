@@ -3,9 +3,8 @@ use chinese_lunisolar_calendar::LunisolarDate;
 use chrono::Timelike;
 use chrono::{DateTime, Local};
 use glib::{Cast, MainContext};
-use gtk::prelude::{LabelExt, OrientableExt};
+use gtk::prelude::LabelExt;
 use gtk::traits::BoxExt;
-use gtk::traits::ButtonExt;
 use gtk::traits::StyleContextExt;
 use gtk::traits::WidgetExt;
 use std::cell::RefCell;
@@ -13,16 +12,16 @@ use std::cell::RefCell;
 use super::Block;
 
 #[derive(Clone)]
-pub enum TimeBM {}
+pub enum TimeIn {}
 
 #[derive(Clone)]
-pub enum TimeWM {
+pub enum TimeOut {
     Chinese((String, String, String)),
     Westen(String, String),
 }
 
 pub struct TimeBlock {
-    dualchannel: DualChannel<TimeWM, TimeBM>,
+    dualchannel: DualChannel<TimeOut, TimeIn>,
 }
 
 impl TimeBlock {
@@ -59,24 +58,24 @@ impl TimeBlock {
 }
 
 impl Block for TimeBlock {
-    type WM = TimeWM;
+    type Out = TimeOut;
 
-    type BM = TimeBM;
+    type In = TimeIn;
 
-    fn loop_receive(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> anyhow::Result<()> {
         let sender = self.dualchannel.get_out_sender();
         let hour = RefCell::new(0);
 
         glib::timeout_add_seconds_local(1, move || {
             let (d, t, h) = Self::get_wes_time();
 
-            sender.send(TimeWM::Westen(d, t)).unwrap();
+            sender.send(TimeOut::Westen(d, t)).unwrap();
 
             let oldt = hour.replace(h);
 
             if oldt != h && h >= 11 {
                 sender
-                    .send(TimeWM::Chinese(Self::get_chinese_date()))
+                    .send(TimeOut::Chinese(Self::get_chinese_date()))
                     .unwrap();
             }
 
@@ -89,8 +88,8 @@ impl Block for TimeBlock {
     fn get_channel(
         &self,
     ) -> (
-        &crate::datahodler::channel::SSender<Self::BM>,
-        &crate::datahodler::channel::MReceiver<Self::WM>,
+        &crate::datahodler::channel::SSender<Self::In>,
+        &crate::datahodler::channel::MReceiver<Self::Out>,
     ) {
         self.dualchannel.get_reveled()
     }
@@ -134,10 +133,10 @@ impl Block for TimeBlock {
                 match mreceiver.recv().await {
                     Ok(msg) => {
                         match msg {
-                            TimeWM::Chinese((y, m, d)) => {
+                            TimeOut::Chinese((y, m, d)) => {
                                 cn_y.set_label(format!("({}) {} {}", y, m, d).as_str());
                             }
-                            TimeWM::Westen(t, d) => {
+                            TimeOut::Westen(t, d) => {
                                 wes_d.set_label(format!("{} {}", d, t).as_str());
                                 // wes_t.set_label(d.as_str());
                             }

@@ -61,12 +61,12 @@ pub fn load_css() {
     // 0.2.8: Allow for defining the name of the stylesheet to look up
 
     provider
-        .load_from_data(include_bytes!("../config/style.css"))
-        .expect("");
+        .load_from_data(include_bytes!("../res/style.css"))
+        .unwrap();
 
     // Add the provider to the default screen
     StyleContext::add_provider_for_screen(
-        &Screen::default().expect(""),
+        &Screen::default().unwrap(),
         &provider,
         STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
