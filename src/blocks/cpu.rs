@@ -114,7 +114,7 @@ impl Block for CpuBlock {
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
-        let series = Series::new("cpu", 100., 30, RGBA::new(1.0, 0.4, 0.4, 1.0), false);
+        let series = Series::new("cpu", 100., 40, RGBA::new(1.0, 0.4, 0.4, 1.0), false);
         let chart = Chart::builder()
             .width(60)
             .line_width(2)

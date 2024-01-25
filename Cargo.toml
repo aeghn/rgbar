@@ -21,6 +21,9 @@ gtk = "0.18.1"
 gdk = "0.18.0"
 gio = "0.18.4"
 
+plotters = "*"
+plotters-cairo = "*"
+
 anyhow = "*"
 
 wireplumber = "*"

@@ -25,11 +25,12 @@ use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
 use gtk::Widget;
 use tracing::error;
 use tracing::info;
+use crate::utils::gtk_icon_loader::GtkIconLoader;
 
 #[derive(Clone)]
 pub enum HyprOut {
     Parsed(ParsedEventType),
-    AllWorkspaces(Vec<HyprWorkspace>, i32),
+    AllWorkspaces(Vec<HyprWorkspace>, i32, String, String),
 }
 
 #[derive(Clone)]
@@ -51,6 +52,7 @@ impl HyprCurrentStatus {
     }
 }
 
+#[derive(Debug)]
 enum MatchType {
     ID,
     Name,
@@ -65,13 +67,14 @@ pub struct HyprWorkspaceWidget {
 
 #[derive(Clone)]
 pub struct HyprWidget {
-    ww_map: Rc<RefCell<Vec<HyprWorkspaceWidget>>>,
+    ww_vec: Rc<RefCell<Vec<HyprWorkspaceWidget>>>,
     ws_box: gtk::Box,
     ws_title_button: gtk::Button,
     out_receiver: MReceiver<HyprOut>,
     in_sender: SSender<HyprIn>,
     holder: gtk::Box,
     current_status: Rc<RefCell<HyprCurrentStatus>>,
+    pub icon_loader: GtkIconLoader,
 }
 
 impl HyprWidget {
@@ -91,19 +94,23 @@ impl HyprWidget {
 
         holder.pack_start(&title_button, false, false, 0);
 
+
+        let icon_loader = utils::gtk_icon_loader::GtkIconLoader::new();
+
         HyprWidget {
-            ww_map: Default::default(),
+            ww_vec: Default::default(),
             ws_box,
             ws_title_button: title_button,
             out_receiver: out_receiver.clone(),
             in_sender: in_sender.clone(),
             holder,
             current_status: current_status.clone(),
+            icon_loader
         }
     }
 
     async fn receive_out_events(&self) {
-        let mut icon_loader = utils::gtk_icon_loader::GtkIconLoader::new();
+
         let mut receiver = self.out_receiver.clone();
 
         self.in_sender.send(HyprIn::NewClient).await.unwrap();
@@ -124,7 +131,7 @@ impl HyprWidget {
                         }
                         _ => {}
                     },
-                    HyprOut::AllWorkspaces(vec, cursor) => self.init(vec, cursor),
+                    HyprOut::AllWorkspaces(vec, cursor, class, title) => self.init(vec, cursor, class, title),
                     _ => {}
                 },
                 Err(_) => {}
@@ -132,7 +139,7 @@ impl HyprWidget {
         }
     }
 
-    fn init(&self, wss: Vec<HyprWorkspace>, cursor: i32) {
+    fn init(&self, wss: Vec<HyprWorkspace>, cursor: i32, class: String, title: String) {
         let ws = wss.iter().find(|e| e.id == cursor).unwrap();
         let current_monitor = ws.monitor.clone();
 
@@ -140,9 +147,12 @@ impl HyprWidget {
             .borrow_mut()
             .current_monitor
             .replace(current_monitor);
+        self.current_status.borrow_mut().current_workspace_id = ws.id.clone();
         for ele in wss {
             self.add_workspace_directly(&ele);
         }
+
+        self.on_active_window_changed_v1(class, title);
 
         self.holder.show_all();
 
@@ -179,11 +189,37 @@ impl HyprWidget {
         self.show_workspace(workspace, MatchType::Name);
     }
 
-    fn on_workspace_moved(&self, ws: String, monitor: String) {}
+    fn on_workspace_moved(&self, ws: String, monitor: String) {
 
-    fn on_active_window_changed_v1(&self, class: String, title: String) {}
+    }
 
-    fn on_active_monitor_changed(&self, monitor: String, workspace: String) {}
+    fn on_active_window_changed_v1(&self, class: String, title: String) {
+        let mut current_status = self.current_status.borrow_mut();
+        if current_status.current_window_title != title {
+
+            current_status.current_window_title = title.clone();
+        }
+
+        let visiable = self.ws_title_button.is_visible();
+        let is_empty = current_status.current_window_title.is_empty();
+
+        if is_empty && visiable {
+            self.ws_title_button.hide();
+        }
+        self.ws_title_button.set_label(title.as_str());
+
+        if !is_empty && !visiable {
+
+            self.ws_title_button.show();
+        }
+
+        let image = self.icon_loader.load_from_name(class.as_str());
+        self.ws_title_button.set_image(image.as_ref());
+    }
+
+    fn on_active_monitor_changed(&self, monitor: String, workspace: String) {
+
+    }
 
     fn show_workspace(&self, workspace: String, match_type: MatchType) -> gtk::Button {
         let current_monitor = self.current_status.borrow().get_current_monitor().clone();
@@ -200,7 +236,7 @@ impl HyprWidget {
                 };
                 let hww = Self::create_workspace_button(&hypr_ws);
 
-                self.ww_map.borrow_mut().push(hww.clone());
+                self.ww_vec.borrow_mut().push(hww.clone());
                 self.ws_box.pack_end(&hww.button, false, false, 0);
 
                 hww
@@ -215,9 +251,17 @@ impl HyprWidget {
     }
 
     fn add_workspace_directly(&self, workspace: &HyprWorkspace) {
-        let ws = Self::create_workspace_button(workspace);
-        self.ws_box.pack_end(&ws.button, false, false, 0);
-        self.ww_map.borrow_mut().push(ws);
+        let ws = match self.find_ww(workspace.id.to_string().as_str(), MatchType::ID) {
+            None => {
+                let widget = Self::create_workspace_button(workspace);
+                self.ww_vec.borrow_mut().push(widget.clone());
+                self.ws_box.pack_end(&widget.button, false, false, 0);
+                widget
+            }
+            Some(ws) => {
+                ws
+            }
+        };
     }
 
     fn hide_workspace(&self, workspace: String, match_type: MatchType) {
@@ -281,7 +325,8 @@ impl HyprWidget {
     }
 
     fn find_ww(&self, name: &str, match_type: MatchType) -> Option<HyprWorkspaceWidget> {
-        self.ww_map
+        error!("{} | {:?}", name, match_type);
+        self.ww_vec
             .borrow()
             .iter()
             .find(|e| match match_type {
@@ -307,11 +352,14 @@ impl HyprBlock {
         }
     }
 
-    fn new_client() -> (Vec<HyprWorkspace>, i32) {
+    fn new_client() -> (Vec<HyprWorkspace>, i32, String, String) {
         let workspaces = hyprclients::get_workspaces().unwrap();
         let active_workspace = hyprclients::get_active_workspace().unwrap();
+        let client = hyprclients::get_active_client();
+        let title = client.as_ref().map(|e| {e.title.clone()}).unwrap_or("".to_string());
+        let class =  client.as_ref().map(|e| {e.class.clone()}).unwrap_or("".to_string());
 
-        (workspaces, active_workspace.id)
+        (workspaces, active_workspace.id, class, title)
     }
 
     fn handle_input_msg(msg: HyprIn) {
@@ -378,7 +426,7 @@ impl Block for HyprBlock {
                         Ok(msg) => match msg {
                             HyprIn::NewClient => {
                                 let all = Self::new_client();
-                                sender.send(HyprOut::AllWorkspaces(all.0, all.1)).unwrap();
+                                sender.send(HyprOut::AllWorkspaces(all.0, all.1, all.2, all.3)).unwrap();
                             }
                         },
                         Err(_) => todo!(),

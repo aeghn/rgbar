@@ -5,6 +5,7 @@ use gdk::RGBA;
 use gtk::prelude::BoxExt;
 
 use gtk::prelude::WidgetExt;
+use log::error;
 
 use crate::datahodler::ring::Ring;
 
@@ -186,7 +187,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
                 .collect();
             let base_height = oneheight * i as f64;
             for (j, ele) in points.iter().enumerate() {
-                let x = (j as f64 + 0.5) * interval as f64;
+                let x = 1. - (j as f64 + 0.5) * interval as f64;
                 let y = ele.y * oneheight * 0.8;
                 cr.move_to(x, 1. - (base_height));
                 cr.line_to(x, 1. - (base_height + oneheight * 0.05 + y));
@@ -223,7 +224,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         cr.set_line_width(line_width);
 
         for serie in series {
-            let interval = 1. / serie.0.ring.size as f64;
+            let interval = 1. / (serie.0.ring.size - 2) as f64;
 
             let point_vec: Vec<Point> = Self::scale(&serie.0, &serie.1).into_iter().collect();
 
@@ -240,15 +241,15 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
                 0.05 + v * 0.9
             };
 
-            cr.move_to(0., transform(point_vec[0].y));
+            cr.move_to(1., transform(point_vec[0].y));
             cr.set_source_rgb(
                 serie.0.color.red(),
                 serie.0.color.green(),
                 serie.0.color.blue(),
             );
 
-            for (i, ele) in point_vec.iter().skip(1).enumerate() {
-                cr.line_to(i as f64 * interval, transform(ele.y));
+            for (i, ele) in point_vec.iter().rev().skip(1).enumerate() {
+                cr.line_to(1. - (i + 1) as f64 * interval, transform(ele.y));
             }
 
             cr.stroke().unwrap();
@@ -335,10 +336,7 @@ impl<E: Into<f64> + Clone + 'static> ChartBuilder<E> {
     }
 
     pub fn build(self) -> Chart<E> {
-        let line_type = match self.line_type {
-            None => LineType::Line,
-            Some(t) => t,
-        };
+        let line_type = self.line_type.unwrap_or_else(|| LineType::Line);
 
         let mut chart = Chart::new(self.series, self.line_width, line_type);
         if let Some(h) = self.height {

@@ -142,8 +142,8 @@ impl Block for NetspeedBlock {
             .build();
         speed_label.style_context().add_class("netspeed-label");
         
-        let up_series = Series::new("up", 5_000_000., 60, RGBA::new(0.9, 0.5, 0.5, 1.0), true);
-        let down_series = Series::new("down", 5_000_000., 60, RGBA::new(0.5, 0.9, 0.5, 1.0), true);
+        let up_series = Series::new("up", 5_000_000., 60, RGBA::new(0.5, 0.5, 0.5, 1.0), true);
+        let down_series = Series::new("down", 5_000_000., 60, RGBA::new(0.9, 0.9, 0.9, 1.0), true);
         let chart = Chart::builder()
             .line_width(2)
             .width(80)
