@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use gdk_pixbuf::Pixbuf;
@@ -9,7 +10,7 @@ use gtk::Image;
 
 #[derive(Clone)]
 pub struct GtkIconLoader {
-    cache: HashMap<String, gtk::Image>,
+    cache: RefCell<HashMap<String, gtk::Image>>,
 }
 
 #[derive(PartialEq, Clone)]
@@ -38,7 +39,7 @@ pub enum IconName {
 impl GtkIconLoader {
     pub fn new() -> Self {
         GtkIconLoader {
-            cache: HashMap::new(),
+            cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -52,11 +53,13 @@ impl GtkIconLoader {
         }
     }
 
-    pub fn load_from_name(&mut self, key: &str) -> Option<&Image> {
+    pub fn load_from_name(&self, key: &str) -> Option<Image> {
         let key = Self::map_name(key);
-        if self.cache.contains_key(key) {
-            let image = self.cache.get(key).unwrap();
-            return Some(image);
+        match self.cache.borrow().get(key) {
+            None =>{}
+            Some(image) => {
+                return Some(image.clone())
+            }
         }
 
         let icon_theme = gtk::IconTheme::default().unwrap();
@@ -64,9 +67,13 @@ impl GtkIconLoader {
             icon_theme.load_icon(key, 22, gtk::IconLookupFlags::FORCE_SVG);
         if let Ok(Some(_i)) = icon {
             let image = Image::from_pixbuf(Some(&_i));
-            self.cache.insert(key.to_string(), image.to_owned());
-            let image = self.cache.get(key).unwrap();
-            return Some(image);
+            self.cache.borrow_mut().insert(key.to_string(), image.to_owned());
+            match self.cache.borrow().get(key) {
+                None => {None}
+                Some(img) => {
+                    return Some(image.clone());
+                }
+            }
         } else {
             None
         }
