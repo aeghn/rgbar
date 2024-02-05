@@ -11,7 +11,6 @@ mod window;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use gdk_pixbuf::gio::ApplicationFlags;
 use tracing_subscriber::prelude::*;
 
 use crate::statusbar::StatusBar;
@@ -29,7 +28,7 @@ fn main() {
         .init();
 
     info!("Building application...");
-    let application = gtk::Application::new(None, ApplicationFlags::default());
+    let application = gtk::Application::new(None, gio::ApplicationFlags::default());
     info!("Loading CSS...");
     let _style_path = PathBuf::new();
     application.connect_startup(|_| load_css());

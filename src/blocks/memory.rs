@@ -2,14 +2,15 @@ use std::cmp::min;
 use std::str::FromStr;
 
 use anyhow::Result;
+use gdk::glib::Cast;
 use gdk::RGBA;
-use glib::{Cast, MainContext};
-use gtk::prelude::{BoxExt, StyleContextExt, WidgetExt};
+use glib::MainContext;
+use gtk::prelude::{ BoxExt, StyleContextExt, WidgetExt };
 
 use crate::datahodler::channel::DualChannel;
 use crate::utils::gtk_icon_loader::IconName;
-use crate::utils::{fileutils, gtk_icon_loader};
-use crate::widgets::chart::{Chart, DrawDirection, LineType, Series};
+use crate::utils::{ fileutils, gtk_icon_loader };
+use crate::widgets::chart::{ Chart, LineType, Series };
 
 use super::Block;
 
@@ -51,19 +52,19 @@ impl Block for MemoryBlock {
             // htop and such only display equivalent of `mem_used`
             let mem_total_used = mem_total - mem_free;
 
-            sender
-                .send(MemoryOut::MemoryInfo(mem_total, mem_total_used))
-                .unwrap();
+            sender.send(MemoryOut::MemoryInfo(mem_total, mem_total_used)).unwrap();
 
             // dev note: difference between avail and free:
             // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=34e431b0ae398fc54ea69ff85ec700722c9da773
             // same logic as htop
-            let _mem_avail = if mem_state.mem_available != 0 {
-                min(mem_state.mem_available, mem_state.mem_total)
-            } else {
-                mem_state.mem_free
-            } as f64
-                * 1024.;
+            let _mem_avail =
+                (
+                    (if mem_state.mem_available != 0 {
+                        min(mem_state.mem_available, mem_state.mem_total)
+                    } else {
+                        mem_state.mem_free
+                    }) as f64
+                ) * 1024.0;
 
             let swap_total = mem_state.swap_total * 1024;
             let swap_free = mem_state.swap_free * 1024;
@@ -77,7 +78,7 @@ impl Block for MemoryBlock {
     }
 
     fn get_channel(
-        &self,
+        &self
     ) -> (
         &crate::datahodler::channel::SSender<Self::In>,
         &crate::datahodler::channel::MReceiver<Self::Out>,
@@ -86,7 +87,8 @@ impl Block for MemoryBlock {
     }
 
     fn widget(&self) -> gtk::Widget {
-        let holder = gtk::Box::builder()
+        let holder = gtk::Box
+            ::builder()
             .orientation(gtk::Orientation::Horizontal)
             .hexpand(false)
             .build();
@@ -100,13 +102,12 @@ impl Block for MemoryBlock {
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
-        let series = Series::new("mem", 100., 40, RGBA::new(1.0, 1.0, 0.3, 1.), false);
+        let series = Series::new("mem", 100.0, 40, RGBA::new(0.5, 0.8, 1.0, 0.6), false);
         let chart = Chart::builder()
-            .width(60)
-            .line_width(2)
-            .with_series(series.clone(), DrawDirection::DownTop)
-            .line_type(LineType::Line)
-            .build();
+            .with_width(60)
+            .with_line_width(1.0)
+            .with_series(series.clone())
+            .with_line_type(LineType::Line);
         chart.draw_in_seconds(1);
         chart.drawing_box.style_context().add_class("chart-border");
 
@@ -118,7 +119,7 @@ impl Block for MemoryBlock {
                 if let Ok(msg) = receiver.recv().await {
                     match msg {
                         MemoryOut::MemoryInfo(total, used) => {
-                            series.add_value((used * 100 / total) as f64);
+                            series.add_value(((used * 100) / total) as f64);
                         }
                     }
                 }
@@ -151,7 +152,8 @@ impl Memstate {
 
         let mut mem_state = Memstate::default();
 
-        fileutils::read_lines("/proc/meminfo")
+        fileutils
+            ::read_lines("/proc/meminfo")
             .expect("unable to open /proc/meminfo ?")
             .for_each(|line| {
                 let line = line.unwrap_or("".to_string());
@@ -170,16 +172,36 @@ impl Memstate {
                     .expect("failed to parse /proc/meminfo");
 
                 match name {
-                    "MemTotal:" => mem_state.mem_total = val,
-                    "MemFree:" => mem_state.mem_free = val,
-                    "MemAvailable:" => mem_state.mem_available = val,
-                    "Buffers:" => mem_state.buffers = val,
-                    "Cached:" => mem_state.pagecache = val,
-                    "SReclaimable:" => mem_state.s_reclaimable = val,
-                    "Shmem:" => mem_state.shmem = val,
-                    "SwapTotal:" => mem_state.swap_total = val,
-                    "SwapFree:" => mem_state.swap_free = val,
-                    "SwapCached:" => mem_state.swap_cached = val,
+                    "MemTotal:" => {
+                        mem_state.mem_total = val;
+                    }
+                    "MemFree:" => {
+                        mem_state.mem_free = val;
+                    }
+                    "MemAvailable:" => {
+                        mem_state.mem_available = val;
+                    }
+                    "Buffers:" => {
+                        mem_state.buffers = val;
+                    }
+                    "Cached:" => {
+                        mem_state.pagecache = val;
+                    }
+                    "SReclaimable:" => {
+                        mem_state.s_reclaimable = val;
+                    }
+                    "Shmem:" => {
+                        mem_state.shmem = val;
+                    }
+                    "SwapTotal:" => {
+                        mem_state.swap_total = val;
+                    }
+                    "SwapFree:" => {
+                        mem_state.swap_free = val;
+                    }
+                    "SwapCached:" => {
+                        mem_state.swap_cached = val;
+                    }
                     _ => (),
                 }
             });

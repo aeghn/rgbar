@@ -4,13 +4,12 @@ use std::{
 };
 
 use anyhow::{anyhow, Result};
-use gdk::RGBA;
-use glib::{Cast, MainContext};
+use gdk::{glib::Cast, RGBA};
+use glib::MainContext;
 use gtk::prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
 
 use crate::utils::gtk_icon_loader;
 use crate::utils::gtk_icon_loader::IconName;
-use crate::widgets::chart::DrawDirection;
 use crate::{
     constants::TriBool,
     datahodler::channel::{DualChannel, MReceiver, SSender},
@@ -114,13 +113,12 @@ impl Block for CpuBlock {
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
-        let series = Series::new("cpu", 100., 40, RGBA::new(1.0, 0.4, 0.4, 1.0), false);
+        let series = Series::new("cpu", 100., 40, RGBA::new(0.5, 0.8, 1.0, 0.6), false);
         let chart = Chart::builder()
-            .width(60)
-            .line_width(2)
-            .with_series(series.clone(), DrawDirection::DownTop)
-            .line_type(LineType::Line)
-            .build();
+            .with_width(60)
+            .with_line_width(1.)
+            .with_series(series.clone())
+            .with_line_type(LineType::Line);
         chart.draw_in_seconds(1);
         chart.drawing_box.style_context().add_class("chart-border");
         holder.pack_start(&image, false, false, 0);
