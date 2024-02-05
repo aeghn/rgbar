@@ -1,14 +1,15 @@
+use gdk::glib::Cast;
 use gdk::RGBA;
-use glib::{Cast, MainContext};
+use glib::MainContext;
 
-use gtk::prelude::{GridExt, LabelExt, StyleContextExt, WidgetExt, ContainerExt};
+use gtk::prelude::{ LabelExt, StyleContextExt, WidgetExt, ContainerExt };
 use human_bytes::human_bytes;
 use regex::Regex;
 
-use crate::datahodler::channel::{DualChannel, MReceiver, SSender};
+use crate::datahodler::channel::{ DualChannel, MReceiver, SSender };
 use crate::utils::gtk_icon_loader::IconName;
-use crate::utils::{fileutils, gtk_icon_loader};
-use crate::widgets::chart::{Chart, DrawDirection, LineType, Series};
+use crate::utils::{ fileutils, gtk_icon_loader };
+use crate::widgets::chart::{ Chart, LineType, Series };
 
 use super::Block;
 
@@ -59,16 +60,17 @@ impl NetspeedBlock {
                     let diub: u64 = fields[9].parse().unwrap();
 
                     let interface = &fields[0];
-                    if Regex::new(r"^lo:?").unwrap().is_match(&interface)
-                // Created by python-based bandwidth manager "traffictoll".
-                    || Regex::new(r"^ifb[0-9]+:?").unwrap().is_match(&interface)
-                // Created by lxd container manager.
-                    || Regex::new(r"^lxdbr[0-9]+:?").unwrap().is_match(&interface)
-                    || Regex::new(r"^virbr[0-9]+:?").unwrap().is_match(&interface)
-                    || Regex::new(r"^br[0-9]+:?").unwrap().is_match(&interface)
-                    || Regex::new(r"^vnet[0-9]+:?").unwrap().is_match(&interface)
-                    || Regex::new(r"^tun[0-9]+:?").unwrap().is_match(&interface)
-                    || Regex::new(r"^tap[0-9]+:?").unwrap().is_match(&interface)
+                    if
+                        Regex::new(r"^lo:?").unwrap().is_match(&interface) ||
+                        // Created by python-based bandwidth manager "traffictoll".
+                        Regex::new(r"^ifb[0-9]+:?").unwrap().is_match(&interface) ||
+                        // Created by lxd container manager.
+                        Regex::new(r"^lxdbr[0-9]+:?").unwrap().is_match(&interface) ||
+                        Regex::new(r"^virbr[0-9]+:?").unwrap().is_match(&interface) ||
+                        Regex::new(r"^br[0-9]+:?").unwrap().is_match(&interface) ||
+                        Regex::new(r"^vnet[0-9]+:?").unwrap().is_match(&interface) ||
+                        Regex::new(r"^tun[0-9]+:?").unwrap().is_match(&interface) ||
+                        Regex::new(r"^tap[0-9]+:?").unwrap().is_match(&interface)
                     {
                         continue;
                     }
@@ -105,15 +107,17 @@ impl Block for NetspeedBlock {
                     last_total_download = download;
                     last_total_upload = upload;
 
-                    let secs = dur.as_millis() as f64 / 1000.;
+                    let secs = (dur.as_millis() as f64) / 1000.0;
 
-                    let convert = |bytes: u64| -> f64 { bytes as f64 / secs };
+                    let convert = |bytes: u64| -> f64 { (bytes as f64) / secs };
 
                     sender
-                        .send(Self::Out::NetspeedDiff(
-                            convert(diff_upload_bytes),
-                            convert(diff_download_bytes),
-                        ))
+                        .send(
+                            Self::Out::NetspeedDiff(
+                                convert(diff_upload_bytes),
+                                convert(diff_download_bytes)
+                            )
+                        )
                         .unwrap();
                 }
             }
@@ -129,35 +133,37 @@ impl Block for NetspeedBlock {
     }
 
     fn widget(&self) -> gtk::Widget {
-        let holder = gtk::Box::builder()
+        let holder = gtk::Box
+            ::builder()
             .orientation(gtk::Orientation::Horizontal)
             .hexpand(false)
             .build();
 
         let image = gtk_icon_loader::load_image(IconName::WIFI);
 
-        let speed_label: gtk::Label = gtk::Label::builder()
-            .hexpand(false)
-            .xalign(0.)
-            .build();
+        let speed_label: gtk::Label = gtk::Label::builder().hexpand(false).xalign(0.0).build();
         speed_label.style_context().add_class("netspeed-label");
-        
-        let up_series = Series::new("up", 5_000_000., 60, RGBA::new(0.5, 0.5, 0.5, 1.0), true);
-        let down_series = Series::new("down", 5_000_000., 60, RGBA::new(0.9, 0.9, 0.9, 1.0), true);
+
+        let up_color = RGBA::new(1.0, 0.8, 0.5, 0.6);
+        let down_color = RGBA::new(0.5, 0.8, 1.0, 0.6);
+        let mut up_series = Series::new("up", 5_000_000.0, 60, up_color.clone(), true);
+        up_series.set_baseline_and_height(0.50, 0.45);
+        let mut down_series = Series::new("down", 5_000_000.0, 60, down_color.clone(), true);
+        down_series.set_baseline_and_height(0.47, -0.45);
         let chart = Chart::builder()
-            .line_width(2)
-            .width(80)
-            .with_series(down_series.clone(), DrawDirection::DownTop)
-            .with_series(up_series.clone(), DrawDirection::TopDown)
-            .line_type(LineType::Pillar)
-            .build();
+            .with_line_width(1.0)
+            .with_width(80)
+            .with_series(down_series.clone())
+            .with_series(up_series.clone())
+            .with_line_type(LineType::Pillar);
+
         chart.drawing_box.set_hexpand(true);
         chart.drawing_box.set_vexpand(true);
         chart.drawing_box.style_context().add_class("chart-border");
         chart.draw_in_seconds(1);
 
         holder.add(&image);
-        holder.add(&chart.drawing_box);     
+        holder.add(&chart.drawing_box);
 
         holder.add(&speed_label);
 
@@ -165,13 +171,16 @@ impl Block for NetspeedBlock {
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
                 match mreceiver.recv().await {
-                    Ok(msg) => match msg {
-                        NetspeedOut::NetspeedDiff(up, down) => {
-                            up_series.add_value(up.clone());
-                            down_series.add_value(down.clone());
-                            speed_label.set_label(format!("{}\n{} ", human_bytes(up), human_bytes(down)).as_str());
+                    Ok(msg) =>
+                        match msg {
+                            NetspeedOut::NetspeedDiff(up, down) => {
+                                up_series.add_value(up.clone());
+                                down_series.add_value(down.clone());
+                                speed_label.set_label(
+                                    format!("{}\n{} ", human_bytes(up), human_bytes(down)).as_str()
+                                );
+                            }
                         }
-                    },
                     Err(_) => {}
                 }
             }

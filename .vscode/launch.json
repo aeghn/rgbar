@@ -13,10 +13,11 @@
                     "build"
                 ]
             },
-            "args": [
-            ],
-            "env": {"WAYLAND_DISPLAY": "wayland-1", "HYPRLAND_INSTANCE_SIGNATURE": "0cd6de8fd169041c98a94127903273b7b33140d7_1706057786"},
+            "args": [],
+            "env": {
+                "WAYLAND_DISPLAY": "wayland-1",
+                "HYPRLAND_INSTANCE_SIGNATURE": "c80816809e2912791cb1cf0df58a6461787fdf96_1707103727"
+            },
         }
-
     ]
 }

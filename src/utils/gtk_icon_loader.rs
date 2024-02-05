@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use gdk_pixbuf::Pixbuf;
+use gdk::gdk_pixbuf::Pixbuf;
 
 use glib::Bytes;
 
@@ -56,20 +56,19 @@ impl GtkIconLoader {
     pub fn load_from_name(&self, key: &str) -> Option<Image> {
         let key = Self::map_name(key);
         match self.cache.borrow().get(key) {
-            None =>{}
+            None => {}
             Some(image) => {
-                return Some(image.clone())
+                return Some(image.clone());
             }
         }
 
         let icon_theme = gtk::IconTheme::default().unwrap();
-        let icon: Result<Option<Pixbuf>, glib::Error> =
-            icon_theme.load_icon(key, 22, gtk::IconLookupFlags::FORCE_SVG);
+        let icon = icon_theme.load_icon(key, 22, gtk::IconLookupFlags::FORCE_SVG);
         if let Ok(Some(_i)) = icon {
             let image = Image::from_pixbuf(Some(&_i));
             self.cache.borrow_mut().insert(key.to_string(), image.to_owned());
             match self.cache.borrow().get(key) {
-                None => {None}
+                None => { None }
                 Some(img) => {
                     return Some(image.clone());
                 }
@@ -90,16 +89,15 @@ pub fn load_image_at(icon_name: IconName, size: i32) -> Image {
 
 pub fn load_pixbuf_at(icon_name: IconName, size: i32) -> Pixbuf {
     let fc = |bytes: &'static [u8]| {
-        let mis = gio::MemoryInputStream::from_bytes(&Bytes::from(bytes));
+        let mis = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from(bytes));
 
         let buf = Pixbuf::from_stream_at_scale(
-            &gio::InputStream::from(mis),
+            &gtk::gio::InputStream::from(mis),
             size,
             size,
             true,
-            None::<&gio::Cancellable>,
-        )
-        .unwrap();
+            None::<&gtk::gio::Cancellable>
+        ).unwrap();
 
         buf
     };
