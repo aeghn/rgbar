@@ -5,6 +5,7 @@ use gdk::glib::Propagation;
 use gdk::RGBA;
 use gtk::prelude::BoxExt;
 
+use gtk::prelude::StyleContextExt;
 use gtk::prelude::WidgetExt;
 
 use crate::datahodler::ring::Ring;
@@ -17,23 +18,21 @@ pub enum LineType {
 
 #[derive(Clone)]
 pub struct Series<E: Into<f64> + Clone> {
-    id: String,
+    _id: String,
     max_value: E,
     ring: Ring<E>,
     color: RGBA,
-    vari_height: bool,
     baseline_percent: f64,
     height_percent: f64,
 }
 
 impl<E: Into<f64> + Clone> Series<E> {
-    pub fn new(id: &str, max_value: E, ring_size: usize, color: RGBA, vari_height: bool) -> Self {
+    pub fn new(id: &str, max_value: E, ring_size: usize, color: RGBA) -> Self {
         Series {
-            id: id.to_string(),
+            _id: id.to_string(),
             max_value,
             ring: Ring::new(ring_size),
             color,
-            vari_height,
             baseline_percent: 0.0,
             height_percent: 1.0,
         }
@@ -47,11 +46,6 @@ impl<E: Into<f64> + Clone> Series<E> {
         self.baseline_percent = base;
         self.height_percent = height;
     }
-}
-
-struct Point {
-    x: f64,
-    y: f64,
 }
 
 pub struct Chart<E: Into<f64> + Clone> {
@@ -73,6 +67,9 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         let drawing_box = gtk::Box::builder().build();
 
         drawing_box.pack_start(&drawing_area, true, true, 0);
+        drawing_box.style_context().add_class("chart-border");
+
+        drawing_box.set_height_request(16);
 
         Self {
             drawing_area,
@@ -113,16 +110,12 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         let width = alloc.width() as f64;
         let height = alloc.height() as f64;
 
-        //cr.set_source_rgba(0.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0, 0.0);
-        // cr.paint().unwrap();
-
         cr.set_line_width(line_width);
         let max_ring_size = series.iter().map(|s| s.ring.size).max().unwrap_or(30);
         let interval = 1.0 / ((max_ring_size - 2) as f64);
-        cr.translate(-1. * width * interval, 0.);
 
         for serie in series {
-            let point_height: Vec<f64> = Self::scale(&serie).into_iter().collect();
+            let (point_height, max) = Self::scale(&serie);
 
             if point_height.len() <= 1 {
                 continue;
@@ -145,12 +138,6 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
             }
             cr.stroke_preserve().unwrap();
 
-            cr.move_to(start.0, start.1);
-            for (i, ele) in point_height.iter().skip(1).enumerate() {
-                end = (transform_x(i + 1), transform_y(ele.clone()));
-                cr.line_to(end.0.clone(), end.1.clone());
-            }
-
             cr.line_to(end.0, transform_y(0.));
             cr.line_to(start.0, transform_y(0.));
             cr.line_to(start.0, start.1);
@@ -162,10 +149,20 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
                 serie.color.alpha(),
             );
             cr.fill().unwrap();
+
+            let max_default: f64 = serie.max_value.clone().into();
+
+            if max > max_default * 1.1 {
+                let v = transform_y(max_default / max);
+                cr.move_to(start.0, v);
+                cr.line_to(end.0, v);
+                cr.set_source_rgba(1.0, 0.3, 0.3, 0.8);
+                cr.stroke().unwrap();
+            }
         }
     }
 
-    fn scale(series: &Series<E>) -> Vec<f64> {
+    fn scale(series: &Series<E>) -> (Vec<f64>, f64) {
         let all: Vec<f64> = series
             .ring
             .get_all()
@@ -182,13 +179,16 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
 
         let mah: f64 = f64::max(max, max_def);
 
-        all.into_iter()
+        let vec = all
+            .into_iter()
             .rev()
             .map(|h| {
                 let sh = h / mah;
                 f64::min(1.0, sh)
             })
-            .collect()
+            .collect();
+
+        (vec, max)
     }
 
     /*     pub fn with_height(self, height: i32) -> Self {

@@ -4,3 +4,5 @@ pub enum TriBool {
     False,
     Unknown,
 }
+
+pub static APP_NAME: &str = "org.codeberg.wangzh.rgbar";

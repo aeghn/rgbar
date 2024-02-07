@@ -17,6 +17,11 @@ pub struct StatusBar {
     block_manager: BlockManager,
 }
 
+#[derive(Clone, Default)]
+pub struct WidgetShareInfo {
+    pub monitor: i32,
+}
+
 impl StatusBar {
     pub fn new(application: &gtk::Application) -> Self {
         let block_manager = BlockManager::launch();
@@ -29,9 +34,13 @@ impl StatusBar {
     }
 
     pub fn new_window(&self, monitor_num: i32) -> ApplicationWindow {
-        let window = crate::window::create_window(&self.application, monitor_num);
+        let window = crate::window::create_window(&self.application, monitor_num.clone());
 
-        self.build_widgets(&window);
+        let mut share_info = WidgetShareInfo::default();
+
+        share_info.monitor = monitor_num.clone();
+
+        self.build_widgets(&window, share_info);
 
         window
     }
@@ -68,31 +77,36 @@ impl StatusBar {
         }
     }
 
-    fn build_widgets(&self, window: &ApplicationWindow) {
+    fn build_widgets(&self, window: &ApplicationWindow, share_info: WidgetShareInfo) {
         let bar = gtk::Box::new(Orientation::Horizontal, 10);
         bar.style_context().add_class("bar");
+        let _share_info = &share_info;
 
-        let time = self.block_manager.time_block.widget();
+        let time = self.block_manager.time_block.widget(_share_info);
         bar.pack_end(&time, false, false, 0);
 
-        let battery = self.block_manager.battery_block.widget();
+        let battery = self.block_manager.battery_block.widget(_share_info);
         bar.pack_end(&battery, false, false, 0);
 
-        let cpu = self.block_manager.cpu_block.widget();
+        let volume = self.block_manager.vol_block.widget(_share_info);
+        bar.pack_end(&volume, false, false, 0);
+
+        let cpu = self.block_manager.cpu_block.widget(_share_info);
         bar.pack_end(&cpu, false, false, 0);
 
-        let memory = self.block_manager.memory_block.widget();
+        let memory = self.block_manager.memory_block.widget(_share_info);
         bar.pack_end(&memory, false, false, 0);
 
-        let netspeed = self.block_manager.net_block.widget();
+        let netspeed = self.block_manager.net_block.widget(_share_info);
         bar.pack_end(&netspeed, false, false, 0);
 
-        let hyprstatus = self.block_manager.hypr_block.widget();
+        let hyprstatus = self.block_manager.hypr_block.widget(_share_info);
         bar.pack_start(&hyprstatus, false, false, 0);
 
         window.add(&bar);
+        bar.show_all();
 
         let window = window.clone();
-        glib::idle_add_local_once(move || { window.show_all(); });
+        glib::idle_add_local_once(move || { window.show(); });
     }
 }

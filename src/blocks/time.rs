@@ -1,9 +1,10 @@
 use crate::datahodler::channel::DualChannel;
+use crate::statusbar::WidgetShareInfo;
 use chinese_lunisolar_calendar::LunisolarDate;
 use chrono::Timelike;
 use chrono::{DateTime, Local};
 use gdk::glib::Cast;
-use glib::{ MainContext};
+use glib::MainContext;
 use gtk::prelude::LabelExt;
 use gtk::traits::BoxExt;
 use gtk::traits::StyleContextExt;
@@ -86,47 +87,38 @@ impl Block for TimeBlock {
         Ok(())
     }
 
-    fn get_channel(
-        &self,
-    ) -> (
-        &crate::datahodler::channel::SSender<Self::In>,
-        &crate::datahodler::channel::MReceiver<Self::Out>,
-    ) {
-        self.dualchannel.get_reveled()
-    }
-
-    fn widget(&self) -> gtk::Widget {
+    fn widget(&self, share_info: &WidgetShareInfo) -> gtk::Widget {
         let holder = gtk::Box::builder()
-            .orientation(gtk::Orientation::Vertical)
+            .orientation(gtk::Orientation::Horizontal)
             .valign(gtk::Align::Center)
             .vexpand(false)
             .build();
 
-        let (cny, cnm, cnd) = Self::get_chinese_date();
-        let cn_y = gtk::Label::builder()
-            .label(format!("({}) {} {}", cny, cnm, cnd))
+        let (_, cnm, cnd) = Self::get_chinese_date();
+        let cn_date = gtk::Label::builder()
+            .label(format!("{}\n{}", cnm, cnd))
             .vexpand(false)
             .build();
-        cn_y.style_context().add_class("time-chinese");
+        cn_date.style_context().add_class("time-chinese");
 
         let cn_holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
             .vexpand(false)
             .build();
-        cn_holder.pack_start(&cn_y, false, false, 0);
+        cn_holder.pack_start(&cn_date, false, false, 0);
 
-        let wes_d = gtk::Label::builder()
+        let wes_date = gtk::Label::builder()
             .label(format!(
-                "{} {}",
+                "{}\n{}",
                 Self::get_wes_time().0,
                 Self::get_wes_time().1
             ))
             .vexpand(false)
             .build();
-        wes_d.style_context().add_class("time-date");
+        wes_date.style_context().add_class("time-date");
 
-        holder.pack_start(&cn_holder, false, false, 0);
-        holder.pack_start(&wes_d, false, false, 0);
+        holder.pack_end(&cn_holder, false, false, 0);
+        holder.pack_start(&wes_date, false, false, 0);
 
         let mut mreceiver = self.dualchannel.get_out_receiver();
         MainContext::ref_thread_default().spawn_local(async move {
@@ -134,11 +126,11 @@ impl Block for TimeBlock {
                 match mreceiver.recv().await {
                     Ok(msg) => {
                         match msg {
-                            TimeOut::Chinese((y, m, d)) => {
-                                cn_y.set_label(format!("({}) {} {}", y, m, d).as_str());
+                            TimeOut::Chinese((_, m, d)) => {
+                                cn_date.set_label(format!("{}\n{}", m, d).as_str());
                             }
-                            TimeOut::Westen(t, d) => {
-                                wes_d.set_label(format!("{} {}", d, t).as_str());
+                            TimeOut::Westen(d, t) => {
+                                wes_date.set_label(format!("{}\n{}", d, t).as_str());
                                 // wes_t.set_label(d.as_str());
                             }
                         }

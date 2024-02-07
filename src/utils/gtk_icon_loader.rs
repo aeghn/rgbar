@@ -34,6 +34,14 @@ pub enum IconName {
     BatteryCMOn,
     BatteryCMOff,
     BatteryCMUnk,
+
+    Headphone,
+    Headset,
+
+    VolumeHigh,
+    VolumeMidium,
+    VolumeLow,
+    VolumeMute,
 }
 
 impl GtkIconLoader {
@@ -66,9 +74,11 @@ impl GtkIconLoader {
         let icon = icon_theme.load_icon(key, 22, gtk::IconLookupFlags::FORCE_SVG);
         if let Ok(Some(_i)) = icon {
             let image = Image::from_pixbuf(Some(&_i));
-            self.cache.borrow_mut().insert(key.to_string(), image.to_owned());
+            self.cache
+                .borrow_mut()
+                .insert(key.to_string(), image.to_owned());
             match self.cache.borrow().get(key) {
-                None => { None }
+                None => None,
                 Some(img) => {
                     return Some(image.clone());
                 }
@@ -96,8 +106,9 @@ pub fn load_pixbuf_at(icon_name: IconName, size: i32) -> Pixbuf {
             size,
             size,
             true,
-            None::<&gtk::gio::Cancellable>
-        ).unwrap();
+            None::<&gtk::gio::Cancellable>,
+        )
+        .unwrap();
 
         buf
     };
@@ -126,6 +137,23 @@ pub fn load_pixbuf_at(icon_name: IconName, size: i32) -> Pixbuf {
         IconName::BatteryCMOn => fc(include_bytes!("../../res/icons/battery-conser.svg")),
         IconName::BatteryCMOff => fc(include_bytes!("../../res/icons/battery-conser.svg")),
         IconName::BatteryCMUnk => fc(include_bytes!("../../res/icons/battery-conser.svg")),
+
+        IconName::Headphone => fc(include_bytes!(
+            "../../res/icons/audio-headphones-symbolic.svg"
+        )),
+        IconName::Headset => fc(include_bytes!("../../res/icons/audio-headset-symbolic.svg")),
+        IconName::VolumeHigh => fc(include_bytes!(
+            "../../res/icons/audio-volume-high-symbolic.svg"
+        )),
+        IconName::VolumeMidium => fc(include_bytes!(
+            "../../res/icons/audio-volume-medium-symbolic.svg"
+        )),
+        IconName::VolumeLow => fc(include_bytes!(
+            "../../res/icons/audio-volume-low-symbolic.svg"
+        )),
+        IconName::VolumeMute => fc(include_bytes!(
+            "../../res/icons/audio-volume-muted-symbolic.svg"
+        )),
     }
 }
 
