@@ -18,13 +18,13 @@ pub struct HyprClient {
 
 #[derive(Clone, Debug)]
 pub struct HyprMonitor {
-    pub id: i64,
+    pub id: Option<i64>,
     pub name: String,
 }
 
 #[derive(Clone, Debug)]
 pub struct HyprWorkspace {
-    pub id: i32,
+    pub id: Option<i32>,
     pub name: String,
     pub monitor: HyprMonitor,
 }
@@ -46,9 +46,9 @@ impl Eq for HyprWorkspace {}
 impl HyprWorkspace {
     pub fn get_bar_name(&self) -> String {
         if self.monitor.name != "eDP-1" {
-            format!(" {}", self.id)
+            format!("* {}", self.name)
         } else {
-            self.id.to_string()
+            self.name.to_string()
         }
     }
 }
@@ -145,7 +145,7 @@ pub fn get_monitors() -> anyhow::Result<(Vec<HyprMonitor>, i32)> {
         }
 
         res.push(HyprMonitor {
-            id: id as i64,
+            id: Some(id as i64),
             name: e.get("name").unwrap().as_str().unwrap().to_string(),
         });
     });
@@ -168,10 +168,10 @@ pub fn get_workspaces() -> anyhow::Result<Vec<HyprWorkspace>> {
     if let Some(arr) = json.as_array() {
         arr.iter().for_each(|e| {
             vec.push(HyprWorkspace {
-                id: e.get("id").unwrap().as_i64().unwrap() as i32,
+                id: e.get("id").unwrap().as_i64().map(|i| i as i32),
                 name: e.get("name").unwrap().as_str().unwrap().to_string(),
                 monitor: HyprMonitor {
-                    id: e.get("monitorID").unwrap().as_i64().unwrap(),
+                    id: e.get("monitorID").unwrap().as_i64(),
                     name: e.get("monitor").unwrap().as_str().unwrap().to_string(),
                 },
             });
@@ -193,10 +193,10 @@ pub fn get_active_workspace() -> anyhow::Result<HyprWorkspace> {
 
     match json.as_object() {
         Some(e) => Ok(HyprWorkspace {
-            id: e.get("id").unwrap().as_i64().unwrap() as i32,
+            id: e.get("id").unwrap().as_i64().map(|i| i as i32),
             name: e.get("name").unwrap().as_str().unwrap().to_string(),
             monitor: HyprMonitor {
-                id: e.get("monitorID").unwrap().as_i64().unwrap(),
+                id: e.get("monitorID").unwrap().as_i64(),
                 name: e.get("monitor").unwrap().as_str().unwrap().to_string(),
             },
         }),

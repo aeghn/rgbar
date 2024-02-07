@@ -4,8 +4,10 @@ use crate::blocks::hyprstatus::hyprevents::ParsedEventType::{
 };
 use regex::Regex;
 
-type MonitorType = String;
-type WorkspaceType = String;
+type MonitorNameType = String;
+type MonitorIdType = u64;
+type WorkspaceNameType = String;
+type WorkspaceIdType = String;
 type TitleType = String;
 type ClassType = String;
 type AddressType = String;
@@ -13,13 +15,13 @@ type AddressType = String;
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 #[allow(dead_code)]
 pub enum ParsedEventType {
-    WorkspaceChanged(WorkspaceType),
-    WorkspaceDeleted(WorkspaceType),
-    WorkspaceAdded(WorkspaceType),
-    WorkspaceMoved(WorkspaceType, MonitorType),
+    WorkspaceChanged(WorkspaceNameType),
+    WorkspaceDeleted(WorkspaceNameType),
+    WorkspaceAdded(WorkspaceNameType),
+    WorkspaceMoved(WorkspaceNameType, MonitorNameType),
     ActiveWindowChangedV1(ClassType, TitleType),
     ActiveWindowChangedV2(AddressType),
-    ActiveMonitorChanged(MonitorType, WorkspaceType),
+    ActiveMonitorChanged(MonitorNameType, WorkspaceNameType),
     FullscreenStateChanged,
     MonitorAdded,
     MonitorRemoved,

@@ -1,6 +1,7 @@
 use crate::datahodler::channel::DualChannel;
 use crate::datahodler::channel::MReceiver;
 use crate::datahodler::channel::SSender;
+use crate::statusbar::WidgetShareInfo;
 
 use self::common::get_battery_info;
 use self::ideapad::get_conservation_mode;
@@ -57,8 +58,6 @@ impl BatteryInfo {
         return self.capacity;
     }
 }
-
-
 
 #[derive(Clone)]
 pub enum BatteryOut {
@@ -117,11 +116,7 @@ impl Block for BatteryBlock {
         Ok(())
     }
 
-    fn get_channel(&self) -> (&SSender<Self::In>, &MReceiver<Self::Out>) {
-        self.dualchannel.get_reveled()
-    }
-
-    fn widget(&self) -> gtk::Widget {
+    fn widget(&self, share_info: &WidgetShareInfo) -> gtk::Widget {
         let holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .build();

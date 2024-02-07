@@ -5,12 +5,13 @@ use anyhow::Result;
 use gdk::glib::Cast;
 use gdk::RGBA;
 use glib::MainContext;
-use gtk::prelude::{ BoxExt, StyleContextExt, WidgetExt };
+use gtk::prelude::{BoxExt, StyleContextExt, WidgetExt};
 
 use crate::datahodler::channel::DualChannel;
+use crate::statusbar::WidgetShareInfo;
 use crate::utils::gtk_icon_loader::IconName;
-use crate::utils::{ fileutils, gtk_icon_loader };
-use crate::widgets::chart::{ Chart, LineType, Series };
+use crate::utils::{fileutils, gtk_icon_loader};
+use crate::widgets::chart::{Chart, LineType, Series};
 
 use super::Block;
 
@@ -52,19 +53,19 @@ impl Block for MemoryBlock {
             // htop and such only display equivalent of `mem_used`
             let mem_total_used = mem_total - mem_free;
 
-            sender.send(MemoryOut::MemoryInfo(mem_total, mem_total_used)).unwrap();
+            sender
+                .send(MemoryOut::MemoryInfo(mem_total, mem_total_used))
+                .unwrap();
 
             // dev note: difference between avail and free:
             // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=34e431b0ae398fc54ea69ff85ec700722c9da773
             // same logic as htop
-            let _mem_avail =
-                (
-                    (if mem_state.mem_available != 0 {
-                        min(mem_state.mem_available, mem_state.mem_total)
-                    } else {
-                        mem_state.mem_free
-                    }) as f64
-                ) * 1024.0;
+            let _mem_avail = ((if mem_state.mem_available != 0 {
+                min(mem_state.mem_available, mem_state.mem_total)
+            } else {
+                mem_state.mem_free
+            }) as f64)
+                * 1024.0;
 
             let swap_total = mem_state.swap_total * 1024;
             let swap_free = mem_state.swap_free * 1024;
@@ -77,18 +78,8 @@ impl Block for MemoryBlock {
         Ok(())
     }
 
-    fn get_channel(
-        &self
-    ) -> (
-        &crate::datahodler::channel::SSender<Self::In>,
-        &crate::datahodler::channel::MReceiver<Self::Out>,
-    ) {
-        todo!()
-    }
-
-    fn widget(&self) -> gtk::Widget {
-        let holder = gtk::Box
-            ::builder()
+    fn widget(&self, share_info: &WidgetShareInfo) -> gtk::Widget {
+        let holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .hexpand(false)
             .build();
@@ -102,14 +93,13 @@ impl Block for MemoryBlock {
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
-        let series = Series::new("mem", 100.0, 40, RGBA::new(0.5, 0.8, 1.0, 0.6), false);
+        let series = Series::new("mem", 100.0, 30, RGBA::new(0.5, 0.8, 1.0, 0.6));
         let chart = Chart::builder()
-            .with_width(60)
+            .with_width(30)
             .with_line_width(1.0)
             .with_series(series.clone())
             .with_line_type(LineType::Line);
         chart.draw_in_seconds(1);
-        chart.drawing_box.style_context().add_class("chart-border");
 
         holder.pack_start(&image, false, false, 0);
         holder.pack_end(&chart.drawing_box, false, false, 0);
@@ -152,8 +142,7 @@ impl Memstate {
 
         let mut mem_state = Memstate::default();
 
-        fileutils
-            ::read_lines("/proc/meminfo")
+        fileutils::read_lines("/proc/meminfo")
             .expect("unable to open /proc/meminfo ?")
             .for_each(|line| {
                 let line = line.unwrap_or("".to_string());

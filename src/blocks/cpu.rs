@@ -8,7 +8,7 @@ use gdk::{glib::Cast, RGBA};
 use glib::MainContext;
 use gtk::prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
 
-use crate::utils::gtk_icon_loader;
+use crate::{statusbar::WidgetShareInfo, utils::gtk_icon_loader};
 use crate::utils::gtk_icon_loader::IconName;
 use crate::{
     constants::TriBool,
@@ -67,7 +67,9 @@ impl Block for CpuBlock {
             // Compute utilizations
             let new_cputime = read_proc_stat().unwrap();
             let utilization_avg = new_cputime.0.utilization(cputime.0);
-            sender.send(CpuOut::UtilizationAvg(utilization_avg)).unwrap();
+            sender
+                .send(CpuOut::UtilizationAvg(utilization_avg))
+                .unwrap();
             let mut utilizations = Vec::new();
             if new_cputime.1.len() != cores {}
             for i in 0..cores {
@@ -92,11 +94,7 @@ impl Block for CpuBlock {
         Ok(())
     }
 
-    fn get_channel(&self) -> (&SSender<Self::In>, &MReceiver<Self::Out>) {
-        self.dualchannel.get_reveled()
-    }
-
-    fn widget(&self) -> gtk::Widget {
+    fn widget(&self, share_info: &WidgetShareInfo) -> gtk::Widget {
         let holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .hexpand(false)
@@ -113,14 +111,13 @@ impl Block for CpuBlock {
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
-        let series = Series::new("cpu", 100., 40, RGBA::new(0.5, 0.8, 1.0, 0.6), false);
+        let series = Series::new("cpu", 100., 30, RGBA::new(0.5, 0.8, 1.0, 0.6));
         let chart = Chart::builder()
-            .with_width(60)
+            .with_width(30)
             .with_line_width(1.)
             .with_series(series.clone())
             .with_line_type(LineType::Line);
         chart.draw_in_seconds(1);
-        chart.drawing_box.style_context().add_class("chart-border");
         holder.pack_start(&image, false, false, 0);
         holder.pack_end(&chart.drawing_box, false, false, 0);
 
