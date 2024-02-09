@@ -12,37 +12,35 @@
 }
 
 .wm {
-    background-color: #383838;
     color: #eaeaea;
-    border-radius: 8px;
+
     margin: 3px 3px 3px 3px;
 }
 
 .wm-title {
     color: #ffffff;
-    background-color: #383838;
+    background-color: #101010;
     padding: 0px 10px 0px 5px;
     border: none;
 }
 
-.wss {
-    margin: 2px 2px 2px 2px;
-    border-radius: 8px;
-}
+.wss {}
 
 .ws {
-    background-color: #606060;
+    padding: 0 3px 0 3px;
+    background-color: #101010;
     color: #ffffff;
     border-color: #101010;
-    padding: 0px 6px 0px 6px;
-    margin-right: 2px;
-    border-radius: 8px;
+    border: 1px solid #606060;
+    margin-right: 3px;
     transition: all 0.3s ease;
 }
 
 .ws-focus {
+    padding: 0 3px 0 3px;
     background-color: #aa0000;
-    border-width: 1px;
+    margin-right: 3px;
+
     color: #ffffff;
     transition: all 0.3s ease;
     animation: colored-gradient 10s ease infinite;
@@ -62,10 +60,11 @@
 
 .time-chinese {
     font-size: 10px;
-    padding: 0 2 0 2;
-    margin: 3 3 3 3;
-    background-color: #aa0000;
+    padding: 0 2px 0 2px;
+    margin: 3px 3px 3px 3px;
     color: #ffffff;
+    border: 1px solid #aa0000;
+    border-radius: 4px;
 }
 
 .time-date {

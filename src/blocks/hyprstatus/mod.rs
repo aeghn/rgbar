@@ -267,7 +267,8 @@ impl HyprWidget {
                 let widget = Self::create_workspace_button(workspace);
                 self.ww_vec.borrow_mut().push(widget.clone());
                 self.ws_box.pack_end(&widget.button, false, false, 0);
-                widget            }
+                widget
+            }
             Some(ws) => ws,
         };
     }
@@ -298,12 +299,10 @@ impl HyprWidget {
     fn create_workspace_button(ws: &HyprWorkspace) -> HyprWorkspaceWidget {
         let label = ws.get_bar_name();
 
-        let workspace_button = gtk::Button::builder()
-            .label(label)
-            .name(&ws.name)
-            .build();
+        let workspace_button = gtk::Button::builder().label(label).name(&ws.name).build();
 
         workspace_button.style_context().add_class("ws");
+        let label = workspace_button.label();
 
         workspace_button.connect_clicked(move |but| {
             let id = but.widget_name();
@@ -333,7 +332,8 @@ impl HyprWidget {
     }
 
     fn find_ww(&self, name: &str, match_type: MatchType) -> Option<HyprWorkspaceWidget> {
-        let fount = self.ww_vec
+        let fount = self
+            .ww_vec
             .borrow()
             .iter()
             .find(|e| match match_type {
@@ -460,8 +460,7 @@ impl Block for HyprBlock {
         let in_sender = self.dualchannel.get_in_sender();
         let out_receiver = self.dualchannel.get_out_receiver();
 
-        let hypr_widget =
-            HyprWidget::new(&in_sender, &out_receiver, share_info);
+        let hypr_widget = HyprWidget::new(&in_sender, &out_receiver, share_info);
 
         let _hypr_widget = hypr_widget.clone();
         MainContext::ref_thread_default().spawn_local(async move {
