@@ -5,7 +5,7 @@ use anyhow::Result;
 use gdk::glib::Cast;
 use gdk::RGBA;
 use glib::MainContext;
-use gtk::prelude::{BoxExt, StyleContextExt, WidgetExt};
+use gtk::prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
 
 use crate::datahodler::channel::DualChannel;
 use crate::statusbar::WidgetShareInfo;

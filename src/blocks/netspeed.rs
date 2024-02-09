@@ -134,7 +134,7 @@ impl Block for NetspeedBlock {
 
         let image = gtk_icon_loader::load_image(IconName::WIFI);
 
-        let speed_label: gtk::Label = gtk::Label::builder().hexpand(false).xalign(0.0).build();
+        let speed_label: gtk::Label = gtk::Label::builder().hexpand(false).xalign(1.0).build();
         speed_label.style_context().add_class("netspeed-label");
 
         let up_color = RGBA::new(1.0, 0.8, 0.5, 0.6);
@@ -145,7 +145,7 @@ impl Block for NetspeedBlock {
         down_series.set_baseline_and_height(0.39, -0.37);
         let chart = Chart::builder()
             .with_line_width(1.0)
-            .with_width(80)
+            .with_width(60)
             .with_series(down_series.clone())
             .with_series(up_series.clone())
             .with_line_type(LineType::Pillar);

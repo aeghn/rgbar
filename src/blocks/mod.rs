@@ -1,4 +1,4 @@
-use crate::{datahodler::channel::{MReceiver, SSender}, statusbar::WidgetShareInfo};
+use crate::statusbar::WidgetShareInfo;
 
 mod audio;
 pub mod battery;
