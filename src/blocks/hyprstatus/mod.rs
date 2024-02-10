@@ -10,6 +10,7 @@ use gio::traits::SocketClientExt;
 use gio::{DataInputStream, SocketClient};
 use glib::{Cast, MainContext, Priority};
 use hyprevents::ParsedEventType;
+use std::any::Any;
 use std::cell::RefCell;
 use std::path::Path;
 use std::process::Command;
@@ -21,10 +22,10 @@ use super::Block;
 use crate::blocks::hyprstatus::hyprclients::HyprWorkspace;
 use crate::datahodler::channel::{DualChannel, MReceiver, SSender};
 use crate::utils::gtk_icon_loader::GtkIconLoader;
-use gtk::prelude::ContainerExt;
+use gtk::prelude::{ContainerExt, ImageExt, LabelExt};
 use gtk::traits::WidgetExt;
 use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
-use gtk::Widget;
+use gtk::{Label, Widget};
 use tracing::error;
 use tracing::info;
 
@@ -72,7 +73,7 @@ pub struct HyprWidget {
     monitor_name: Option<String>,
     ww_vec: Rc<RefCell<Vec<HyprWorkspaceWidget>>>,
     ws_box: gtk::Box,
-    ws_title_button: gtk::Button,
+    cw_title: (gtk::Image, Label),
     out_receiver: MReceiver<HyprOut>,
     in_sender: SSender<HyprIn>,
     holder: gtk::Box,
@@ -95,7 +96,8 @@ impl HyprWidget {
 
         holder.pack_start(&ws_box, false, false, 0);
 
-        holder.pack_start(&title_button, false, false, 0);
+        holder.pack_start(&title_button.0, false, false, 0);
+        holder.pack_start(&title_button.1, false, false, 0);
 
         let icon_loader = utils::gtk_icon_loader::GtkIconLoader::new();
 
@@ -104,7 +106,7 @@ impl HyprWidget {
             monitor_name: Default::default(),
             ww_vec: Default::default(),
             ws_box,
-            ws_title_button: title_button,
+            cw_title: title_button,
             out_receiver: out_receiver.clone(),
             in_sender: in_sender.clone(),
             holder,
@@ -205,20 +207,23 @@ impl HyprWidget {
             current_status.current_window_title = title.clone();
         }
 
-        let visiable = self.ws_title_button.is_visible();
+        let visiable = self.cw_title.1.is_visible();
         let is_empty = current_status.current_window_title.is_empty();
 
         if is_empty && visiable {
-            self.ws_title_button.hide();
+            self.cw_title.1.hide();
+            self.cw_title.0.hide();
         }
-        self.ws_title_button.set_label(title.as_str());
+        self.cw_title.1.set_label(title.as_str());
+
+        if let Some(img) = self.icon_loader.load_from_name(&class) {
+            self.cw_title.0.set_from_pixbuf(Some(&img));
+            self.cw_title.0.show();
+        }
 
         if !is_empty && !visiable {
-            self.ws_title_button.show();
+            self.cw_title.1.show();
         }
-
-        let image = self.icon_loader.load_from_name(class.as_str());
-        self.ws_title_button.set_image(image.as_ref());
     }
 
     fn on_active_monitor_changed(&self, monitor: String, workspace: String) {
@@ -302,7 +307,6 @@ impl HyprWidget {
         let workspace_button = gtk::Button::builder().label(label).name(&ws.name).build();
 
         workspace_button.style_context().add_class("ws");
-        let label = workspace_button.label();
 
         workspace_button.connect_clicked(move |but| {
             let id = but.widget_name();
@@ -324,11 +328,18 @@ impl HyprWidget {
         ws_container
     }
 
-    fn create_active_window_button() -> gtk::Button {
-        let active_window = gtk::Button::builder().build();
-        active_window.style_context().add_class("wm-title");
+    fn create_active_window_button() -> (gtk::Image, gtk::Label) {
+        let image = gtk::Image::builder().build();
+        let label = gtk::Label::builder().build();
+        label.style_context().add_class("wm-title");
 
-        active_window
+        label.set_single_line_mode(true);
+        label.set_ellipsize(gdk::pango::EllipsizeMode::End);
+        label.set_lines(1);
+        label.set_line_wrap(true);
+        label.set_line_wrap_mode(gdk::pango::WrapMode::Char);
+
+        (image, label)
     }
 
     fn find_ww(&self, name: &str, match_type: MatchType) -> Option<HyprWorkspaceWidget> {

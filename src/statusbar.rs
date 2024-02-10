@@ -79,6 +79,7 @@ impl StatusBar {
 
     fn build_widgets(&self, window: &ApplicationWindow, share_info: WidgetShareInfo) {
         let bar = gtk::Box::new(Orientation::Horizontal, 10);
+
         bar.style_context().add_class("bar");
         let _share_info = &share_info;
 
@@ -107,6 +108,8 @@ impl StatusBar {
         bar.show_all();
 
         let window = window.clone();
-        glib::idle_add_local_once(move || { window.show(); });
+        glib::idle_add_local_once(move || {
+            window.show();
+        });
     }
 }

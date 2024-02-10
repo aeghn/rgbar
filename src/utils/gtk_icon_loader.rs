@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 use gdk::gdk_pixbuf::Pixbuf;
 
+use gio::Icon;
 use glib::Bytes;
 
 use gtk::traits::IconThemeExt;
@@ -10,7 +11,7 @@ use gtk::Image;
 
 #[derive(Clone)]
 pub struct GtkIconLoader {
-    cache: RefCell<HashMap<String, gtk::Image>>,
+    cache: RefCell<HashMap<String, gtk::gdk_pixbuf::Pixbuf>>,
 }
 
 #[derive(PartialEq, Clone)]
@@ -61,7 +62,7 @@ impl GtkIconLoader {
         }
     }
 
-    pub fn load_from_name(&self, key: &str) -> Option<Image> {
+    pub fn load_from_name(&self, key: &str) -> Option<Pixbuf> {
         let key = Self::map_name(key);
         match self.cache.borrow().get(key) {
             None => {}
@@ -71,16 +72,13 @@ impl GtkIconLoader {
         }
 
         let icon_theme = gtk::IconTheme::default().unwrap();
-        let icon = icon_theme.load_icon(key, 22, gtk::IconLookupFlags::FORCE_SVG);
-        if let Ok(Some(_i)) = icon {
-            let image = Image::from_pixbuf(Some(&_i));
-            self.cache
-                .borrow_mut()
-                .insert(key.to_string(), image.to_owned());
+        let icon = icon_theme.load_icon(key, 24, gtk::IconLookupFlags::FORCE_SVG);
+        if let Ok(Some(pbf)) = icon {
+            self.cache.borrow_mut().insert(key.to_string(), pbf.clone());
             match self.cache.borrow().get(key) {
                 None => None,
-                Some(img) => {
-                    return Some(image.clone());
+                Some(pbf) => {
+                    return Some(pbf.clone());
                 }
             }
         } else {
