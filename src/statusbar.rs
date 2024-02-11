@@ -84,21 +84,27 @@ impl StatusBar {
         let _share_info = &share_info;
 
         let time = self.block_manager.time_block.widget(_share_info);
+        time.style_context().add_class("block");
         bar.pack_end(&time, false, false, 0);
 
         let battery = self.block_manager.battery_block.widget(_share_info);
+        battery.style_context().add_class("block");
         bar.pack_end(&battery, false, false, 0);
 
         let volume = self.block_manager.vol_block.widget(_share_info);
+        volume.style_context().add_class("block");
         bar.pack_end(&volume, false, false, 0);
 
         let cpu = self.block_manager.cpu_block.widget(_share_info);
+        cpu.style_context().add_class("block");
         bar.pack_end(&cpu, false, false, 0);
 
         let memory = self.block_manager.memory_block.widget(_share_info);
+        memory.style_context().add_class("block");
         bar.pack_end(&memory, false, false, 0);
 
         let netspeed = self.block_manager.net_block.widget(_share_info);
+        netspeed.style_context().add_class("block");
         bar.pack_end(&netspeed, false, false, 0);
 
         let hyprstatus = self.block_manager.hypr_block.widget(_share_info);

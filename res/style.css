@@ -48,8 +48,7 @@
 
 .block {
     color: #eaeaea;
-    background-color: #101010;
-    border: solid 1px #606060;
+    padding-left: 20px;
 }
 
 .netspeed-label {

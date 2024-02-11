@@ -117,24 +117,24 @@ pub fn load_pixbuf_at(icon_name: IconName, size: i32) -> Pixbuf {
         IconName::WIFI => fc(include_bytes!("../../res/icons/wifi.svg")),
 
         IconName::BatteryFull => fc(include_bytes!("../../res/icons/battery-full.svg")),
-        IconName::BatteryHigh => fc(include_bytes!("../../res/icons/battery-full.svg")),
-        IconName::BatteryMid => fc(include_bytes!("../../res/icons/battery-full.svg")),
-        IconName::BatteryLow => fc(include_bytes!("../../res/icons/battery-full.svg")),
-        IconName::BatteryEmpty => fc(include_bytes!("../../res/icons/battery-full.svg")),
-        IconName::BatteryUnk => fc(include_bytes!("../../res/icons/battery-full.svg")),
+        IconName::BatteryHigh => fc(include_bytes!("../../res/icons/battery-high.svg")),
+        IconName::BatteryMid => fc(include_bytes!("../../res/icons/battery-medium.svg")),
+        IconName::BatteryLow => fc(include_bytes!("../../res/icons/battery-low.svg")),
+        IconName::BatteryEmpty => fc(include_bytes!("../../res/icons/battery-empty.svg")),
+        IconName::BatteryUnk => fc(include_bytes!("../../res/icons/battery-empty.svg")),
 
-        IconName::BattetyPSCharging => fc(include_bytes!("../../res/icons/battery-connected.svg")),
+        IconName::BattetyPSCharging => fc(include_bytes!("../../res/icons/battery-charging.svg")),
         IconName::BatteryPSNotCharging => {
             fc(include_bytes!("../../res/icons/battery-connected.svg"))
         }
         IconName::BatteryPSDisconnected => {
-            fc(include_bytes!("../../res/icons/battery-connected.svg"))
+            fc(include_bytes!("../../res/icons/battery-disconnected.svg"))
         }
         IconName::BatteryPSUnk => fc(include_bytes!("../../res/icons/battery-connected.svg")),
 
         IconName::BatteryCMOn => fc(include_bytes!("../../res/icons/battery-conser.svg")),
-        IconName::BatteryCMOff => fc(include_bytes!("../../res/icons/battery-conser.svg")),
-        IconName::BatteryCMUnk => fc(include_bytes!("../../res/icons/battery-conser.svg")),
+        IconName::BatteryCMOff => fc(include_bytes!("../../res/icons/battery-not-conser.svg")),
+        IconName::BatteryCMUnk => fc(include_bytes!("../../res/icons/battery-not-conser.svg")),
 
         IconName::Headphone => fc(include_bytes!(
             "../../res/icons/audio-headphones-symbolic.svg"
