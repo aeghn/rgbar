@@ -1,62 +1,8 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
-<svg
-   width="32"
-   height="32"
-   viewBox="0 0 8.4666666 8.4666666"
-   version="1.1"
-   id="svg1"
-   inkscape:version="1.3.2 (091e20ef0f, 2023-11-25, custom)"
-   sodipodi:docname="battery-disconnected.svg"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
-  <sodipodi:namedview
-     id="namedview1"
-     pagecolor="#ffffff"
-     bordercolor="#999999"
-     borderopacity="1"
-     inkscape:showpageshadow="0"
-     inkscape:pageopacity="0"
-     inkscape:pagecheckerboard="0"
-     inkscape:deskcolor="#d1d1d1"
-     inkscape:document-units="px"
-     inkscape:zoom="7.4407836"
-     inkscape:cx="-2.8222834"
-     inkscape:cy="21.032731"
-     inkscape:window-width="1919"
-     inkscape:window-height="1079"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
-  <defs
-     id="defs1" />
-  <g
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
-     id="layer1">
-    <rect
-       style="fill:#ffffff;fill-opacity:1;stroke-width:0.289055"
-       id="rect2"
-       width="1.3353895"
-       height="9.3620338"
-       x="-0.68178016"
-       y="1.3058039"
-       ry="1.4148265"
-       rx="1.0583333"
-       transform="rotate(-45.134802)" />
-    <rect
-       style="fill:#ffffff;fill-opacity:1;stroke-width:0.289055"
-       id="rect2-5"
-       width="1.3353895"
-       height="9.3620338"
-       x="-6.6545157"
-       y="-4.6951027"
-       ry="1.4148265"
-       rx="1.0583333"
-       transform="matrix(-0.70544119,-0.70876846,-0.70876846,0.70544119,0,0)" />
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-unplug">
+   <path d="m19 5 3-3"/>
+   <path d="m2 22 3-3"/>
+   <path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/>
+   <path d="M7.5 13.5 10 11"/>
+   <path d="M10.5 16.5 13 14"/>
+   <path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z"/>
 </svg>

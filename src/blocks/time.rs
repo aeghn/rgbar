@@ -87,16 +87,16 @@ impl Block for TimeBlock {
         Ok(())
     }
 
-    fn widget(&self, share_info: &WidgetShareInfo) -> gtk::Widget {
+    fn widget(&self, _share_info: &WidgetShareInfo) -> gtk::Widget {
         let holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .valign(gtk::Align::Center)
             .vexpand(false)
             .build();
 
-        let (_, cnm, cnd) = Self::get_chinese_date();
+        let (_, _cnm, cnd) = Self::get_chinese_date();
         let cn_date = gtk::Label::builder()
-            .label(format!("{}\n{}", cnm, cnd))
+            .label(format!("{}", cnd))
             .vexpand(false)
             .build();
         cn_date.style_context().add_class("time-chinese");
@@ -108,11 +108,7 @@ impl Block for TimeBlock {
         cn_holder.pack_start(&cn_date, false, false, 0);
 
         let wes_date = gtk::Label::builder()
-            .label(format!(
-                "{}\n{}",
-                Self::get_wes_time().0,
-                Self::get_wes_time().1
-            ))
+            .label(format!("{}", Self::get_wes_time().1))
             .vexpand(false)
             .build();
         wes_date.style_context().add_class("time-date");
@@ -126,11 +122,11 @@ impl Block for TimeBlock {
                 match mreceiver.recv().await {
                     Ok(msg) => {
                         match msg {
-                            TimeOut::Chinese((_, m, d)) => {
-                                cn_date.set_label(format!("{}\n{}", m, d).as_str());
+                            TimeOut::Chinese((_, _m, d)) => {
+                                cn_date.set_label(format!("{}", d).as_str());
                             }
-                            TimeOut::Westen(d, t) => {
-                                wes_date.set_label(format!("{}\n{}", d, t).as_str());
+                            TimeOut::Westen(_d, t) => {
+                                wes_date.set_label(format!("{}", t).as_str());
                                 // wes_t.set_label(d.as_str());
                             }
                         }

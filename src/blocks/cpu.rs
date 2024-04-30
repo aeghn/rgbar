@@ -8,14 +8,14 @@ use gdk::{glib::Cast, RGBA};
 use glib::MainContext;
 use gtk::prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
 
-use crate::{statusbar::WidgetShareInfo, utils::gtk_icon_loader};
-use crate::utils::gtk_icon_loader::IconName;
+use crate::utils::gtkiconloader::IconName;
 use crate::{
     constants::TriBool,
-    datahodler::channel::{DualChannel, MReceiver, SSender},
+    datahodler::channel::DualChannel,
     utils::fileutils,
     widgets::chart::{Chart, LineType, Series},
 };
+use crate::{statusbar::WidgetShareInfo, utils::gtkiconloader};
 
 use super::Block;
 
@@ -94,13 +94,13 @@ impl Block for CpuBlock {
         Ok(())
     }
 
-    fn widget(&self, share_info: &WidgetShareInfo) -> gtk::Widget {
+    fn widget(&self, _: &WidgetShareInfo) -> gtk::Widget {
         let holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .hexpand(false)
             .build();
 
-        let image = gtk_icon_loader::load_image(IconName::CPU);
+        let image = gtkiconloader::load_image_at(IconName::CPU, 16);
 
         let label = gtk::Label::builder().label("CPU: ").build();
         label.style_context().add_class("cpu-mem-label");

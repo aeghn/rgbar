@@ -2,15 +2,15 @@ pub mod hyprclients;
 pub mod hyprevents;
 
 use crate::statusbar::WidgetShareInfo;
-use crate::utils;
+use crate::utils::{self};
 use anyhow::anyhow;
-use gdk::prelude::MonitorExt;
+
 use gio::prelude::{DataInputStreamExtManual, IOStreamExtManual};
 use gio::traits::SocketClientExt;
 use gio::{DataInputStream, SocketClient};
 use glib::{Cast, MainContext, Priority};
 use hyprevents::ParsedEventType;
-use std::any::Any;
+
 use std::cell::RefCell;
 use std::path::Path;
 use std::process::Command;
@@ -21,7 +21,7 @@ use self::hyprclients::HyprMonitor;
 use super::Block;
 use crate::blocks::hyprstatus::hyprclients::HyprWorkspace;
 use crate::datahodler::channel::{DualChannel, MReceiver, SSender};
-use crate::utils::gtk_icon_loader::GtkIconLoader;
+use crate::utils::gtkiconloader::GtkIconLoader;
 use gtk::prelude::{ContainerExt, ImageExt, LabelExt};
 use gtk::traits::WidgetExt;
 use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
@@ -49,8 +49,8 @@ pub struct HyprCurrentStatus {
 }
 
 impl HyprCurrentStatus {
-    pub fn get_current_monitor(&self) -> &HyprMonitor {
-        self.current_monitor.as_ref().unwrap()
+    pub fn get_current_monitor(&self) -> Option<HyprMonitor> {
+        self.current_monitor.clone()
     }
 }
 
@@ -90,23 +90,23 @@ impl HyprWidget {
         let holder = gtk::Box::new(gtk::Orientation::Horizontal, 0);
 
         let ws_box = Self::create_workspace_container();
-        let title_button = Self::create_active_window_button();
+        let title_container = Self::create_active_window_container();
 
         holder.style_context().add_class("wm");
 
         holder.pack_start(&ws_box, false, false, 0);
 
-        holder.pack_start(&title_button.0, false, false, 0);
-        holder.pack_start(&title_button.1, false, false, 0);
+        holder.pack_start(&title_container.0, false, false, 0);
+        holder.pack_start(&title_container.1, false, false, 0);
 
-        let icon_loader = utils::gtk_icon_loader::GtkIconLoader::new();
+        let icon_loader = utils::gtkiconloader::GtkIconLoader::new();
 
         HyprWidget {
             monitor_id: share_info.monitor.clone(),
             monitor_name: Default::default(),
             ww_vec: Default::default(),
             ws_box,
-            cw_title: title_button,
+            cw_title: title_container,
             out_receiver: out_receiver.clone(),
             in_sender: in_sender.clone(),
             holder,
@@ -183,9 +183,11 @@ impl HyprWidget {
         }
 
         let ww = self.show_workspace(workspace.clone(), MatchType::Name);
-        let style = ww.style_context();
-        if !style.has_class("ws-focus") {
-            style.add_class("ws-focus");
+        if let Some(ww) = ww {
+            let style = ww.style_context();
+            if !style.has_class("ws-focus") {
+                style.add_class("ws-focus");
+            }
         }
 
         self.current_status.borrow_mut().current_workspace_name = workspace.clone();
@@ -199,7 +201,7 @@ impl HyprWidget {
         self.show_workspace(workspace, MatchType::Name);
     }
 
-    fn on_workspace_moved(&self, ws: String, monitor: String) {}
+    fn on_workspace_moved(&self, _ws: String, _monitor: String) {}
 
     fn on_active_window_changed_v1(&self, class: String, title: String) {
         let mut current_status = self.current_status.borrow_mut();
@@ -237,37 +239,41 @@ impl HyprWidget {
         self.on_workspace_changed(&workspace);
     }
 
-    fn show_workspace(&self, workspace_name: String, match_type: MatchType) -> gtk::Button {
-        let current_monitor = self.current_status.borrow().get_current_monitor().clone();
+    fn show_workspace(&self, workspace_name: String, match_type: MatchType) -> Option<gtk::Button> {
+        let current_monitor = self.current_status.borrow().get_current_monitor();
 
         let b = self.find_ww(workspace_name.as_str(), match_type);
 
-        let but = match b {
-            Some(but) => but.clone(),
-            None => {
-                let hypr_ws = HyprWorkspace {
-                    id: None,
-                    name: workspace_name,
-                    monitor: current_monitor.clone(),
-                };
-                let hww = Self::create_workspace_button(&hypr_ws);
+        if let Some(mon) = current_monitor {
+            let but = match b {
+                Some(but) => but.clone(),
+                None => {
+                    let hypr_ws = HyprWorkspace {
+                        id: None,
+                        name: workspace_name,
+                        monitor: mon.clone(),
+                    };
+                    let hww = Self::create_workspace_button(&hypr_ws);
 
-                self.ww_vec.borrow_mut().push(hww.clone());
-                self.ws_box.pack_end(&hww.button, false, false, 0);
+                    self.ww_vec.borrow_mut().push(hww.clone());
+                    self.ws_box.pack_end(&hww.button, false, false, 0);
 
-                hww
-            }
-        };
+                    hww
+                }
+            };
 
-        Self::reorder_workspaces(&self.ws_box);
+            Self::reorder_workspaces(&self.ws_box);
 
-        but.button.show();
+            but.button.show();
 
-        but.button
+            Some(but.button)
+        } else {
+            None
+        }
     }
 
     fn add_workspace_directly(&self, workspace: &HyprWorkspace) {
-        let ws = match self.find_ww(workspace.name.as_str(), MatchType::Name) {
+        let _ws = match self.find_ww(workspace.name.as_str(), MatchType::Name) {
             None => {
                 let widget = Self::create_workspace_button(workspace);
                 self.ww_vec.borrow_mut().push(widget.clone());
@@ -328,7 +334,7 @@ impl HyprWidget {
         ws_container
     }
 
-    fn create_active_window_button() -> (gtk::Image, gtk::Label) {
+    fn create_active_window_container() -> (gtk::Image, gtk::Label) {
         let image = gtk::Image::builder().build();
         let label = gtk::Label::builder().build();
         label.style_context().add_class("wm-title");

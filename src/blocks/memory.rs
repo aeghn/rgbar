@@ -9,8 +9,8 @@ use gtk::prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
 
 use crate::datahodler::channel::DualChannel;
 use crate::statusbar::WidgetShareInfo;
-use crate::utils::gtk_icon_loader::IconName;
-use crate::utils::{fileutils, gtk_icon_loader};
+use crate::utils::gtkiconloader::IconName;
+use crate::utils::{fileutils, gtkiconloader};
 use crate::widgets::chart::{Chart, LineType, Series};
 
 use super::Block;
@@ -78,13 +78,13 @@ impl Block for MemoryBlock {
         Ok(())
     }
 
-    fn widget(&self, share_info: &WidgetShareInfo) -> gtk::Widget {
+    fn widget(&self, _share_info: &WidgetShareInfo) -> gtk::Widget {
         let holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .hexpand(false)
             .build();
 
-        let image = gtk_icon_loader::load_image(IconName::RAM);
+        let image = gtkiconloader::load_image_at(IconName::RAM, 18);
 
         let label = gtk::Label::builder().label("MEM: ").build();
         label.style_context().add_class("cpu-mem-label");

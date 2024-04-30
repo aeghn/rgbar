@@ -3,11 +3,8 @@ use std::collections::HashMap;
 
 use gdk::gdk_pixbuf::Pixbuf;
 
-use gio::Icon;
-use glib::Bytes;
-
+use gtk::prelude::{StyleContextExt, WidgetExt};
 use gtk::traits::IconThemeExt;
-use gtk::Image;
 
 #[derive(Clone)]
 pub struct GtkIconLoader {
@@ -34,7 +31,7 @@ pub enum IconName {
 
     BatteryCMOn,
     BatteryCMOff,
-    BatteryCMUnk,
+    BatteryCMUnknown,
 
     Headphone,
     Headset,
@@ -72,7 +69,7 @@ impl GtkIconLoader {
         }
 
         let icon_theme = gtk::IconTheme::default().unwrap();
-        let icon = icon_theme.load_icon(key, 24, gtk::IconLookupFlags::FORCE_SVG);
+        let icon = icon_theme.load_icon(key, 18, gtk::IconLookupFlags::FORCE_SVG);
         if let Ok(Some(pbf)) = icon {
             self.cache.borrow_mut().insert(key.to_string(), pbf.clone());
             match self.cache.borrow().get(key) {
@@ -87,12 +84,37 @@ impl GtkIconLoader {
     }
 }
 
-pub fn load_image(icon_name: IconName) -> Image {
-    Image::from_pixbuf(Some(&load_pixbuf(icon_name)))
+pub fn load_label(icon_name: IconName) -> &'static str {
+    match icon_name {
+        IconName::CPU => "",
+        IconName::RAM => "",
+        IconName::WIFI => "",
+        IconName::BatteryFull => "",
+        IconName::BatteryHigh => "",
+        IconName::BatteryMid => "",
+        IconName::BatteryLow => "",
+        IconName::BatteryEmpty => "",
+        IconName::BatteryUnk => "",
+        IconName::BattetyPSCharging => "",
+        IconName::BatteryPSNotCharging => "",
+        IconName::BatteryPSDisconnected => "",
+        IconName::BatteryPSUnk => "",
+        IconName::BatteryCMOn => "",
+        IconName::BatteryCMOff => "",
+        IconName::BatteryCMUnknown => "",
+        IconName::Headphone => "",
+        IconName::Headset => "",
+        IconName::VolumeHigh => "",
+        IconName::VolumeMidium => "",
+        IconName::VolumeLow => "",
+        IconName::VolumeMute => "",
+    }
 }
 
-pub fn load_image_at(icon_name: IconName, size: i32) -> Image {
-    Image::from_pixbuf(Some(&load_pixbuf_at(icon_name, size)))
+pub fn load_image_at(icon_name: IconName, _size: i32) -> gtk::Label {
+    let label = gtk::Label::builder().label(load_label(icon_name)).build();
+    label.style_context().add_class("lucide");
+    label
 }
 
 pub fn load_pixbuf_at(icon_name: IconName, size: i32) -> Pixbuf {
@@ -134,7 +156,7 @@ pub fn load_pixbuf_at(icon_name: IconName, size: i32) -> Pixbuf {
 
         IconName::BatteryCMOn => fc(include_bytes!("../../res/icons/battery-conser.svg")),
         IconName::BatteryCMOff => fc(include_bytes!("../../res/icons/battery-not-conser.svg")),
-        IconName::BatteryCMUnk => fc(include_bytes!("../../res/icons/battery-not-conser.svg")),
+        IconName::BatteryCMUnknown => fc(include_bytes!("../../res/icons/battery-not-conser.svg")),
 
         IconName::Headphone => fc(include_bytes!(
             "../../res/icons/audio-headphones-symbolic.svg"
@@ -156,5 +178,5 @@ pub fn load_pixbuf_at(icon_name: IconName, size: i32) -> Pixbuf {
 }
 
 pub fn load_pixbuf(icon_name: IconName) -> Pixbuf {
-    load_pixbuf_at(icon_name, 16)
+    load_pixbuf_at(icon_name, 20)
 }

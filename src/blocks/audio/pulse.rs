@@ -17,11 +17,11 @@ use std::borrow::Cow;
 use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
+use std::io;
 use std::os::fd::RawFd;
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
-use std::{default, io};
 
 use anyhow::Result;
 use smart_default::SmartDefault;
@@ -373,7 +373,7 @@ impl Client {
 
 impl Device {
     pub(super) fn new(device_kind: DeviceKind, name: Option<String>) -> Result<Self> {
-        let (mut tx, rx) = async_channel::unbounded();
+        let (tx, rx) = async_channel::unbounded();
         EVENT_LISTENER.lock().unwrap().push(tx);
 
         Client::send(ClientRequest::GetDefaultDevice)?;
@@ -489,9 +489,7 @@ impl SoundDevice for Device {
 
     async fn wait_for_update(&self) -> Result<()> {
         match self.updates.recv().await {
-            Ok(_) => {
-                Ok(())
-            },
+            Ok(_) => Ok(()),
             Err(_) => Err(anyhow!("unable to get update")),
         }
     }

@@ -1,23 +1,23 @@
 use crate::datahodler::channel::DualChannel;
-use crate::datahodler::channel::MReceiver;
-use crate::datahodler::channel::SSender;
+
 use crate::statusbar::WidgetShareInfo;
+use crate::utils::gtkiconloader::load_label;
 
 use self::common::get_battery_info;
 use self::ideapad::get_conservation_mode;
 use self::ideapad::ConvervationMode;
 
 use super::Block;
-use crate::utils::gtk_icon_loader;
-use crate::utils::gtk_icon_loader::IconName;
+use crate::utils::gtkiconloader;
+use crate::utils::gtkiconloader::IconName;
 use gdk::glib::Cast;
 use glib::clone;
 use glib::MainContext;
-use gtk::prelude::ContainerExt;
+
+use gtk::prelude::BoxExt;
 use gtk::prelude::LabelExt;
 use gtk::prelude::StyleContextExt;
 use gtk::prelude::WidgetExt;
-use gtk::prelude::{BoxExt, ImageExt};
 use tracing::warn;
 
 mod common;
@@ -116,38 +116,26 @@ impl Block for BatteryBlock {
         Ok(())
     }
 
-    fn widget(&self, share_info: &WidgetShareInfo) -> gtk::Widget {
+    fn widget(&self, _share_info: &WidgetShareInfo) -> gtk::Widget {
         let holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .build();
 
-        let battery_status_image =
-            gtk::Image::from_pixbuf(Some(&gtk_icon_loader::load_pixbuf(IconName::BatteryUnk)));
+        let battery_status_image = gtkiconloader::load_image_at(IconName::BatteryMid, 16);
+        battery_status_image.style_context().add_class("f-20");
 
         let battery_percent_value = gtk::Label::builder().build();
         battery_percent_value
             .style_context()
             .add_class("battery-label");
 
-        let convervation_image = gtk::Image::from_pixbuf(Some(&gtk_icon_loader::load_pixbuf_at(
-            IconName::BatteryCMUnk,
-            10,
-        )));
-        let power_status_image = gtk::Image::from_pixbuf(Some(&gtk_icon_loader::load_pixbuf_at(
-            IconName::BatteryPSDisconnected,
-            10,
-        )));
+        let convervation_image = gtkiconloader::load_image_at(IconName::BatteryCMOn, 16);
 
-        let vbox = gtk::Box::builder()
-            .orientation(gtk::Orientation::Vertical)
-            .vexpand(true)
-            .valign(gtk::Align::Center)
-            .build();
-        vbox.add(&power_status_image);
-        vbox.add(&convervation_image);
+        let power_status_image = gtkiconloader::load_image_at(IconName::BatteryPSUnk, 16);
 
         holder.pack_start(&battery_status_image, false, false, 0);
-        holder.pack_start(&vbox, false, false, 0);
+        holder.pack_start(&power_status_image, false, false, 0);
+        holder.pack_start(&convervation_image, false, false, 0);
         holder.pack_start(&battery_percent_value, false, false, 0);
 
         let mut percent = 0;
@@ -166,11 +154,9 @@ impl Block for BatteryBlock {
                                 let mapped = match cm_status {
                                     ConvervationMode::Enable => IconName::BatteryCMOn,
                                     ConvervationMode::Disable => IconName::BatteryCMOff,
-                                    ConvervationMode::Unknown => IconName::BatteryCMUnk,
+                                    ConvervationMode::Unknown => IconName::BatteryCMUnknown,
                                 };
-                                convervation_image.set_from_pixbuf(Some(
-                                    &gtk_icon_loader::load_pixbuf_at(mapped, 10),
-                                ));
+                                convervation_image.set_label(&load_label(mapped))
                             }
                         }
                         BatteryOut::BatteryInfo(bi) => {
@@ -185,8 +171,7 @@ impl Block for BatteryBlock {
                                     _ => IconName::BatteryFull,
                                 };
 
-                                battery_status_image
-                                    .set_from_pixbuf(Some(&gtk_icon_loader::load_pixbuf(mapped)));
+                                battery_status_image.set_label(&load_label(mapped));
 
                                 percent = status;
                             }
@@ -204,9 +189,7 @@ impl Block for BatteryBlock {
                                     PowerStatus::Unknown => IconName::BatteryPSUnk,
                                 };
 
-                                power_status_image.set_from_pixbuf(Some(
-                                    &gtk_icon_loader::load_pixbuf_at(mapped, 10),
-                                ));
+                                power_status_image.set_label(&load_label(mapped))
                             }
                         }
                         BatteryOut::UnknownBatteryInfo => todo!(),

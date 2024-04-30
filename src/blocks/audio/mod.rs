@@ -4,15 +4,15 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     datahodler::channel::{DualChannel, MSender},
-    utils::{channel_utils, gtk_icon_loader},
+    utils::gtkiconloader::{self, load_label, IconName},
 };
 
 use self::pulse::Device;
 
 use anyhow::Result;
-use gio::Volume;
-use glib::{Cast, ControlFlow, MainContext};
-use gtk::prelude::{BoxExt, ImageExt, LabelExt, StyleContextExt, WidgetExt, WidgetExtManual};
+
+use glib::{Cast, MainContext};
+use gtk::prelude::{BoxExt, LabelExt, WidgetExt};
 
 use super::Block;
 
@@ -152,17 +152,10 @@ impl Block for PulseBlock {
             .build();
 
         let volume = gtk::Label::builder().build();
-        let headphone_icon = gtk::Image::builder().build();
-        let vol_icon = gtk::Image::builder().build();
-        vol_icon.style_context().add_class("botton-icon");
+        let headphone_icon = gtkiconloader::load_image_at(IconName::Headphone, 16);
+        let vol_icon = gtkiconloader::load_image_at(IconName::VolumeMidium, 16);
 
-        headphone_icon.set_from_pixbuf(Some(&gtk_icon_loader::load_pixbuf_at(
-            gtk_icon_loader::IconName::Headphone,
-            14,
-        )));
-        headphone_icon.style_context().add_class("botton-icon");
         holder.pack_start(&headphone_icon, false, false, 0);
-
 
         holder.pack_start(&vol_icon, false, false, 0);
         holder.pack_start(&volume, false, false, 0);
@@ -173,7 +166,6 @@ impl Block for PulseBlock {
                 match receiver.recv().await {
                     Ok(msg) => {
                         if let PulseWM::Full(mute, vol, headphone) = msg {
-                            
                             if headphone {
                                 if !headphone_icon.is_visible() {
                                     headphone_icon.show();
@@ -183,36 +175,17 @@ impl Block for PulseBlock {
                             }
 
                             if mute {
-                                vol_icon.set_from_pixbuf(Some(&gtk_icon_loader::load_pixbuf_at(
-                                    gtk_icon_loader::IconName::VolumeMute,
-                                    14,
-                                )));
+                                vol_icon.set_label(&load_label(gtkiconloader::IconName::VolumeMute))
                             } else {
                                 match vol {
-                                    0..=30 => {
-                                        vol_icon.set_from_pixbuf(Some(
-                                            &gtk_icon_loader::load_pixbuf_at(
-                                                gtk_icon_loader::IconName::VolumeLow,
-                                                14,
-                                            ),
-                                        ));
-                                    }
-                                    31..=65 => {
-                                        vol_icon.set_from_pixbuf(Some(
-                                            &gtk_icon_loader::load_pixbuf_at(
-                                                gtk_icon_loader::IconName::VolumeMidium,
-                                                14,
-                                            ),
-                                        ));
-                                    }
-                                    31.. => {
-                                        vol_icon.set_from_pixbuf(Some(
-                                            &gtk_icon_loader::load_pixbuf_at(
-                                                gtk_icon_loader::IconName::VolumeHigh,
-                                                14,
-                                            ),
-                                        ));
-                                    }
+                                    0..=30 => vol_icon
+                                        .set_label(&load_label(gtkiconloader::IconName::VolumeLow)),
+                                    31..=65 => vol_icon.set_label(&load_label(
+                                        gtkiconloader::IconName::VolumeMidium,
+                                    )),
+                                    31.. => vol_icon.set_label(&load_label(
+                                        gtkiconloader::IconName::VolumeHigh,
+                                    )),
                                 }
                             }
 

@@ -1,40 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-   height="16px"
-   viewBox="0 0 16 16"
-   width="16px"
-   version="1.1"
-   id="svg1"
-   sodipodi:docname="battery-empty.svg"
-   inkscape:version="1.3.2 (091e20ef0f, 2023-11-25, custom)"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
-  <defs
-     id="defs1" />
-  <sodipodi:namedview
-     id="namedview1"
-     pagecolor="#ffffff"
-     bordercolor="#999999"
-     borderopacity="1"
-     inkscape:showpageshadow="0"
-     inkscape:pageopacity="0"
-     inkscape:pagecheckerboard="0"
-     inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="16.3125"
-     inkscape:cx="7.9693487"
-     inkscape:cy="7.9693487"
-     inkscape:window-width="1909"
-     inkscape:window-height="1008"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="svg1" />
-  <path
-     d="M 7,0 C 6,0 6,1 6,1 V 2 H 5 C 5,2 4.292969,1.984375 3.550781,2.355469 2.8125,2.726562 2,3.667969 2,5 v 8 C 2,13 1.984375,13.707031 2.355469,14.449219 2.726562,15.1875 3.667969,16 5,16 h 6 c 0,0 0.707031,0.01563 1.449219,-0.355469 C 13.1875,15.273438 14,14.332031 14,13 V 5 C 14,3.667969 13.1875,2.726562 12.449219,2.355469 11.707031,1.984375 11,2 11,2 H 10 V 1 C 10,0 9,0 9,0 Z M 5,4 h 6 c 0.554688,0 1,0.445312 1,1 v 8 c 0,0.554688 -0.445312,1 -1,1 H 5 C 4.445312,14 4,13.554688 4,13 V 5 C 4,4.445312 4.445312,4 5,4 Z"
-     fill="#2e3434"
-     id="path1"
-     style="fill:#f06060;fill-opacity:1"
-     sodipodi:nodetypes="sccccsccsccsscccscssssssssss" />
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-battery">
+   <rect width="16" height="10" x="2" y="7" rx="2" ry="2"/>
+   <line x1="22" x2="22" y1="11" y2="13"/>
 </svg>
