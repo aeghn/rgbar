@@ -17,12 +17,19 @@ pub enum LineType {
 }
 
 #[derive(Clone)]
+pub enum BaselineType {
+    None,
+    FixedPercent(f64),
+    Upon,
+}
+
+#[derive(Clone)]
 pub struct Series<E: Into<f64> + Clone> {
     _id: String,
     max_value: E,
     ring: Ring<E>,
     color: RGBA,
-    baseline_percent: f64,
+    baseline_type: BaselineType,
     height_percent: f64,
 }
 
@@ -33,7 +40,7 @@ impl<E: Into<f64> + Clone> Series<E> {
             max_value,
             ring: Ring::new(ring_size),
             color,
-            baseline_percent: 0.0,
+            baseline_type: BaselineType::FixedPercent(0.0),
             height_percent: 1.0,
         }
     }
@@ -43,7 +50,7 @@ impl<E: Into<f64> + Clone> Series<E> {
     }
 
     pub fn set_baseline_and_height(&mut self, base: f64, height: f64) {
-        self.baseline_percent = base;
+        self.baseline_type = BaselineType::FixedPercent(base);
         self.height_percent = height;
     }
 }
@@ -68,8 +75,6 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
 
         drawing_box.pack_start(&drawing_area, true, true, 0);
         drawing_box.style_context().add_class("chart-border");
-
-        drawing_box.set_height_request(16);
 
         Self {
             drawing_area,
@@ -114,6 +119,18 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         let max_ring_size = series.iter().map(|s| s.ring.size).max().unwrap_or(30);
         let interval = 1.0 / ((max_ring_size - 2) as f64);
 
+        let min_baseline = series
+            .iter()
+            .filter_map(|s| match s.baseline_type {
+                BaselineType::None => None,
+                BaselineType::FixedPercent(per) => Some(per),
+                BaselineType::Upon => None,
+            })
+            .min_by(|s, o| f64::total_cmp(s, o))
+            .unwrap_or(0.0);
+
+        let mut last_serie_points: Vec<(f64, f64)> = vec![];
+
         for serie in series {
             let (point_height, max) = Self::scale(&serie);
 
@@ -121,8 +138,15 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
                 continue;
             }
 
-            let transform_y =
-                |v: f64| (1. - (v * serie.height_percent + serie.baseline_percent)) * height;
+            let transform_y = |v: f64| {
+                (1. - (v * serie.height_percent
+                    + if let BaselineType::FixedPercent(per) = serie.baseline_type {
+                        per
+                    } else {
+                        min_baseline
+                    }))
+                    * height
+            };
 
             let transform_x = |v| (1.0 - v as f64 * interval) * width;
 
@@ -131,16 +155,29 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
             cr.move_to(start.0, start.1);
             cr.set_source_rgb(serie.color.red(), serie.color.green(), serie.color.blue());
 
-            let mut end = start.clone();
+            let mut this_serie_points = vec![];
+            let mut cur = start.clone();
+            this_serie_points.push(cur.clone());
             for (i, ele) in point_height.iter().skip(1).enumerate() {
-                end = (transform_x(i + 1), transform_y(ele.clone()));
-                cr.line_to(end.0.clone(), end.1.clone());
+                cur = (transform_x(i + 1), transform_y(ele.clone()));
+                this_serie_points.push(cur.clone());
+                cr.line_to(cur.0.clone(), cur.1.clone());
             }
             cr.stroke_preserve().unwrap();
 
-            cr.line_to(end.0, transform_y(0.));
-            cr.line_to(start.0, transform_y(0.));
-            cr.line_to(start.0, start.1);
+            match serie.baseline_type {
+                BaselineType::None => {}
+                BaselineType::FixedPercent(_) => {
+                    cr.line_to(cur.0, transform_y(0.));
+                    cr.line_to(start.0, transform_y(0.));
+                    cr.line_to(start.0, start.1);
+                }
+                BaselineType::Upon => {
+                    last_serie_points.iter().rev().for_each(|e| {
+                        cr.line_to(e.0, e.1);
+                    });
+                }
+            }
 
             cr.set_source_rgba(
                 serie.color.red(),
@@ -155,10 +192,12 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
             if max > max_default * 1.1 {
                 let v = transform_y(max_default / max);
                 cr.move_to(start.0, v);
-                cr.line_to(end.0, v);
+                cr.line_to(cur.0, v);
                 cr.set_source_rgba(1.0, 0.3, 0.3, 0.8);
                 cr.stroke().unwrap();
             }
+
+            last_serie_points = this_serie_points;
         }
     }
 
@@ -190,11 +229,6 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
 
         (vec, max)
     }
-
-    /*     pub fn with_height(self, height: i32) -> Self {
-        self.drawing_area.set_height_request(height);
-        self
-    } */
 
     pub fn with_width(self, width: i32) -> Self {
         self.drawing_area.set_width_request(width);

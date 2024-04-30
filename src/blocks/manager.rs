@@ -1,5 +1,6 @@
 use super::{
-    audio::PulseBlock, battery::BatteryBlock, cpu::CpuBlock, hyprstatus::HyprBlock, memory::MemoryBlock, netspeed::NetspeedBlock, time::TimeBlock, Block
+    audio::PulseBlock, battery::BatteryBlock, cpu::CpuBlock, hyprstatus::HyprBlock,
+    memory::MemoryBlock, netspeed::NetspeedBlock, time::TimeBlock, Block,
 };
 
 pub struct BlockManager {

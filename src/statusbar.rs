@@ -81,33 +81,33 @@ impl StatusBar {
         let bar = gtk::Box::new(Orientation::Horizontal, 10);
 
         bar.style_context().add_class("bar");
-        let _share_info = &share_info;
+        let share_info = &share_info;
 
-        let time = self.block_manager.time_block.widget(_share_info);
+        let time = self.block_manager.time_block.widget(share_info);
         time.style_context().add_class("block");
         bar.pack_end(&time, false, false, 0);
 
-        let battery = self.block_manager.battery_block.widget(_share_info);
+        let battery = self.block_manager.battery_block.widget(share_info);
         battery.style_context().add_class("block");
         bar.pack_end(&battery, false, false, 0);
 
-        let volume = self.block_manager.vol_block.widget(_share_info);
+        let volume = self.block_manager.vol_block.widget(share_info);
         volume.style_context().add_class("block");
         bar.pack_end(&volume, false, false, 0);
 
-        let cpu = self.block_manager.cpu_block.widget(_share_info);
+        let cpu = self.block_manager.cpu_block.widget(share_info);
         cpu.style_context().add_class("block");
         bar.pack_end(&cpu, false, false, 0);
 
-        let memory = self.block_manager.memory_block.widget(_share_info);
+        let memory = self.block_manager.memory_block.widget(share_info);
         memory.style_context().add_class("block");
         bar.pack_end(&memory, false, false, 0);
 
-        let netspeed = self.block_manager.net_block.widget(_share_info);
+        let netspeed = self.block_manager.net_block.widget(share_info);
         netspeed.style_context().add_class("block");
         bar.pack_end(&netspeed, false, false, 0);
 
-        let hyprstatus = self.block_manager.hypr_block.widget(_share_info);
+        let hyprstatus = self.block_manager.hypr_block.widget(share_info);
         bar.pack_start(&hyprstatus, false, false, 0);
 
         window.add(&bar);

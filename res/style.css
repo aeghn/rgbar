@@ -1,91 +1,106 @@
 * {
-    font-family: sans-serif;
-    font-weight: normal;
-    font-size: 12px;
-    color: #ffffff;
-    padding: 0px 0px 0px 0px;
-    margin: 0px 0px 0px 0px;
+  color: #fff;
+  padding: 0px 0px 0px 0px;
+  margin: 0px 0px 0px 0px;
+}
+
+button {
+  min-width: 0px;
+  padding: 0px;
+  border: 0px;
 }
 
 .bar {
-    background-color: #101010;
+  background-color: #282828;
 }
 
 .wm {
-    color: #eaeaea;
-
-    margin: 3px 3px 3px 3px;
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  margin: 2px 3px 2px 3px;
 }
 
 .wm-title {
-    color: #ffffff;
-    background-color: #101010;
-    padding: 0px 10px 0px 5px;
-    border: none;
+  color: #fff;
+  background-color: #282828;
+  padding: 0px 5px 0px 5px;
 }
 
-.wss {}
+.wm-cw-icon {
+  margin-left: 5px;
+  padding-left: 10px;
+  border-left: 1px solid #606060;
+}
+
+.wss {
+}
 
 .ws {
-    padding: 0 3px 0 3px;
-    background-color: #101010;
-    color: #ffffff;
-    border-color: #101010;
-    border: 1px solid #606060;
-    margin-right: 3px;
-    transition: all 0.3s ease;
+  font-size: 10px;
+  padding: 0 3px 0 3px;
+  background-color: #282828;
+  color: #fff;
+  margin-right: 3px;
 }
 
 .ws-focus {
-    padding: 0 3px 0 3px;
-    background-color: #aa0000;
-    margin-right: 3px;
-
-    color: #ffffff;
-    transition: all 0.3s ease;
-    animation: colored-gradient 10s ease infinite;
+  font-size: 10px;
+  padding: 0 8px 0 8px;
+  background-color: #aa0000;
+  margin-right: 3px;
+  color: #fff;
 }
 
 .block {
-    color: #eaeaea;
-    padding-left: 20px;
+  color: #fff;
+  background-color: #404040;
+  border: 1px solid #808080;
+  border-radius: 4px;
+  padding: 1px 5px 1px 5px;
+  margin: 3px 1px 5px 1px;
 }
 
 .netspeed-label {
-    font-size: 12px;
-    color: #fff;
-    min-width: 65px;
+  font-size: 8px;
+  color: #fff;
+  min-width: 40px;
 }
 
 .time-chinese {
-    font-size: 10px;
-    padding: 0 2px 0 2px;
-    margin: 3px 3px 3px 3px;
-    color: #ffffff;
-    border: 1px solid #aa0000;
-    border-radius: 4px;
+  font-size: 12px;
+  padding: 0 2px 0 2px;
+  margin: 3px 3px 3px 3px;
+  color: #fff;
 }
 
 .time-date {
-    font-size: 12px;
-    min-width: 60px;
+  font-size: 12px;
+  min-width: 60px;
 }
 
 .battery-label {
-    padding-left: 5px;
+  padding-left: 5px;
 }
 
 .chart-border {
-    border: 1px #606060 solid;
-    margin: 5px 1px 5px 5px;
-    /*padding: 1px 3px 1px 3px;*/
-    border-radius: 3px;
+  margin: 2px 1px 2px 2px;
 }
 
 .dborder {
-    border: 1px #aa0000 solid;
+  border: 1px #aa0000 solid;
 }
 
 .botton-icon {
-    margin-right: 5px;
+  margin-right: 5px;
+}
+
+.lucide {
+  font-family: lucide;
+  font-size: 16px;
+}
+
+.f-20 {
+  font-size: 20px;
 }
