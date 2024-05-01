@@ -56,21 +56,17 @@ impl HyprCurrentStatus {
 
 #[derive(Debug)]
 enum MatchType {
-    ID,
     Name,
 }
 
 #[derive(Clone, Debug)]
 pub struct HyprWorkspaceWidget {
     name: String,
-    id: Option<i32>,
     button: gtk::Button,
 }
 
 #[derive(Clone)]
 pub struct HyprWidget {
-    monitor_id: i32,
-    monitor_name: Option<String>,
     ww_vec: Rc<RefCell<Vec<HyprWorkspaceWidget>>>,
     ws_box: gtk::Box,
     cw_title: (gtk::Image, Label),
@@ -102,8 +98,6 @@ impl HyprWidget {
         let icon_loader = utils::gtkiconloader::GtkIconLoader::new();
 
         HyprWidget {
-            monitor_id: share_info.monitor.clone(),
-            monitor_name: Default::default(),
             ww_vec: Default::default(),
             ws_box,
             cw_title: title_container,
@@ -139,9 +133,10 @@ impl HyprWidget {
                     HyprOut::AllWorkspaces(vec, cursor, class, title) => {
                         self.init(vec, cursor, class, title)
                     }
-                    _ => {}
                 },
-                Err(_) => {}
+                Err(err) => {
+                    error!("unable receive messsage: {}", err)
+                }
             }
         }
     }
@@ -322,7 +317,6 @@ impl HyprWidget {
 
         HyprWorkspaceWidget {
             name: ws.name.clone(),
-            id: ws.id.clone(),
             button: workspace_button,
         }
     }
@@ -354,7 +348,6 @@ impl HyprWidget {
             .borrow()
             .iter()
             .find(|e| match match_type {
-                MatchType::ID => false,
                 MatchType::Name => e.name.as_str() == name,
             })
             .map(|e| e.clone());
@@ -364,16 +357,12 @@ impl HyprWidget {
 
 pub struct HyprBlock {
     dualchannel: DualChannel<HyprOut, HyprIn>,
-    current_status: Rc<RefCell<HyprCurrentStatus>>,
 }
 
 impl HyprBlock {
     pub fn new() -> Self {
-        let current_status = Rc::new(RefCell::default());
-
         Self {
             dualchannel: DualChannel::new(30),
-            current_status,
         }
     }
 
@@ -391,12 +380,6 @@ impl HyprBlock {
             .unwrap_or("".to_string());
 
         (workspaces, active_workspace.name, class, title)
-    }
-
-    fn handle_input_msg(msg: HyprIn) {
-        match msg {
-            HyprIn::NewClient => {}
-        }
     }
 }
 

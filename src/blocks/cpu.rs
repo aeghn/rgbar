@@ -29,7 +29,7 @@ pub enum CpuIn {}
 pub enum CpuOut {
     Turbo(TriBool),
     Frequencies(Vec<f64>),
-    UtilizationAvg(f64),
+    UtilizationAvg(f64, f64),
     Utilizations(Vec<f64>),
 }
 
@@ -66,9 +66,9 @@ impl Block for CpuBlock {
 
             // Compute utilizations
             let new_cputime = read_proc_stat().unwrap();
-            let utilization_avg = new_cputime.0.utilization(cputime.0);
+            let utilization_avg = new_cputime.0.utilization_user_and_system(cputime.0);
             sender
-                .send(CpuOut::UtilizationAvg(utilization_avg))
+                .send(CpuOut::UtilizationAvg(utilization_avg.0, utilization_avg.1))
                 .unwrap();
             let mut utilizations = Vec::new();
             if new_cputime.1.len() != cores {}
@@ -100,7 +100,7 @@ impl Block for CpuBlock {
             .hexpand(false)
             .build();
 
-        let image = gtkiconloader::load_image_at(IconName::CPU, 16);
+        let icon = gtkiconloader::load_font_icon(IconName::CPU);
 
         let label = gtk::Label::builder().label("CPU: ").build();
         label.style_context().add_class("cpu-mem-label");
@@ -111,14 +111,16 @@ impl Block for CpuBlock {
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
-        let series = Series::new("cpu", 100., 30, RGBA::new(0.5, 0.8, 1.0, 0.6));
+        let user_serie = Series::new("cpu", 100., 30, RGBA::new(0.5, 0.8, 1.0, 0.6));
+        let system_serie = Series::new("cpu", 100., 30, RGBA::new(1.0, 0.3, 0.1, 0.6));
         let chart = Chart::builder()
             .with_width(30)
             .with_line_width(1.)
-            .with_series(series.clone())
+            .with_series(system_serie.clone())
+            .with_series(user_serie.clone())
             .with_line_type(LineType::Line);
         chart.draw_in_seconds(1);
-        holder.pack_start(&image, false, false, 0);
+        holder.pack_start(&icon, false, false, 0);
         holder.pack_end(&chart.drawing_box, false, false, 0);
 
         MainContext::ref_thread_default().spawn_local(async move {
@@ -139,8 +141,9 @@ impl Block for CpuBlock {
                             label_str = new;
                         }
                         CpuOut::Frequencies(_freq) => {}
-                        CpuOut::UtilizationAvg(avg) => {
-                            series.add_value(avg * 100.);
+                        CpuOut::UtilizationAvg(user, system) => {
+                            system_serie.add_value(system * 100.);
+                            user_serie.add_value(user * 100.);
                         }
                         CpuOut::Utilizations(_) => {}
                     }
@@ -178,6 +181,8 @@ fn read_frequencies() -> Result<Vec<f64>> {
 struct CpuTime {
     idle: u64,
     non_idle: u64,
+    user: u64,
+    system_total: u64,
 }
 
 impl CpuTime {
@@ -191,9 +196,12 @@ impl CpuTime {
         let irq = u64::from_str(s.next()?).ok()?;
         let softirq = u64::from_str(s.next()?).ok()?;
 
+        let system_total = nice + system + irq + softirq;
         Some(Self {
             idle: idle + iowait,
-            non_idle: user + nice + system + irq + softirq,
+            non_idle: user + system_total,
+            user,
+            system_total,
         })
     }
 
@@ -203,6 +211,18 @@ impl CpuTime {
             0.0
         } else {
             ((self.non_idle - old.non_idle) as f64 / elapsed as f64).clamp(0., 1.)
+        }
+    }
+
+    fn utilization_user_and_system(&self, old: Self) -> (f64, f64) {
+        let elapsed = (self.idle + self.non_idle).saturating_sub(old.idle + old.non_idle);
+        if elapsed == 0 {
+            (0.0, 0.)
+        } else {
+            (
+                ((self.user - old.user) as f64 / elapsed as f64).clamp(0., 1.),
+                ((self.system_total - old.system_total) as f64 / elapsed as f64).clamp(0., 1.),
+            )
         }
     }
 }

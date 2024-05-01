@@ -1,9 +1,12 @@
 use crate::statusbar::WidgetShareInfo;
 
 mod audio;
+#[allow(dead_code)]
 pub mod battery;
+#[allow(dead_code)]
 pub mod cpu;
 pub mod manager;
+#[allow(dead_code)]
 pub mod memory;
 pub mod netspeed;
 

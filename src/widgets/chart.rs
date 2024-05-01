@@ -7,6 +7,7 @@ use gtk::prelude::BoxExt;
 
 use gtk::prelude::StyleContextExt;
 use gtk::prelude::WidgetExt;
+use tracing::error;
 
 use crate::datahodler::ring::Ring;
 
@@ -16,17 +17,16 @@ pub enum LineType {
     Pillar,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum BaselineType {
-    None,
     FixedPercent(f64),
     Upon,
 }
 
 #[derive(Clone)]
 pub struct Series<E: Into<f64> + Clone> {
-    _id: String,
-    max_value: E,
+    id: String,
+    threshold: E,
     ring: Ring<E>,
     color: RGBA,
     baseline_type: BaselineType,
@@ -34,24 +34,29 @@ pub struct Series<E: Into<f64> + Clone> {
 }
 
 impl<E: Into<f64> + Clone> Series<E> {
-    pub fn new(id: &str, max_value: E, ring_size: usize, color: RGBA) -> Self {
+    pub fn new(id: &str, threshold: E, ring_size: usize, color: RGBA) -> Self {
         Series {
-            _id: id.to_string(),
-            max_value,
+            id: id.to_string(),
+            threshold,
             ring: Ring::new(ring_size),
             color,
-            baseline_type: BaselineType::FixedPercent(0.0),
+            baseline_type: BaselineType::Upon,
             height_percent: 1.0,
         }
     }
 
-    pub fn add_value(&self, value: E) {
-        self.ring.add(value);
+    pub fn with_baseline(mut self, baseline_type: BaselineType) -> Self {
+        self.baseline_type = baseline_type;
+        self
     }
 
-    pub fn set_baseline_and_height(&mut self, base: f64, height: f64) {
-        self.baseline_type = BaselineType::FixedPercent(base);
-        self.height_percent = height;
+    pub fn with_height_percent(mut self, height_percent: f64) -> Self {
+        self.height_percent = height_percent;
+        self
+    }
+
+    pub fn add_value(&self, value: E) {
+        self.ring.add(value);
     }
 }
 
@@ -112,70 +117,101 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
     ) {
         let alloc = da.allocation();
 
-        let width = alloc.width() as f64;
-        let height = alloc.height() as f64;
+        let alloc_w = alloc.width();
+        let alloc_h = alloc.height();
 
         cr.set_line_width(line_width);
-        let max_ring_size = series.iter().map(|s| s.ring.size).max().unwrap_or(30);
-        let interval = 1.0 / ((max_ring_size - 2) as f64);
 
-        let min_baseline = series
-            .iter()
-            .filter_map(|s| match s.baseline_type {
-                BaselineType::None => None,
-                BaselineType::FixedPercent(per) => Some(per),
-                BaselineType::Upon => None,
-            })
-            .min_by(|s, o| f64::total_cmp(s, o))
-            .unwrap_or(0.0);
+        let max_serie_size = series.iter().map(|s| s.ring.size).max().unwrap_or(30);
+        let interval = 1.0 / ((max_serie_size - 2) as f64);
 
-        let mut last_serie_points: Vec<(f64, f64)> = vec![];
+        let mut sum_heights_percent = vec![0.; max_serie_size + 2];
+        let mut cur_x = 0;
+
+        let mut prev_alloc_ys: Option<Vec<(f64, f64)>> = None;
 
         for serie in series {
-            let (point_height, max) = Self::scale(&serie);
+            let (ys, max_y) = Self::scale(&serie);
 
-            if point_height.len() <= 1 {
+            if ys.len() <= 1 {
                 continue;
             }
 
-            let transform_y = |v: f64| {
-                (1. - (v * serie.height_percent
-                    + if let BaselineType::FixedPercent(per) = serie.baseline_type {
-                        per
+            cur_x = 0;
+
+            let mut alloc_ys: Vec<(f64, f64)> = Vec::with_capacity(alloc_w as usize);
+            let mut def_baseline = alloc_h;
+
+            for (i, yt) in ys.iter().enumerate() {
+                // get x and y
+                let alloc_x = i as f64 * interval * alloc_w as f64;
+                let base_percent = match serie.baseline_type {
+                    BaselineType::FixedPercent(base) => base,
+                    BaselineType::Upon => sum_heights_percent[alloc_x as usize],
+                };
+
+                let y_percent = base_percent + yt * serie.height_percent;
+
+                // build sum_heights_percent
+                if let BaselineType::Upon = serie.baseline_type {
+                    let last_x = cur_x;
+                    let last_y = sum_heights_percent[last_x];
+
+                    let step = if alloc_x as usize - cur_x > 0 {
+                        (y_percent - last_y) / (alloc_x - cur_x as f64)
                     } else {
-                        min_baseline
-                    }))
-                    * height
-            };
+                        0.
+                    };
 
-            let transform_x = |v| (1.0 - v as f64 * interval) * width;
+                    for x in last_x..=(alloc_x as usize) {
+                        sum_heights_percent[x] = last_y + (x - last_x) as f64 * step;
+                        cur_x = x;
+                    }
 
-            let start = (transform_x(0), transform_y(point_height[0]));
+                    if last_x == 0 {
+                        sum_heights_percent[0] = y_percent;
+                    }
+                }
 
-            cr.move_to(start.0, start.1);
-            cr.set_source_rgb(serie.color.red(), serie.color.green(), serie.color.blue());
+                let alloc_y = (1. - y_percent) * alloc_h as f64;
+                alloc_ys.push((alloc_x, alloc_y));
 
-            let mut this_serie_points = vec![];
-            let mut cur = start.clone();
-            this_serie_points.push(cur.clone());
-            for (i, ele) in point_height.iter().skip(1).enumerate() {
-                cur = (transform_x(i + 1), transform_y(ele.clone()));
-                this_serie_points.push(cur.clone());
-                cr.line_to(cur.0.clone(), cur.1.clone());
+                if i == 0 {
+                    cr.move_to(alloc_x, alloc_y);
+                    cr.set_source_rgb(serie.color.red(), serie.color.green(), serie.color.blue());
+                } else {
+                    cr.line_to(alloc_x, alloc_y);
+                }
             }
+
             cr.stroke_preserve().unwrap();
 
             match serie.baseline_type {
-                BaselineType::None => {}
-                BaselineType::FixedPercent(_) => {
-                    cr.line_to(cur.0, transform_y(0.));
-                    cr.line_to(start.0, transform_y(0.));
-                    cr.line_to(start.0, start.1);
+                BaselineType::FixedPercent(baseline) => {
+                    if let Some((x, _)) = alloc_ys.last() {
+                        cr.line_to(*x, alloc_h as f64 * baseline);
+                    }
+                    if let Some((x, _)) = alloc_ys.first() {
+                        cr.line_to(*x, alloc_h as f64 * baseline);
+                    }
                 }
                 BaselineType::Upon => {
-                    last_serie_points.iter().rev().for_each(|e| {
-                        cr.line_to(e.0, e.1);
-                    });
+                    if let Some(vec) = prev_alloc_ys.as_ref() {
+                        for (x, y) in vec.iter().rev() {
+                            cr.line_to(*x, *y);
+                        }
+                    } else {
+                        if let Some((x, _)) = alloc_ys.last() {
+                            cr.line_to(*x, def_baseline as f64);
+                        }
+                        if let Some((x, _)) = alloc_ys.first() {
+                            cr.line_to(*x, def_baseline as f64);
+                        }
+                    }
+
+                    if let Some((x, y)) = alloc_ys.get(0) {
+                        cr.line_to(*x, *y);
+                    }
                 }
             }
 
@@ -187,47 +223,30 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
             );
             cr.fill().unwrap();
 
-            let max_default: f64 = serie.max_value.clone().into();
-
-            if max > max_default * 1.1 {
-                let v = transform_y(max_default / max);
-                cr.move_to(start.0, v);
-                cr.line_to(cur.0, v);
-                cr.set_source_rgba(1.0, 0.3, 0.3, 0.8);
-                cr.stroke().unwrap();
-            }
-
-            last_serie_points = this_serie_points;
+            prev_alloc_ys.replace(alloc_ys);
         }
     }
 
-    fn scale(series: &Series<E>) -> (Vec<f64>, f64) {
-        let all: Vec<f64> = series
-            .ring
-            .get_all()
-            .into_iter()
-            .map(|e| e.into())
-            .collect();
+    fn scale(serie: &Series<E>) -> (Vec<f64>, f64) {
+        let originals: Vec<f64> = serie.ring.get_all().into_iter().map(|e| e.into()).collect();
 
-        let max_def: f64 = series.max_value.clone().into();
-        let max = all
-            .iter()
-            .max_by(|e1, e2| e1.total_cmp(e2))
-            .unwrap_or(&max_def)
-            .clone();
+        let threshold_def: f64 = serie.threshold.clone().into();
+        let mut true_threshold = threshold_def;
 
-        let mah: f64 = f64::max(max, max_def);
+        for h in originals.as_slice() {
+            true_threshold = f64::max(*h, true_threshold);
+        }
 
-        let vec = all
+        let vec = originals
             .into_iter()
             .rev()
             .map(|h| {
-                let sh = h / mah;
+                let sh = h / true_threshold;
                 f64::min(1.0, sh)
             })
             .collect();
 
-        (vec, max)
+        (vec, true_threshold)
     }
 
     pub fn with_width(self, width: i32) -> Self {
