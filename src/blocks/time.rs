@@ -37,7 +37,7 @@ impl TimeBlock {
         let now: DateTime<Local> = Local::now();
 
         (
-            now.format("%y-%m-%d").to_string(),
+            now.format("%m-%d %a").to_string(),
             now.format("%H:%M:%S").to_string(),
             now.hour(),
         )
@@ -125,9 +125,8 @@ impl Block for TimeBlock {
                             TimeOut::Chinese((_, _m, d)) => {
                                 cn_date.set_label(format!("{}", d).as_str());
                             }
-                            TimeOut::Westen(_d, t) => {
-                                wes_date.set_label(format!("{}", t).as_str());
-                                // wes_t.set_label(d.as_str());
+                            TimeOut::Westen(d, t) => {
+                                wes_date.set_label(format!("{} {}", d, t).as_str());
                             }
                         }
                     }

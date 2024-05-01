@@ -7,7 +7,7 @@ use gtk::prelude::BoxExt;
 
 use gtk::prelude::StyleContextExt;
 use gtk::prelude::WidgetExt;
-use tracing::error;
+
 
 use crate::datahodler::ring::Ring;
 
@@ -131,7 +131,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         let mut prev_alloc_ys: Option<Vec<(f64, f64)>> = None;
 
         for serie in series {
-            let (ys, max_y) = Self::scale(&serie);
+            let (ys, _max_y) = Self::scale(&serie);
 
             if ys.len() <= 1 {
                 continue;
@@ -140,7 +140,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
             cur_x = 0;
 
             let mut alloc_ys: Vec<(f64, f64)> = Vec::with_capacity(alloc_w as usize);
-            let mut def_baseline = alloc_h;
+            let def_baseline = alloc_h;
 
             for (i, yt) in ys.iter().enumerate() {
                 // get x and y

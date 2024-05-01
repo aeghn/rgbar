@@ -81,7 +81,7 @@ impl HyprWidget {
     pub fn new(
         in_sender: &SSender<HyprIn>,
         out_receiver: &MReceiver<HyprOut>,
-        share_info: &WidgetShareInfo,
+        _share_info: &WidgetShareInfo,
     ) -> Self {
         let holder = gtk::Box::new(gtk::Orientation::Horizontal, 0);
 

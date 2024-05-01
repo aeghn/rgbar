@@ -5,13 +5,13 @@ use anyhow::Result;
 use gdk::glib::Cast;
 use gdk::RGBA;
 use glib::MainContext;
-use gtk::prelude::{BoxExt, StyleContextExt, WidgetExt};
+use gtk::prelude::{BoxExt, StyleContextExt};
 
 use crate::datahodler::channel::DualChannel;
 use crate::statusbar::WidgetShareInfo;
 use crate::utils::gtkiconloader::IconName;
 use crate::utils::{fileutils, gtkiconloader};
-use crate::widgets::chart::{BaselineType, Chart, LineType, Series};
+use crate::widgets::chart::{Chart, LineType, Series};
 
 use super::Block;
 
