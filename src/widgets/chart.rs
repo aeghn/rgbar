@@ -8,7 +8,6 @@ use gtk::prelude::BoxExt;
 use gtk::prelude::StyleContextExt;
 use gtk::prelude::WidgetExt;
 
-
 use crate::datahodler::ring::Ring;
 
 #[derive(Clone)]
@@ -188,11 +187,12 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
 
             match serie.baseline_type {
                 BaselineType::FixedPercent(baseline) => {
+                    let base = 1. - baseline;
                     if let Some((x, _)) = alloc_ys.last() {
-                        cr.line_to(*x, alloc_h as f64 * baseline);
+                        cr.line_to(*x, alloc_h as f64 * base);
                     }
                     if let Some((x, _)) = alloc_ys.first() {
-                        cr.line_to(*x, alloc_h as f64 * baseline);
+                        cr.line_to(*x, alloc_h as f64 * base);
                     }
                 }
                 BaselineType::Upon => {
