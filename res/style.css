@@ -1,5 +1,4 @@
 * {
-  color: #fff;
   padding: 0px 0px 0px 0px;
   margin: 0px 0px 0px 0px;
 }
@@ -11,57 +10,59 @@ button {
 }
 
 .bar {
-  background-color: #282828;
+  background-color: #101010;
 }
 
 .wm {
-  color: #fff;
   font-family: "Inter", sans-serif;
-  font-weight: 600;
+  font-weight: 400;
+  font-style: italic;
   font-size: 12px;
   margin: 2px 3px 2px 3px;
 }
 
 .wm-title {
-  color: #fff;
+  color: #eee;
   background-color: #282828;
   padding: 0px 5px 0px 5px;
 }
 
 .wm-cw-icon {
-  margin-left: 5px;
+  margin-left: 10px;
   padding-left: 10px;
   border-left: 1px solid #606060;
 }
 
 .ws {
-  font-size: 10px;
-  padding: 0 3px 0 3px;
-  background-color: #282828;
-  color: #fff;
-  margin-right: 3px;
+  color: #999;
+  font-size: 12px;
+  padding: 0 8px 0 8px;
+  background-color: #303030;
+}
+
+.wss {
+  background-color: #404040;
+  border-radius: 5px;
+  border: 1px #606060 solid;
+  margin: 3px 0 3px;
 }
 
 .ws-focus {
-  font-size: 10px;
-  padding: 0 8px 0 8px;
-  background-color: #aa0000;
-  margin-right: 3px;
   color: #fff;
+  background-color: #505050;
 }
 
 .block {
-  color: #fff;
-  background-color: #404040;
-  border: 1px solid #808080;
-  border-radius: 4px;
+  background-color: #303030;
+  color: #ddd;
+  border: 1px solid #686868;
+  border-radius: 5px;
   padding: 1px 5px 1px 5px;
   margin: 3px 1px 5px 1px;
 }
 
 .netspeed-label {
   font-size: 8px;
-  color: #fff;
   min-width: 40px;
 }
 
@@ -69,7 +70,6 @@ button {
   font-size: 12px;
   padding: 0 2px 0 2px;
   margin: 3px 3px 3px 3px;
-  color: #fff;
 }
 
 .time-date {
