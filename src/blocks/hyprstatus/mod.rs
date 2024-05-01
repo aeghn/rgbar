@@ -330,6 +330,7 @@ impl HyprWidget {
 
     fn create_active_window_container() -> (gtk::Image, gtk::Label) {
         let image = gtk::Image::builder().build();
+        image.style_context().add_class("wm-cw-icon");
         let label = gtk::Label::builder().build();
         label.style_context().add_class("wm-title");
 
