@@ -38,6 +38,7 @@ pub enum IconName {
     VolumeMidium,
     VolumeLow,
     VolumeMute,
+    Empty,
 }
 
 impl GtkIconLoader {
@@ -96,14 +97,15 @@ pub fn load_label(icon_name: IconName) -> &'static str {
         IconName::BatteryPowerNotCharging => "",
         IconName::BatteryPowerDisconnected => "",
         IconName::BatteryPowerUnknown => "",
-        IconName::BatteryConservationOn => "",
-        IconName::BatteryConservationOff => "",
+        IconName::BatteryConservationOn => "",
+        IconName::BatteryConservationOff => "",
         IconName::BatteryConservationUnknown => "",
         IconName::Headphone => "",
         IconName::VolumeHigh => "",
         IconName::VolumeMidium => "",
         IconName::VolumeLow => "",
         IconName::VolumeMute => "",
+        IconName::Empty => "",
     }
 }
 

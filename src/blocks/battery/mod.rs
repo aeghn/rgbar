@@ -121,7 +121,7 @@ impl Block for BatteryBlock {
             .orientation(gtk::Orientation::Horizontal)
             .build();
 
-        let battery_status_icon = gtkiconloader::load_font_icon(IconName::BatteryMid);
+        let battery_status_icon = gtkiconloader::load_font_icon(IconName::Empty);
         battery_status_icon.style_context().add_class("f-20");
 
         let battery_percent_value = gtk::Label::builder().build();
@@ -129,9 +129,9 @@ impl Block for BatteryBlock {
             .style_context()
             .add_class("battery-label");
 
-        let convervation_icon = gtkiconloader::load_font_icon(IconName::BatteryConservationOn);
+        let convervation_icon = gtkiconloader::load_font_icon(IconName::Empty);
 
-        let power_status_icon = gtkiconloader::load_font_icon(IconName::BatteryPowerUnknown);
+        let power_status_icon = gtkiconloader::load_font_icon(IconName::Empty);
 
         holder.pack_start(&battery_status_icon, false, false, 0);
         holder.pack_start(&power_status_icon, false, false, 0);
