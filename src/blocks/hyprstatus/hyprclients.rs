@@ -1,8 +1,6 @@
 use std::hash::{Hash, Hasher};
 use std::process::Command;
 
-use tracing::error;
-
 #[derive(Clone)]
 pub struct HyprClient {
     pub class: String,
@@ -52,45 +50,6 @@ impl HyprWorkspace {
     }
 }
 
-pub fn get_clients() -> anyhow::Result<Vec<HyprClient>> {
-    let output = Command::new("hyprctl").arg("clients").arg("-j").output()?;
-    error!("hypr clients: {:.?}", output);
-
-    let mut vec: Vec<HyprClient> = vec![];
-
-    let out = String::from_utf8(output.stdout).unwrap();
-
-    let json = serde_json::from_str::<serde_json::Value>(out.as_str()).unwrap();
-
-    if let Some(array) = json.as_array() {
-        for e in array {
-            let class = e.get("class").unwrap().as_str().unwrap();
-            let monitor = e.get("monitor").unwrap().as_i64().unwrap();
-            if monitor == -1 {
-                continue;
-            }
-
-            vec.push(HyprClient {
-                class: class.to_string(),
-                title: e.get("title").unwrap().as_str().unwrap().to_string(),
-                address: e.get("address").unwrap().as_str().unwrap().to_string(),
-                mapped: e.get("mapped").unwrap().as_bool().unwrap(),
-                hidden: e.get("hidden").unwrap().as_bool().unwrap(),
-                pid: e.get("pid").unwrap().as_i64().unwrap(),
-                xwayland: e.get("xwayland").unwrap().as_bool().unwrap(),
-                workspace_id: e
-                    .get("workspace")
-                    .unwrap()
-                    .get("id")
-                    .unwrap()
-                    .as_i64()
-                    .unwrap(),
-            })
-        }
-    }
-    Ok(vec)
-}
-
 pub fn get_active_client() -> Option<HyprClient> {
     let output = Command::new("hyprctl")
         .arg("activewindow")
@@ -118,38 +77,6 @@ pub fn get_active_client() -> Option<HyprClient> {
     } else {
         None
     }
-}
-
-pub fn get_monitors() -> anyhow::Result<(Vec<HyprMonitor>, i32)> {
-    let output = Command::new("hyprctl")
-        .arg("monitors")
-        .arg("-j")
-        .output()
-        .unwrap();
-
-    let _vec: Vec<HyprClient> = vec![];
-
-    let command_output = String::from_utf8(output.stdout).unwrap();
-
-    let json = serde_json::from_str::<serde_json::Value>(command_output.as_str()).unwrap();
-    let array = json.as_array().unwrap();
-
-    let mut res = vec![];
-    let mut cursor = 0;
-    array.iter().for_each(|e| {
-        let id = e.get("id").unwrap().as_i64().unwrap() as i32;
-
-        if e.get("focused").unwrap().as_bool().unwrap() {
-            cursor = id.clone();
-        }
-
-        res.push(HyprMonitor {
-            id: Some(id as i64),
-            name: e.get("name").unwrap().as_str().unwrap().to_string(),
-        });
-    });
-
-    Ok((res, cursor))
 }
 
 pub fn get_workspaces() -> anyhow::Result<Vec<HyprWorkspace>> {

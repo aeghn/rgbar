@@ -121,21 +121,21 @@ impl Block for BatteryBlock {
             .orientation(gtk::Orientation::Horizontal)
             .build();
 
-        let battery_status_image = gtkiconloader::load_image_at(IconName::BatteryMid, 16);
-        battery_status_image.style_context().add_class("f-20");
+        let battery_status_icon = gtkiconloader::load_font_icon(IconName::BatteryMid);
+        battery_status_icon.style_context().add_class("f-20");
 
         let battery_percent_value = gtk::Label::builder().build();
         battery_percent_value
             .style_context()
             .add_class("battery-label");
 
-        let convervation_image = gtkiconloader::load_image_at(IconName::BatteryCMOn, 16);
+        let convervation_icon = gtkiconloader::load_font_icon(IconName::BatteryConservationOn);
 
-        let power_status_image = gtkiconloader::load_image_at(IconName::BatteryPSUnk, 16);
+        let power_status_icon = gtkiconloader::load_font_icon(IconName::BatteryPowerUnknown);
 
-        holder.pack_start(&battery_status_image, false, false, 0);
-        holder.pack_start(&power_status_image, false, false, 0);
-        holder.pack_start(&convervation_image, false, false, 0);
+        holder.pack_start(&battery_status_icon, false, false, 0);
+        holder.pack_start(&power_status_icon, false, false, 0);
+        holder.pack_start(&convervation_icon, false, false, 0);
         holder.pack_start(&battery_percent_value, false, false, 0);
 
         let mut percent = 0;
@@ -152,11 +152,13 @@ impl Block for BatteryBlock {
                             if cm_status != cm {
                                 cm_status = cm;
                                 let mapped = match cm_status {
-                                    ConvervationMode::Enable => IconName::BatteryCMOn,
-                                    ConvervationMode::Disable => IconName::BatteryCMOff,
-                                    ConvervationMode::Unknown => IconName::BatteryCMUnknown,
+                                    ConvervationMode::Enable => IconName::BatteryConservationOn,
+                                    ConvervationMode::Disable => IconName::BatteryConservationOff,
+                                    ConvervationMode::Unknown => {
+                                        IconName::BatteryConservationUnknown
+                                    }
                                 };
-                                convervation_image.set_label(&load_label(mapped))
+                                convervation_icon.set_label(&load_label(mapped))
                             }
                         }
                         BatteryOut::BatteryInfo(bi) => {
@@ -171,7 +173,7 @@ impl Block for BatteryBlock {
                                     _ => IconName::BatteryFull,
                                 };
 
-                                battery_status_image.set_label(&load_label(mapped));
+                                battery_status_icon.set_label(&load_label(mapped));
 
                                 percent = status;
                             }
@@ -183,13 +185,13 @@ impl Block for BatteryBlock {
                             if power_status != pstatus {
                                 power_status = pstatus;
                                 let mapped = match power_status {
-                                    PowerStatus::NotCharging => IconName::BatteryPSNotCharging,
-                                    PowerStatus::Discharging => IconName::BatteryPSDisconnected,
-                                    PowerStatus::Charging => IconName::BattetyPSCharging,
-                                    PowerStatus::Unknown => IconName::BatteryPSUnk,
+                                    PowerStatus::NotCharging => IconName::BatteryPowerNotCharging,
+                                    PowerStatus::Discharging => IconName::BatteryPowerDisconnected,
+                                    PowerStatus::Charging => IconName::BattetyPowerCharging,
+                                    PowerStatus::Unknown => IconName::BatteryPowerUnknown,
                                 };
 
-                                power_status_image.set_label(&load_label(mapped))
+                                power_status_icon.set_label(&load_label(mapped))
                             }
                         }
                         BatteryOut::UnknownBatteryInfo => todo!(),

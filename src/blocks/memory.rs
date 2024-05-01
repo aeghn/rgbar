@@ -5,19 +5,19 @@ use anyhow::Result;
 use gdk::glib::Cast;
 use gdk::RGBA;
 use glib::MainContext;
-use gtk::prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
+use gtk::prelude::{BoxExt, StyleContextExt, WidgetExt};
 
 use crate::datahodler::channel::DualChannel;
 use crate::statusbar::WidgetShareInfo;
 use crate::utils::gtkiconloader::IconName;
 use crate::utils::{fileutils, gtkiconloader};
-use crate::widgets::chart::{Chart, LineType, Series};
+use crate::widgets::chart::{BaselineType, Chart, LineType, Series};
 
 use super::Block;
 
 #[derive(Clone)]
 pub enum MemoryOut {
-    MemoryInfo(u64, u64), // USED / TOTAL
+    MemoryUsedAndCache(u64, u64, u64), // USED / Cache / total
 }
 
 #[derive(Clone)]
@@ -47,14 +47,16 @@ impl Block for MemoryBlock {
             let mem_state = Memstate::new().unwrap();
 
             let mem_total = mem_state.mem_total * 1024;
-            let mem_free = mem_state.mem_free * 1024;
 
             // TODO: possibly remove this as it is confusing to have `mem_total_used` and `mem_used`
             // htop and such only display equivalent of `mem_used`
-            let mem_total_used = mem_total - mem_free;
+            let mem_used = mem_total - mem_state.mem_available * 1024;
+            let mem_cache = mem_state.pagecache * 1024;
 
             sender
-                .send(MemoryOut::MemoryInfo(mem_total, mem_total_used))
+                .send(MemoryOut::MemoryUsedAndCache(
+                    mem_used, mem_cache, mem_total,
+                ))
                 .unwrap();
 
             // dev note: difference between avail and free:
@@ -84,32 +86,30 @@ impl Block for MemoryBlock {
             .hexpand(false)
             .build();
 
-        let image = gtkiconloader::load_image_at(IconName::RAM, 18);
-
-        let label = gtk::Label::builder().label("MEM: ").build();
-        label.style_context().add_class("cpu-mem-label");
-
-        let _label_str = String::new();
+        let icon = gtkiconloader::load_font_icon(IconName::RAM);
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
-        let series = Series::new("mem", 100.0, 30, RGBA::new(0.5, 0.8, 1.0, 0.6));
+        let mem_series = Series::new("mem", 100.0, 30, RGBA::new(0.5, 0.8, 1.0, 0.6));
+        let cache_series = Series::new("cache", 100.0, 30, RGBA::new(1.0, 0.8, 0.3, 0.6));
         let chart = Chart::builder()
             .with_width(30)
             .with_line_width(1.0)
-            .with_series(series.clone())
+            .with_series(mem_series.clone())
+            .with_series(cache_series.clone())
             .with_line_type(LineType::Line);
         chart.draw_in_seconds(1);
 
-        holder.pack_start(&image, false, false, 0);
+        holder.pack_start(&icon, false, false, 0);
         holder.pack_end(&chart.drawing_box, false, false, 0);
 
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
                 if let Ok(msg) = receiver.recv().await {
                     match msg {
-                        MemoryOut::MemoryInfo(total, used) => {
-                            series.add_value(((used * 100) / total) as f64);
+                        MemoryOut::MemoryUsedAndCache(used, cache, total) => {
+                            cache_series.add_value(((cache * 100) / total) as f64);
+                            mem_series.add_value(((used * 100) / total) as f64);
                         }
                     }
                 }

@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub mod pulse;
 
 use std::{cell::RefCell, rc::Rc};
@@ -17,6 +18,7 @@ use gtk::prelude::{BoxExt, LabelExt, WidgetExt};
 use super::Block;
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub enum PulseBM {
     Mute,
     SetVolume(u32),
@@ -26,6 +28,7 @@ pub enum PulseBM {
 }
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub enum PulseWM {
     Muted(bool),
     Volume(u32),
@@ -48,6 +51,7 @@ trait SoundDevice {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[allow(dead_code)]
 pub enum DeviceKind {
     Sink,
     Source,
@@ -152,8 +156,8 @@ impl Block for PulseBlock {
             .build();
 
         let volume = gtk::Label::builder().build();
-        let headphone_icon = gtkiconloader::load_image_at(IconName::Headphone, 16);
-        let vol_icon = gtkiconloader::load_image_at(IconName::VolumeMidium, 16);
+        let headphone_icon = gtkiconloader::load_font_icon(IconName::Headphone);
+        let vol_icon = gtkiconloader::load_font_icon(IconName::VolumeMidium);
 
         holder.pack_start(&headphone_icon, false, false, 0);
 

@@ -2,8 +2,6 @@ use crate::utils::fileutils;
 
 use super::PowerStatus::{Charging, Discharging, NotCharging, Unknown};
 
-use std::io::BufRead;
-
 use super::{BatteryInfo, PowerStatus};
 
 static POWER_INFO_PATH: &str = "/sys/class/power_supply/BAT0/uevent";

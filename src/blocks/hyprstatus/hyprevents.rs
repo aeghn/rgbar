@@ -5,9 +5,7 @@ use crate::blocks::hyprstatus::hyprevents::ParsedEventType::{
 use regex::Regex;
 
 type MonitorNameType = String;
-type MonitorIdType = u64;
 type WorkspaceNameType = String;
-type WorkspaceIdType = String;
 type TitleType = String;
 type ClassType = String;
 type AddressType = String;

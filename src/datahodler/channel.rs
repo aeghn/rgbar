@@ -23,23 +23,6 @@ impl<OutMsg: Clone, InMsg: Clone> DualChannel<OutMsg, InMsg> {
         }
     }
 
-    pub fn get_reveled(&self) -> (&SSender<InMsg>, &MReceiver<OutMsg>) {
-        (&self.in_sender, &self.out_recevier)
-    }
-
-    pub fn output(&self, msg: OutMsg) -> anyhow::Result<Option<OutMsg>> {
-        self.out_sender
-            .try_broadcast(msg)
-            .map_err(|err| anyhow!("unable to send: {}", err))
-    }
-
-    pub async fn recv_async(&self) -> anyhow::Result<InMsg> {
-        self.in_recevier
-            .recv()
-            .await
-            .map_err(|err| anyhow!("unable to recevie: {}", err))
-    }
-
     pub fn get_out_sender(&self) -> MSender<OutMsg> {
         self.out_sender.clone().into()
     }

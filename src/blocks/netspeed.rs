@@ -10,7 +10,7 @@ use crate::datahodler::channel::DualChannel;
 use crate::statusbar::WidgetShareInfo;
 use crate::utils::gtkiconloader::IconName;
 use crate::utils::{fileutils, gtkiconloader};
-use crate::widgets::chart::{Chart, LineType, Series};
+use crate::widgets::chart::{BaselineType, Chart, LineType, Series};
 
 use super::Block;
 
@@ -132,17 +132,20 @@ impl Block for NetspeedBlock {
             .hexpand(false)
             .build();
 
-        let image = gtkiconloader::load_image_at(IconName::WIFI, 18);
+        let icon = gtkiconloader::load_font_icon(IconName::WIFI);
 
         let speed_label: gtk::Label = gtk::Label::builder().hexpand(false).xalign(1.0).build();
         speed_label.style_context().add_class("netspeed-label");
 
         let up_color = RGBA::new(1.0, 0.8, 0.5, 0.6);
         let down_color = RGBA::new(0.5, 0.8, 1.0, 0.6);
-        let mut up_series = Series::new("up", 2_000_000.0, 60, up_color.clone());
-        up_series.set_baseline_and_height(0.45, 0.45);
-        let mut down_series = Series::new("down", 2_000_000.0, 60, down_color.clone());
-        down_series.set_baseline_and_height(0.39, -0.37);
+        let up_series = Series::new("up", 2_000_000.0, 60, up_color.clone())
+            .with_baseline(BaselineType::FixedPercent(0.5))
+            .with_height_percent(0.45);
+        let down_series = Series::new("down", 2_000_000.0, 60, down_color.clone())
+            .with_baseline(BaselineType::FixedPercent(0.45))
+            .with_height_percent(-0.40);
+
         let chart = Chart::builder()
             .with_line_width(1.0)
             .with_width(60)
@@ -152,7 +155,7 @@ impl Block for NetspeedBlock {
 
         chart.draw_in_seconds(1);
 
-        holder.add(&image);
+        holder.add(&icon);
         holder.add(&chart.drawing_box);
 
         holder.add(&speed_label);
