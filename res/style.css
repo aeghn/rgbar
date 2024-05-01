@@ -14,16 +14,14 @@ button {
 }
 
 .wm {
-  font-family: "Inter", sans-serif;
-  font-weight: 400;
+  font-family: "Inter", "Smiley Sans", sans-serif;
+  font-size: 13px;
   font-style: italic;
-  font-size: 12px;
   margin: 2px 3px 2px 3px;
 }
 
 .wm-title {
   color: #eee;
-  background-color: #282828;
   padding: 0px 5px 0px 5px;
 }
 
