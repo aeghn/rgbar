@@ -16,13 +16,13 @@ button {
 .wm {
   font-family: "Inter", "Smiley Sans", sans-serif;
   font-size: 13px;
-  font-style: italic;
   margin: 2px 3px 2px 3px;
 }
 
 .wm-title {
   color: #eee;
   padding: 0px 5px 0px 5px;
+  font-style: italic;
 }
 
 .wm-cw-icon {
