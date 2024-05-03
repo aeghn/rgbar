@@ -150,8 +150,7 @@ impl Block for NetspeedBlock {
             .with_line_width(1.0)
             .with_width(60)
             .with_series(down_series.clone())
-            .with_series(up_series.clone())
-            .with_line_type(LineType::Pillar);
+            .with_series(up_series.clone());
 
         chart.draw_in_seconds(1);
 

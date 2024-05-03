@@ -13,7 +13,7 @@ use crate::datahodler::ring::Ring;
 #[derive(Clone)]
 pub enum LineType {
     Line,
-    Pillar,
+    Fill,
 }
 
 #[derive(Clone, Debug)]
@@ -30,6 +30,7 @@ pub struct Series<E: Into<f64> + Clone> {
     color: RGBA,
     baseline_type: BaselineType,
     height_percent: f64,
+    line_type: LineType,
 }
 
 impl<E: Into<f64> + Clone> Series<E> {
@@ -41,6 +42,7 @@ impl<E: Into<f64> + Clone> Series<E> {
             color,
             baseline_type: BaselineType::Upon,
             height_percent: 1.0,
+            line_type: LineType::Fill,
         }
     }
 
@@ -54,6 +56,11 @@ impl<E: Into<f64> + Clone> Series<E> {
         self
     }
 
+    pub fn with_line_type(mut self, line_type: LineType) -> Self {
+        self.line_type = line_type;
+        self
+    }
+
     pub fn add_value(&self, value: E) {
         self.ring.add(value);
     }
@@ -62,7 +69,6 @@ impl<E: Into<f64> + Clone> Series<E> {
 pub struct Chart<E: Into<f64> + Clone> {
     drawing_area: gtk::DrawingArea,
     line_width: f64,
-    line_type: LineType,
     phondata: PhantomData<E>,
     pub drawing_box: gtk::Box,
     series: Vec<Series<E>>,
@@ -83,7 +89,6 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         Self {
             drawing_area,
             line_width: 1.0,
-            line_type: LineType::Line,
             phondata: Default::default(),
             drawing_box,
             series: vec![],
@@ -183,45 +188,49 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
                 }
             }
 
-            cr.stroke_preserve().unwrap();
+            if let LineType::Fill = serie.line_type {
+                cr.stroke_preserve().unwrap();
 
-            match serie.baseline_type {
-                BaselineType::FixedPercent(baseline) => {
-                    let base = 1. - baseline;
-                    if let Some((x, _)) = alloc_ys.last() {
-                        cr.line_to(*x, alloc_h as f64 * base);
-                    }
-                    if let Some((x, _)) = alloc_ys.first() {
-                        cr.line_to(*x, alloc_h as f64 * base);
-                    }
-                }
-                BaselineType::Upon => {
-                    if let Some(vec) = prev_alloc_ys.as_ref() {
-                        for (x, y) in vec.iter().rev() {
-                            cr.line_to(*x, *y);
-                        }
-                    } else {
+                match serie.baseline_type {
+                    BaselineType::FixedPercent(baseline) => {
+                        let base = 1. - baseline;
                         if let Some((x, _)) = alloc_ys.last() {
-                            cr.line_to(*x, def_baseline as f64);
+                            cr.line_to(*x, alloc_h as f64 * base);
                         }
                         if let Some((x, _)) = alloc_ys.first() {
-                            cr.line_to(*x, def_baseline as f64);
+                            cr.line_to(*x, alloc_h as f64 * base);
                         }
                     }
+                    BaselineType::Upon => {
+                        if let Some(vec) = prev_alloc_ys.as_ref() {
+                            for (x, y) in vec.iter().rev() {
+                                cr.line_to(*x, *y);
+                            }
+                        } else {
+                            if let Some((x, _)) = alloc_ys.last() {
+                                cr.line_to(*x, def_baseline as f64);
+                            }
+                            if let Some((x, _)) = alloc_ys.first() {
+                                cr.line_to(*x, def_baseline as f64);
+                            }
+                        }
 
-                    if let Some((x, y)) = alloc_ys.get(0) {
-                        cr.line_to(*x, *y);
+                        if let Some((x, y)) = alloc_ys.get(0) {
+                            cr.line_to(*x, *y);
+                        }
                     }
                 }
-            }
 
-            cr.set_source_rgba(
-                serie.color.red(),
-                serie.color.green(),
-                serie.color.blue(),
-                serie.color.alpha(),
-            );
-            cr.fill().unwrap();
+                cr.set_source_rgba(
+                    serie.color.red(),
+                    serie.color.green(),
+                    serie.color.blue(),
+                    serie.color.alpha(),
+                );
+                cr.fill().unwrap();
+            } else {
+                cr.stroke().unwrap();
+            }
 
             prev_alloc_ys.replace(alloc_ys);
         }
@@ -257,12 +266,6 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
 
     pub fn with_line_width(mut self, line_width: f64) -> Self {
         self.line_width = line_width;
-
-        self
-    }
-
-    pub fn with_line_type(mut self, line_type: LineType) -> Self {
-        self.line_type = line_type;
 
         self
     }

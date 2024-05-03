@@ -105,20 +105,21 @@ impl Block for CpuBlock {
 
         let icon = gtkiconloader::load_font_icon(IconName::CPU);
 
-        let freq = gtkiconloader::load_font_icon(IconName::Empty);
-
         let user_serie = Series::new("cpu_user", 100., 30, RGBA::new(0.5, 0.8, 1.0, 0.6));
-        let system_serie = Series::new("cpu_system", 100., 30, RGBA::new(1.0, 0.3, 0.1, 0.6));
+        let system_serie = Series::new("cpu_system", 100., 30, RGBA::new(0.6, 0.6, 0.1, 0.6));
+        let freq_serir = Series::new("cpu_freq", 4.7 * 1e9, 30, RGBA::new(1.0, 0.3, 0.1, 0.6))
+            .with_baseline(crate::widgets::chart::BaselineType::FixedPercent(0.))
+            .with_height_percent(1.)
+            .with_line_type(LineType::Line);
         let chart = Chart::builder()
             .with_width(30)
             .with_line_width(1.)
             .with_series(system_serie.clone())
             .with_series(user_serie.clone())
-            .with_line_type(LineType::Line);
+            .with_series(freq_serir.clone());
         chart.draw_in_seconds(1);
 
         holder.pack_start(&icon, false, false, 0);
-        holder.pack_end(&freq, false, false, 0);
         holder.pack_end(&chart.drawing_box, false, false, 0);
 
         MainContext::ref_thread_default().spawn_local(async move {
@@ -132,17 +133,7 @@ impl Block for CpuBlock {
                                 .max_by(|f1, f2| f64::total_cmp(&f1, &f2))
                                 .unwrap_or(&0.);
 
-                            let icon = if max < &(1. * 1e9) {
-                                gtkiconloader::load_label(IconName::FreqShell)
-                            } else if max < &(2. * 1e9) {
-                                gtkiconloader::load_label(IconName::FreqSnail)
-                            } else if max < &(3. * 1e9) {
-                                gtkiconloader::load_label(IconName::FreqTurtle)
-                            } else {
-                                gtkiconloader::load_label(IconName::FreqRabbit)
-                            };
-
-                            freq.set_label(icon)
+                            freq_serir.add_value(*max);
                         }
                         CpuOut::UtilizationAvg(user, system) => {
                             system_serie.add_value(system * 100.);

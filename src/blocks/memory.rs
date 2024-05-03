@@ -96,8 +96,7 @@ impl Block for MemoryBlock {
             .with_width(30)
             .with_line_width(1.0)
             .with_series(mem_series.clone())
-            .with_series(cache_series.clone())
-            .with_line_type(LineType::Line);
+            .with_series(cache_series.clone());
         chart.draw_in_seconds(1);
 
         holder.pack_start(&icon, false, false, 0);
