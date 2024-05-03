@@ -1,7 +1,12 @@
+use std::time::Instant;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
+
 use crate::datahodler::channel::DualChannel;
 
 use crate::statusbar::WidgetShareInfo;
 use crate::utils::gtkiconloader::load_label;
+use crate::utils::timeutils::second_to_human;
 
 use self::common::get_battery_info;
 use self::ideapad::get_conservation_mode;
@@ -64,6 +69,8 @@ pub enum BatteryOut {
     ConvervationMode(ConvervationMode),
     BatteryInfo(BatteryInfo),
     UnknownBatteryInfo,
+    BatteryPowerDisconnected(u64, usize), // Timestamp, battery
+    BatteryPowerConnected,                // Timestamp, battery
 }
 
 #[derive(Clone)]
@@ -81,17 +88,42 @@ impl BatteryBlock {
     }
 }
 
+fn mills() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs()
+}
+
 impl Block for BatteryBlock {
     type Out = BatteryOut;
     type In = BatteryIn;
 
     fn run(&mut self) -> anyhow::Result<()> {
         let sender = self.dualchannel.get_out_sender();
+        let mut last_info: Option<PowerStatus> = None;
+
         glib::timeout_add_seconds(
             1,
             clone!(@strong sender => move || {
                 match get_battery_info() {
-                    Ok(info) => sender.send(Self::Out::BatteryInfo(info)).expect("msg"),
+                    Ok(info) => {
+                        if let PowerStatus::Discharging = info.status {
+                            if Some(&PowerStatus::Discharging) != last_info.as_ref() {
+                                let seconds = mills();
+
+                                sender.send(Self::Out::BatteryPowerDisconnected(seconds, info.energy_now.clone() as usize)).expect("send disconnected info");
+
+                                last_info.replace(PowerStatus::Discharging);
+                            }
+                        } else if let PowerStatus::Charging = info.status {
+                            if Some(&PowerStatus::Discharging) == last_info.as_ref() {
+                                sender.send(Self::Out::BatteryPowerConnected).expect("unable to send");
+                                last_info.take();
+                            }
+                        }
+                        sender.send(Self::Out::BatteryInfo(info)).expect("send battery info message")
+                    },
                     Err(_) => sender.send(Self::Out::UnknownBatteryInfo).expect("todo"),
                 };
 
@@ -124,11 +156,8 @@ impl Block for BatteryBlock {
         let battery_status_icon = gtkiconloader::load_font_icon(IconName::Empty);
         battery_status_icon.style_context().add_class("f-20");
 
-        let battery_percent_value = gtk::Label::builder().build();
-        battery_percent_value
-            .style_context()
-            .add_class("battery-label");
-
+        let battery_info = gtk::Label::builder().build();
+        battery_info.style_context().add_class("battery-label");
         let convervation_icon = gtkiconloader::load_font_icon(IconName::Empty);
 
         let power_status_icon = gtkiconloader::load_font_icon(IconName::Empty);
@@ -136,11 +165,13 @@ impl Block for BatteryBlock {
         holder.pack_start(&battery_status_icon, false, false, 0);
         holder.pack_start(&power_status_icon, false, false, 0);
         holder.pack_start(&convervation_icon, false, false, 0);
-        holder.pack_start(&battery_percent_value, false, false, 0);
+        holder.pack_start(&battery_info, false, false, 0);
 
         let mut percent = 0;
         let mut cm_status = ConvervationMode::Unknown;
         let mut power_status = PowerStatus::Unknown;
+
+        let mut disconnect_info: Option<(u64, usize)> = None;
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
@@ -178,7 +209,25 @@ impl Block for BatteryBlock {
                                 percent = status;
                             }
 
-                            battery_percent_value.set_label(format!("{}%", status).as_str());
+                            let info = if let Some((time, value)) = disconnect_info {
+                                let seconds = mills();
+                                let time_diff = (seconds - time) as f64;
+
+                                let cap_diff = value as u32 - bi.energy_now;
+                                if cap_diff == 0 {
+                                    format!("{}%", status)
+                                } else {
+                                    let remain_secs = (bi.energy_now as f64
+                                        / (cap_diff as f64 / time_diff))
+                                        as u32;
+
+                                    format!("{}% ({})", status, second_to_human(remain_secs))
+                                }
+                            } else {
+                                format!("{}%", status)
+                            };
+
+                            battery_info.set_label(&info);
 
                             let pstatus = bi.status;
 
@@ -194,7 +243,13 @@ impl Block for BatteryBlock {
                                 power_status_icon.set_label(&load_label(mapped))
                             }
                         }
-                        BatteryOut::UnknownBatteryInfo => todo!(),
+                        BatteryOut::UnknownBatteryInfo => {}
+                        BatteryOut::BatteryPowerDisconnected(time, value) => {
+                            disconnect_info.replace((time, value));
+                        }
+                        BatteryOut::BatteryPowerConnected => {
+                            disconnect_info.take();
+                        }
                     }
                 }
             }
