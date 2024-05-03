@@ -7,6 +7,7 @@ use anyhow::{anyhow, Result};
 use gdk::{glib::Cast, RGBA};
 use glib::MainContext;
 use gtk::prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
+use tracing::error;
 
 use crate::utils::gtkiconloader::IconName;
 use crate::{
@@ -95,6 +96,8 @@ impl Block for CpuBlock {
     }
 
     fn widget(&self, _: &WidgetShareInfo) -> gtk::Widget {
+        let mut receiver = self.dualchannel.get_out_receiver();
+
         let holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .hexpand(false)
@@ -102,17 +105,10 @@ impl Block for CpuBlock {
 
         let icon = gtkiconloader::load_font_icon(IconName::CPU);
 
-        let label = gtk::Label::builder().label("CPU: ").build();
-        label.style_context().add_class("cpu-mem-label");
+        let freq = gtkiconloader::load_font_icon(IconName::Empty);
 
-        let _turbo_str = String::new();
-        let _freq = String::new();
-        let mut label_str = String::new();
-
-        let mut receiver = self.dualchannel.get_out_receiver();
-
-        let user_serie = Series::new("cpu", 100., 30, RGBA::new(0.5, 0.8, 1.0, 0.6));
-        let system_serie = Series::new("cpu", 100., 30, RGBA::new(1.0, 0.3, 0.1, 0.6));
+        let user_serie = Series::new("cpu_user", 100., 30, RGBA::new(0.5, 0.8, 1.0, 0.6));
+        let system_serie = Series::new("cpu_system", 100., 30, RGBA::new(1.0, 0.3, 0.1, 0.6));
         let chart = Chart::builder()
             .with_width(30)
             .with_line_width(1.)
@@ -120,27 +116,34 @@ impl Block for CpuBlock {
             .with_series(user_serie.clone())
             .with_line_type(LineType::Line);
         chart.draw_in_seconds(1);
+
         holder.pack_start(&icon, false, false, 0);
+        holder.pack_end(&freq, false, false, 0);
         holder.pack_end(&chart.drawing_box, false, false, 0);
 
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
                 if let Ok(msg) = receiver.recv().await {
                     match msg {
-                        CpuOut::Turbo(turbo) => {
-                            let new = match turbo {
-                                TriBool::True => "T",
-                                TriBool::False => "N",
-                                TriBool::Unknown => "",
+                        CpuOut::Turbo(_turbo) => {}
+                        CpuOut::Frequencies(freqs) => {
+                            let max = freqs
+                                .iter()
+                                .max_by(|f1, f2| f64::total_cmp(&f1, &f2))
+                                .unwrap_or(&0.);
+
+                            let icon = if max < &(1. * 1e9) {
+                                gtkiconloader::load_label(IconName::FreqShell)
+                            } else if max < &(2. * 1e9) {
+                                gtkiconloader::load_label(IconName::FreqSnail)
+                            } else if max < &(3. * 1e9) {
+                                gtkiconloader::load_label(IconName::FreqTurtle)
+                            } else {
+                                gtkiconloader::load_label(IconName::FreqRabbit)
                             };
 
-                            let new = format!("{}", new);
-                            if new.as_str() != label_str.as_str() {
-                                label.set_label(&new);
-                            }
-                            label_str = new;
+                            freq.set_label(icon)
                         }
-                        CpuOut::Frequencies(_freq) => {}
                         CpuOut::UtilizationAvg(user, system) => {
                             system_serie.add_value(system * 100.);
                             user_serie.add_value(user * 100.);
