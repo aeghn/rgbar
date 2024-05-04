@@ -216,6 +216,8 @@ impl HyprWidget {
         if let Some(img) = self.icon_loader.load_from_name(&class) {
             self.cw_title.0.set_from_pixbuf(Some(&img));
             self.cw_title.0.show();
+        } else {
+            self.cw_title.0.hide();
         }
 
         if !is_empty && !visiable {
@@ -293,7 +295,16 @@ impl HyprWidget {
 
     fn reorder_workspaces(workspaces: &gtk::Box) {
         let mut children = workspaces.children();
-        children.sort_by(|a, b| a.widget_name().cmp(&b.widget_name()));
+        children.sort_by(|a, b| {
+            let ai = isize::from_str_radix(a.widget_name().as_str(), 10);
+            let bi = isize::from_str_radix(b.widget_name().as_str(), 10);
+
+            if let (Ok(ai), Ok(bi)) = (ai, bi) {
+                isize::cmp(&ai, &bi)
+            } else {
+                a.widget_name().cmp(&b.widget_name())
+            }
+        });
 
         children
             .iter()
