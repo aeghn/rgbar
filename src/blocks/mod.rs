@@ -12,6 +12,7 @@ pub mod netspeed;
 
 pub mod hyprstatus;
 pub mod time;
+pub mod temp;
 
 pub trait Block {
     type Out;

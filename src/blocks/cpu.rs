@@ -1,7 +1,4 @@
-use std::{
-    fs::{self},
-    str::FromStr,
-};
+use std::{fs, str::FromStr, time::Duration};
 
 use anyhow::{anyhow, Result};
 use gdk::{glib::Cast, RGBA};
@@ -18,7 +15,7 @@ use crate::{
 };
 use crate::{statusbar::WidgetShareInfo, utils::gtkiconloader};
 
-use super::Block;
+use super::{temp, Block};
 
 const CPU_BOOST_PATH: &str = "/sys/devices/system/cpu/cpufreq/boost";
 const CPU_NO_TURBO_PATH: &str = "/sys/devices/system/cpu/intel_pstate/no_turbo";
@@ -28,10 +25,10 @@ pub enum CpuIn {}
 
 #[derive(Clone)]
 pub enum CpuOut {
-    Turbo(TriBool),
     Frequencies(Vec<f64>),
     UtilizationAvg(f64, f64),
     Utilizations(Vec<f64>),
+    CpuTemp(f64),
 }
 
 pub struct CpuBlock {
@@ -52,8 +49,6 @@ impl Block for CpuBlock {
     type In = CpuIn;
 
     fn run(&mut self) -> anyhow::Result<()> {
-        let sender = self.dualchannel.get_out_sender();
-
         let mut cputime = read_proc_stat()?;
         let cores = cputime.1.len();
 
@@ -61,6 +56,12 @@ impl Block for CpuBlock {
             return Err(anyhow!("/proc/stat reported zero cores"));
         }
 
+        let mut temp_file = temp::match_type_dir("x86_pkg_temp").map(|mut p| {
+            p.push("temp");
+            p
+        });
+
+        let sender = self.dualchannel.get_out_sender();
         glib::timeout_add_seconds_local(1, move || {
             let freqs = read_frequencies().expect("unable to read frequencies");
             sender.send(CpuOut::Frequencies(freqs)).unwrap();
@@ -80,14 +81,17 @@ impl Block for CpuBlock {
 
             cputime = new_cputime;
 
-            // Read boost state on intel CPUs
-            sender
-                .send(CpuOut::Turbo(
-                    boost_status()
-                        .map(|e| if e { TriBool::True } else { TriBool::False })
-                        .unwrap_or(TriBool::Unknown),
-                ))
-                .unwrap();
+            glib::ControlFlow::Continue
+        });
+
+        let sender = self.dualchannel.get_out_sender();
+        glib::timeout_add_local(Duration::from_millis(1600), move || {
+            if let Ok(temp_path) = temp_file.as_ref() {
+                let temp = temp::read_type_temp(temp_path);
+                if let Ok(temp) = temp {
+                    sender.send(CpuOut::CpuTemp(temp)).unwrap();
+                }
+            };
 
             glib::ControlFlow::Continue
         });
@@ -105,9 +109,11 @@ impl Block for CpuBlock {
 
         let icon = gtkiconloader::load_font_icon(IconName::CPU);
 
+        let freq = gtkiconloader::load_font_icon(IconName::Empty);
+
         let user_serie = Series::new("cpu_user", 100., 30, RGBA::new(0.5, 0.8, 1.0, 0.6));
         let system_serie = Series::new("cpu_system", 100., 30, RGBA::new(0.6, 0.6, 0.1, 0.6));
-        let freq_serir = Series::new("cpu_freq", 4.7 * 1e9, 30, RGBA::new(1.0, 0.3, 0.1, 0.6))
+        let cpu_temp = Series::new("cpu_temp", 100., 30, RGBA::new(1.0, 0.3, 0.1, 0.6))
             .with_baseline(crate::widgets::chart::BaselineType::FixedPercent(0.))
             .with_height_percent(1.)
             .with_line_type(LineType::Line);
@@ -116,30 +122,43 @@ impl Block for CpuBlock {
             .with_line_width(1.)
             .with_series(system_serie.clone())
             .with_series(user_serie.clone())
-            .with_series(freq_serir.clone());
+            .with_series(cpu_temp.clone());
         chart.draw_in_seconds(1);
 
         holder.pack_start(&icon, false, false, 0);
+        holder.pack_end(&freq, false, false, 0);
         holder.pack_end(&chart.drawing_box, false, false, 0);
 
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
                 if let Ok(msg) = receiver.recv().await {
                     match msg {
-                        CpuOut::Turbo(_turbo) => {}
                         CpuOut::Frequencies(freqs) => {
                             let max = freqs
                                 .iter()
                                 .max_by(|f1, f2| f64::total_cmp(&f1, &f2))
                                 .unwrap_or(&0.);
 
-                            freq_serir.add_value(*max);
+                            let icon = if max < &(1. * 1e9) {
+                                gtkiconloader::load_label(IconName::FreqShell)
+                            } else if max < &(2. * 1e9) {
+                                gtkiconloader::load_label(IconName::FreqSnail)
+                            } else if max < &(3. * 1e9) {
+                                gtkiconloader::load_label(IconName::FreqTurtle)
+                            } else {
+                                gtkiconloader::load_label(IconName::FreqRabbit)
+                            };
+
+                            freq.set_label(icon)
                         }
                         CpuOut::UtilizationAvg(user, system) => {
                             system_serie.add_value(system * 100.);
                             user_serie.add_value(user * 100.);
                         }
                         CpuOut::Utilizations(_) => {}
+                        CpuOut::CpuTemp(temp) => {
+                            cpu_temp.add_value(temp);
+                        }
                     }
                 }
             }
