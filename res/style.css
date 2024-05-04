@@ -13,29 +13,24 @@ button {
   background-color: #101010;
 }
 
+.lucide {
+  font-family: lucide;
+  font-size: 16px;
+}
+
+.chart-border {
+  margin: 2px 1px 2px 2px;
+}
+
+.f-20 {
+  font-size: 20px;
+}
+
+/* Window Manger Part */
 .wm {
   font-family: "Inter", "Smiley Sans", sans-serif;
   font-size: 13px;
   margin: 2px 3px 2px 3px;
-}
-
-.wm-title {
-  color: #eee;
-  padding: 0px 5px 0px 5px;
-  font-style: italic;
-}
-
-.wm-cw-icon {
-  margin-left: 10px;
-  padding-left: 10px;
-  border-left: 1px solid #606060;
-}
-
-.ws {
-  color: #999;
-  font-size: 12px;
-  padding: 0 8px 0 8px;
-  background-color: #303030;
 }
 
 .wss {
@@ -45,12 +40,31 @@ button {
   margin: 3px 0 3px;
 }
 
+.ws {
+  color: #999;
+  font-size: 12px;
+  padding: 0 8px 0 8px;
+  background-color: #303030;
+}
+
 .ws-focus {
   color: #fff;
   background-color: #505050;
 }
 
+.wm-cw-title {
+  color: #eee;
+  padding: 0px 5px 0px 5px;
+  font-style: italic;
+}
+
+.wm-cw-icon {
+  margin-left: 10px;
+}
+
+/* Block Common Config */
 .block {
+  font-family: "Inter", sans-serif;
   background-color: #303030;
   color: #ddd;
   border: 1px solid #686868;
@@ -59,9 +73,22 @@ button {
   margin: 3px 1px 5px 1px;
 }
 
+/* NetSpeed */
 .netspeed-label {
   font-size: 8px;
   min-width: 40px;
+}
+
+.battery-label {
+  padding-left: 5px;
+}
+
+.dborder {
+  border: 1px #aa0000 solid;
+}
+
+.time-block {
+  min-width: 150px;
 }
 
 .time-chinese {
@@ -73,29 +100,4 @@ button {
 .time-date {
   font-size: 12px;
   min-width: 60px;
-}
-
-.battery-label {
-  padding-left: 5px;
-}
-
-.chart-border {
-  margin: 2px 1px 2px 2px;
-}
-
-.dborder {
-  border: 1px #aa0000 solid;
-}
-
-.botton-icon {
-  margin-right: 5px;
-}
-
-.lucide {
-  font-family: lucide;
-  font-size: 16px;
-}
-
-.f-20 {
-  font-size: 20px;
 }

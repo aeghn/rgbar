@@ -93,6 +93,7 @@ impl Block for TimeBlock {
             .valign(gtk::Align::Center)
             .vexpand(false)
             .build();
+        holder.style_context().add_class("time-block");
 
         let (_, _cnm, cnd) = Self::get_chinese_date();
         let cn_date = gtk::Label::builder()
@@ -107,8 +108,9 @@ impl Block for TimeBlock {
             .build();
         cn_holder.pack_start(&cn_date, false, false, 0);
 
+        let wes = Self::get_wes_time();
         let wes_date = gtk::Label::builder()
-            .label(format!("{}", Self::get_wes_time().1))
+            .label(format!("{} {}", wes.0, wes.1))
             .vexpand(false)
             .build();
         wes_date.style_context().add_class("time-date");
@@ -120,16 +122,14 @@ impl Block for TimeBlock {
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
                 match mreceiver.recv().await {
-                    Ok(msg) => {
-                        match msg {
-                            TimeOut::Chinese((_, _m, d)) => {
-                                cn_date.set_label(format!("{}", d).as_str());
-                            }
-                            TimeOut::Westen(d, t) => {
-                                wes_date.set_label(format!("{} {}", d, t).as_str());
-                            }
+                    Ok(msg) => match msg {
+                        TimeOut::Chinese((_, _m, d)) => {
+                            cn_date.set_label(format!("{}", d).as_str());
                         }
-                    }
+                        TimeOut::Westen(d, t) => {
+                            wes_date.set_label(format!("{} {}", d, t).as_str());
+                        }
+                    },
                     Err(_) => {}
                 }
             }

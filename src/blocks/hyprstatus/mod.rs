@@ -332,7 +332,7 @@ impl HyprWidget {
         let image = gtk::Image::builder().build();
         image.style_context().add_class("wm-cw-icon");
         let label = gtk::Label::builder().build();
-        label.style_context().add_class("wm-title");
+        label.style_context().add_class("wm-cw-title");
 
         label.set_single_line_mode(true);
         label.set_ellipsize(gdk::pango::EllipsizeMode::End);
