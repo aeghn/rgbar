@@ -84,7 +84,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         let drawing_box = gtk::Box::builder().build();
 
         drawing_box.pack_start(&drawing_area, true, true, 0);
-        drawing_box.style_context().add_class("chart-border");
+        drawing_box.style_context().add_class("chart");
 
         Self {
             drawing_area,
@@ -129,7 +129,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         let max_serie_size = series.iter().map(|s| s.ring.size).max().unwrap_or(30);
         let interval = 1.0 / ((max_serie_size - 2) as f64);
 
-        let mut sum_heights_percent = vec![0.; max_serie_size + 2];
+        let mut sum_heights_percent = vec![0.; alloc_w as usize + 2];
         let mut cur_x = 0;
 
         let mut prev_alloc_ys: Option<Vec<(f64, f64)>> = None;
