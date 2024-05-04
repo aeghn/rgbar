@@ -21,7 +21,11 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}",
-            "env": {"WAYLAND_DISPLAY": "wayland-1", "DISPLAY": ""}
+            "env": {
+                "WAYLAND_DISPLAY": "wayland-1",
+                "DISPLAY": "",
+                "HYPRLAND_INSTANCE_SIGNATURE": "fe7b748eb668136dd0558b7c8279bfcd7ab4d759_1714777238"
+            }
         },
         {
             "type": "lldb",
