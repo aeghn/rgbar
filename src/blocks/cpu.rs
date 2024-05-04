@@ -109,25 +109,48 @@ impl Block for CpuBlock {
 
         let icon = gtkiconloader::load_font_icon(IconName::CPU);
 
-        let freq = gtkiconloader::load_font_icon(IconName::Empty);
+        let right_holder = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .hexpand(true)
+            .build();
 
-        let user_serie = Series::new("cpu_user", 100., 30, RGBA::new(0.5, 0.8, 1.0, 0.6));
-        let system_serie = Series::new("cpu_system", 100., 30, RGBA::new(0.6, 0.6, 0.1, 0.6));
-        let cpu_temp = Series::new("cpu_temp", 100., 30, RGBA::new(1.0, 0.3, 0.1, 0.6))
-            .with_baseline(crate::widgets::chart::BaselineType::FixedPercent(0.))
-            .with_height_percent(1.)
-            .with_line_type(LineType::Line);
+        let label_holder = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .hexpand(true)
+            .vexpand(false)
+            .build();
+
+        let utilization_label = gtk::Label::builder().build();
+        utilization_label.style_context().add_class("cpu-util");
+        let freq_label = gtkiconloader::load_font_icon(IconName::Empty);
+        freq_label.style_context().add_class("cpu-freq");
+        let temp_label = gtk::Label::builder().build();
+        temp_label.style_context().add_class("cpu-temp");
+
+        label_holder.pack_start(&utilization_label, false, false, 0);
+
+        label_holder.pack_start(&temp_label, false, false, 0);
+        label_holder.pack_start(&freq_label, false, false, 0);
+
+        right_holder.pack_start(&label_holder, false, false, 0);
+
+        let user_serie = Series::new("cpu_user", 100., 50, RGBA::new(0.5, 0.8, 1.0, 0.6));
+        let system_serie = Series::new("cpu_system", 100., 50, RGBA::new(0.6, 0.6, 0.1, 0.6));
+        /*         let cpu_temp = Series::new("cpu_temp", 100., 30, RGBA::new(1.0, 0.3, 0.1, 0.6))
+        .with_baseline(crate::widgets::chart::BaselineType::FixedPercent(0.))
+        .with_height_percent(1.)
+        .with_line_type(LineType::Line); */
         let chart = Chart::builder()
             .with_width(30)
             .with_line_width(1.)
             .with_series(system_serie.clone())
-            .with_series(user_serie.clone())
-            .with_series(cpu_temp.clone());
-        chart.draw_in_seconds(1);
+            .with_series(user_serie.clone());
+        chart.draw_in_seconds(2);
+
+        right_holder.pack_end(&chart.drawing_box, true, true, 0);
 
         holder.pack_start(&icon, false, false, 0);
-        holder.pack_end(&freq, false, false, 0);
-        holder.pack_end(&chart.drawing_box, false, false, 0);
+        holder.pack_end(&right_holder, false, false, 0);
 
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
@@ -149,15 +172,17 @@ impl Block for CpuBlock {
                                 gtkiconloader::load_label(IconName::FreqRabbit)
                             };
 
-                            freq.set_label(icon)
+                            freq_label.set_label(icon)
                         }
                         CpuOut::UtilizationAvg(user, system) => {
                             system_serie.add_value(system * 100.);
                             user_serie.add_value(user * 100.);
+                            utilization_label
+                                .set_label(format!("{:.1}%", (system + user) * 100.).as_str());
                         }
                         CpuOut::Utilizations(_) => {}
                         CpuOut::CpuTemp(temp) => {
-                            cpu_temp.add_value(temp);
+                            temp_label.set_label(format!("{:.1}C", temp).as_str())
                         }
                     }
                 }
