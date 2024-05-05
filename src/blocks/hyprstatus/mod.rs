@@ -400,10 +400,11 @@ impl Block for HyprBlock {
     type In = HyprIn;
 
     fn run(&mut self) -> anyhow::Result<()> {
+        let xdg_runtime_dir = std::env::var("XDG_RUNTIME_DIR")?;
         if let Ok(ins) = std::env::var("HYPRLAND_INSTANCE_SIGNATURE") {
             let sender = self.dualchannel.get_out_sender();
 
-            let socket = format!("/tmp/hypr/{}/.socket2.sock", ins);
+            let socket = format!("{}/hypr/{}/.socket2.sock", xdg_runtime_dir, ins);
             let socket_path = Path::new(socket.as_str());
 
             info!("Listening on: {:?}", socket_path);
