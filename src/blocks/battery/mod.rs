@@ -116,7 +116,7 @@ impl Block for BatteryBlock {
 
                                 last_info.replace(PowerStatus::Discharging);
                             }
-                        } else if let PowerStatus::Charging = info.status {
+                        } else if PowerStatus::Charging == info.status || PowerStatus::NotCharging == info.status {
                             if Some(&PowerStatus::Discharging) == last_info.as_ref() {
                                 sender.send(Self::Out::BatteryPowerConnected).expect("unable to send");
                                 last_info.take();
