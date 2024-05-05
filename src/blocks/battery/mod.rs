@@ -1,4 +1,3 @@
-use std::time::Instant;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
@@ -158,6 +157,9 @@ impl Block for BatteryBlock {
 
         let battery_info = gtk::Label::builder().build();
         battery_info.style_context().add_class("battery-label");
+        let remain_time = gtk::Label::builder().build();
+        remain_time.style_context().add_class("battery-label");
+
         let convervation_icon = gtkiconloader::load_font_icon(IconName::Empty);
 
         let power_status_icon = gtkiconloader::load_font_icon(IconName::Empty);
@@ -166,10 +168,12 @@ impl Block for BatteryBlock {
         holder.pack_start(&power_status_icon, false, false, 0);
         holder.pack_start(&convervation_icon, false, false, 0);
         holder.pack_start(&battery_info, false, false, 0);
+        holder.pack_start(&remain_time, false, false, 0);
 
         let mut percent = 0;
         let mut cm_status = ConvervationMode::Unknown;
         let mut power_status = PowerStatus::Unknown;
+        let mut last_refresh_label_time = 0;
 
         let mut disconnect_info: Option<(u64, usize)> = None;
 
@@ -209,25 +213,26 @@ impl Block for BatteryBlock {
                                 percent = status;
                             }
 
-                            let info = if let Some((time, value)) = disconnect_info {
+                            if let Some((time, value)) = disconnect_info {
                                 let seconds = mills();
                                 let time_diff = (seconds - time) as f64;
 
                                 let cap_diff = value as u32 - bi.energy_now;
-                                if cap_diff == 0 {
-                                    format!("{}%", status)
-                                } else {
+                                if cap_diff > 0 && seconds - last_refresh_label_time > 10 {
                                     let remain_secs = (bi.energy_now as f64
                                         / (cap_diff as f64 / time_diff))
                                         as u32;
 
-                                    format!("{}% ({})", status, second_to_human(remain_secs))
+                                    remain_time
+                                        .set_label(&format!("({})", second_to_human(remain_secs)));
+
+                                    last_refresh_label_time = seconds;
                                 }
                             } else {
-                                format!("{}%", status)
-                            };
+                                remain_time.set_label("")
+                            }
 
-                            battery_info.set_label(&info);
+                            battery_info.set_label(&format!("{}%", status));
 
                             let pstatus = bi.status;
 
