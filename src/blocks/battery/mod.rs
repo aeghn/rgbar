@@ -32,7 +32,8 @@ pub enum PowerStatus {
     NotCharging = 1,
     Discharging = 2,
     Charging = 3,
-    Unknown = 4,
+    Full = 4,
+    Unknown = 5,
 }
 
 #[derive(Debug, Clone)]
@@ -242,6 +243,7 @@ impl Block for BatteryBlock {
                                     PowerStatus::NotCharging => IconName::BatteryPowerNotCharging,
                                     PowerStatus::Discharging => IconName::BatteryPowerDisconnected,
                                     PowerStatus::Charging => IconName::BattetyPowerCharging,
+                                    PowerStatus::Full => IconName::BatteryPowerFull,
                                     PowerStatus::Unknown => IconName::BatteryPowerUnknown,
                                 };
 

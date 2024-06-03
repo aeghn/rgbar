@@ -43,6 +43,7 @@ fn read_event(_path: &str) -> anyhow::Result<BatteryInfo> {
                             "charging" => Charging,
                             "not charging" => NotCharging,
                             "discharging" => Discharging,
+                            "full" => PowerStatus::Full,
                             _ => Unknown,
                         };
                     }

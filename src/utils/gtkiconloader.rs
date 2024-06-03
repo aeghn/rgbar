@@ -27,6 +27,7 @@ pub enum IconName {
     BatteryPowerNotCharging,
     BatteryPowerDisconnected,
     BatteryPowerUnknown,
+    BatteryPowerFull,
 
     BatteryConservationOn,
     BatteryConservationOff,
@@ -101,6 +102,7 @@ pub fn load_label(icon_name: IconName) -> &'static str {
         IconName::BattetyPowerCharging => "",
         IconName::BatteryPowerNotCharging => "",
         IconName::BatteryPowerDisconnected => "",
+        IconName::BatteryPowerFull => "",
         IconName::BatteryPowerUnknown => "",
         IconName::BatteryConservationOn => "",
         IconName::BatteryConservationOff => "",
