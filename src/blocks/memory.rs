@@ -90,8 +90,8 @@ impl Block for MemoryBlock {
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
-        let mem_series = Series::new("mem", 100.0, 30, RGBA::new(0.5, 0.8, 1.0, 0.6));
-        let cache_series = Series::new("cache", 100.0, 30, RGBA::new(1.0, 0.8, 0.3, 0.6));
+        let mem_series = Series::new("mem", 100.0, 30, RGBA::new(0.2, 0.2, 0.2, 0.6));
+        let cache_series = Series::new("cache", 100.0, 30, RGBA::new(0.5, 0.5, 0.5, 0.6));
         let chart = Chart::builder()
             .with_width(30)
             .with_line_width(1.0)
