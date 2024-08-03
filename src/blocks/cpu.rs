@@ -134,8 +134,8 @@ impl Block for CpuBlock {
 
         right_holder.pack_start(&label_holder, false, false, 0);
 
-        let user_serie = Series::new("cpu_user", 100., 50, RGBA::new(0.5, 0.8, 1.0, 0.6));
-        let system_serie = Series::new("cpu_system", 100., 50, RGBA::new(0.6, 0.6, 0.1, 0.6));
+        let user_serie = Series::new("cpu_user", 100., 50, RGBA::new(0.5, 0.2, 0.2, 0.6));
+        let system_serie = Series::new("cpu_system", 100., 50, RGBA::new(0.7, 0.2, 0.1, 0.6));
         /*         let cpu_temp = Series::new("cpu_temp", 100., 30, RGBA::new(1.0, 0.3, 0.1, 0.6))
         .with_baseline(crate::widgets::chart::BaselineType::FixedPercent(0.))
         .with_height_percent(1.)
