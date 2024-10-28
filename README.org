@@ -1,0 +1,17 @@
+#+TITLE: Rust Gtk-3 Bar
+
+A system status bar for wayland and hyprland by Rust and Gtk-3.
+
+* Features
+  - Hyprland
+    - Current Workspace (Click Support)
+    - Active Window Title (Icon Support)
+  - Netspeed (with Graph)
+  - Memory (with Graph)
+  - CPU (Temperature, Graph, Frequency)
+  - Volume (Pulse, with Scroll/Click Support)
+  - Battery (Ideapad Features)
+  - Date (with Chinese Calendar Support)
+
+* Credits
+  - https://github.com/greshake/i3status-rust
