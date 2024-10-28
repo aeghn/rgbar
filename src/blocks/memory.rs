@@ -1,17 +1,16 @@
 use std::cmp::min;
 use std::str::FromStr;
 
+use crate::prelude::*;
 use anyhow::Result;
-use gdk::glib::Cast;
 use gdk::RGBA;
 use glib::MainContext;
-use gtk::prelude::{BoxExt, StyleContextExt};
+use gtk::prelude::BoxExt;
 
-use crate::datahodler::channel::DualChannel;
 use crate::statusbar::WidgetShareInfo;
-use crate::utils::gtkiconloader::IconName;
-use crate::utils::{fileutils, gtkiconloader};
-use crate::widgets::chart::{Chart, LineType, Series};
+use crate::util::gtk_icon_loader::IconName;
+use crate::util::{fileutil, gtk_icon_loader};
+use crate::widgets::chart::{Chart, Column};
 
 use super::Block;
 
@@ -86,17 +85,17 @@ impl Block for MemoryBlock {
             .hexpand(false)
             .build();
 
-        let icon = gtkiconloader::load_font_icon(IconName::RAM);
+        let icon = gtk_icon_loader::load_font_icon(IconName::RAM);
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
-        let mem_series = Series::new("mem", 100.0, 30, RGBA::new(0.2, 0.2, 0.2, 0.6));
-        let cache_series = Series::new("cache", 100.0, 30, RGBA::new(0.5, 0.5, 0.5, 0.6));
+        let mem_columns = Column::new("mem", 100.0, 30, RGBA::new(0.2, 0.2, 0.2, 0.6));
+        let cache_columns = Column::new("cache", 100.0, 30, RGBA::new(0.5, 0.5, 0.5, 0.6));
         let chart = Chart::builder()
             .with_width(30)
             .with_line_width(1.0)
-            .with_series(mem_series.clone())
-            .with_series(cache_series.clone());
+            .with_columns(mem_columns.clone())
+            .with_columns(cache_columns.clone());
         chart.draw_in_seconds(1);
 
         holder.pack_start(&icon, false, false, 0);
@@ -107,8 +106,8 @@ impl Block for MemoryBlock {
                 if let Ok(msg) = receiver.recv().await {
                     match msg {
                         MemoryOut::MemoryUsedAndCache(used, cache, total) => {
-                            cache_series.add_value(((cache * 100) / total) as f64);
-                            mem_series.add_value(((used * 100) / total) as f64);
+                            cache_columns.add_value(((cache * 100) / total) as f64);
+                            mem_columns.add_value(((used * 100) / total) as f64);
                         }
                     }
                 }
@@ -141,7 +140,7 @@ impl Memstate {
 
         let mut mem_state = Memstate::default();
 
-        fileutils::read_lines("/proc/meminfo")
+        fileutil::read_lines("/proc/meminfo")
             .expect("unable to open /proc/meminfo ?")
             .for_each(|line| {
                 let line = line.unwrap_or("".to_string());

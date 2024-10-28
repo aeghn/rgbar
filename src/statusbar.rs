@@ -52,6 +52,7 @@ impl StatusBar {
     }
 
     pub fn check_monitors(&mut self, screen: &gdk::Screen) {
+        tracing::info!("Screen {:?}", screen);
         let monitor_count = screen.display().n_monitors();
         for i in 0..monitor_count {
             if self.window_map.contains_key(&i) {

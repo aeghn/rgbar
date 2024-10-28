@@ -1,12 +1,11 @@
 use crate::datahodler::channel::DualChannel;
+use crate::prelude::*;
 use crate::statusbar::WidgetShareInfo;
 use chinese_lunisolar_calendar::LunisolarDate;
 use chrono::Timelike;
 use chrono::{DateTime, Local};
-use gdk::glib::Cast;
 use glib::MainContext;
 use gtk::prelude::LabelExt;
-use gtk::traits::BoxExt;
 use gtk::traits::StyleContextExt;
 use gtk::traits::WidgetExt;
 use std::cell::RefCell;
@@ -18,7 +17,11 @@ pub enum TimeIn {}
 
 #[derive(Clone)]
 pub enum TimeOut {
-    Chinese((String, String, String)),
+    Chinese {
+        year: String,
+        month: String,
+        day: String,
+    },
     Westen(String, String),
 }
 
@@ -76,8 +79,13 @@ impl Block for TimeBlock {
             let oldt = hour.replace(h);
 
             if oldt != h && h >= 11 {
+                let d = Self::get_chinese_date();
                 sender
-                    .send(TimeOut::Chinese(Self::get_chinese_date()))
+                    .send(TimeOut::Chinese {
+                        year: d.0,
+                        month: d.1,
+                        day: d.2,
+                    })
                     .unwrap();
             }
 
@@ -88,53 +96,34 @@ impl Block for TimeBlock {
     }
 
     fn widget(&self, _share_info: &WidgetShareInfo) -> gtk::Widget {
-        let holder = gtk::Box::builder()
-            .orientation(gtk::Orientation::Horizontal)
-            .valign(gtk::Align::Center)
-            .vexpand(false)
-            .build();
-        holder.style_context().add_class("time-block");
-
-        let (_, _cnm, cnd) = Self::get_chinese_date();
-        let cn_date = gtk::Label::builder()
-            .label(format!("{}", cnd))
-            .vexpand(false)
-            .build();
-        cn_date.style_context().add_class("time-chinese");
-
-        let cn_holder = gtk::Box::builder()
-            .orientation(gtk::Orientation::Vertical)
-            .vexpand(false)
-            .build();
-        cn_holder.pack_start(&cn_date, false, false, 0);
-
         let wes = Self::get_wes_time();
-        let wes_date = gtk::Label::builder()
+        let date_container = gtk::Label::builder()
             .label(format!("{} {}", wes.0, wes.1))
             .vexpand(false)
             .build();
-        wes_date.style_context().add_class("time-date");
+        date_container.style_context().add_class("time-date");
 
-        holder.pack_end(&cn_holder, false, false, 0);
-        holder.pack_start(&wes_date, false, false, 0);
-
-        let mut mreceiver = self.dualchannel.get_out_receiver();
-        MainContext::ref_thread_default().spawn_local(async move {
-            loop {
-                match mreceiver.recv().await {
-                    Ok(msg) => match msg {
-                        TimeOut::Chinese((_, _m, d)) => {
-                            cn_date.set_label(format!("{}", d).as_str());
-                        }
-                        TimeOut::Westen(d, t) => {
-                            wes_date.set_label(format!("{} {}", d, t).as_str());
-                        }
-                    },
-                    Err(_) => {}
+        {
+            let wes_date = date_container.clone();
+            let mut mreceiver = self.dualchannel.get_out_receiver();
+            MainContext::ref_thread_default().spawn_local(async move {
+                loop {
+                    match mreceiver.recv().await {
+                        Ok(msg) => match msg {
+                            TimeOut::Chinese { year, month, day } => {
+                                let cn_date = format!("{year}年 {month} {day}");
+                                wes_date.set_tooltip_text(Some(cn_date.as_str()));
+                            }
+                            TimeOut::Westen(d, t) => {
+                                wes_date.set_label(format!("{} {}", d, t).as_str());
+                            }
+                        },
+                        Err(_) => {}
+                    }
                 }
-            }
-        });
+            });
+        }
 
-        holder.upcast()
+        date_container.upcast()
     }
 }

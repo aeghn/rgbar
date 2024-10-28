@@ -110,17 +110,7 @@ button {
   font-size: 8px;
 }
 
-.time-block {
-  min-width: 150px;
-}
-
-.time-chinese {
-  font-size: 12px;
-  padding: 0 2px 0 2px;
-  margin: 3px 3px 3px 3px;
-}
-
 .time-date {
   font-size: 12px;
-  min-width: 60px;
+  min-width: 120px;
 }

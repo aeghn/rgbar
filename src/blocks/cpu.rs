@@ -4,16 +4,14 @@ use anyhow::{anyhow, Result};
 use gdk::{glib::Cast, RGBA};
 use glib::MainContext;
 use gtk::prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
-use tracing::error;
 
-use crate::utils::gtkiconloader::IconName;
+use crate::prelude::*;
+use crate::util::gtk_icon_loader::IconName;
+use crate::{statusbar::WidgetShareInfo, util::gtk_icon_loader};
 use crate::{
-    constants::TriBool,
-    datahodler::channel::DualChannel,
-    utils::fileutils,
-    widgets::chart::{Chart, LineType, Series},
+    util::fileutil,
+    widgets::chart::{Chart, Column},
 };
-use crate::{statusbar::WidgetShareInfo, utils::gtkiconloader};
 
 use super::{temp, Block};
 
@@ -56,7 +54,7 @@ impl Block for CpuBlock {
             return Err(anyhow!("/proc/stat reported zero cores"));
         }
 
-        let mut temp_file = temp::match_type_dir("x86_pkg_temp").map(|mut p| {
+        let temp_file = temp::match_type_dir("x86_pkg_temp").map(|mut p| {
             p.push("temp");
             p
         });
@@ -107,7 +105,7 @@ impl Block for CpuBlock {
             .hexpand(false)
             .build();
 
-        let icon = gtkiconloader::load_font_icon(IconName::CPU);
+        let icon = gtk_icon_loader::load_font_icon(IconName::CPU);
 
         let right_holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
@@ -122,7 +120,7 @@ impl Block for CpuBlock {
 
         let utilization_label = gtk::Label::builder().build();
         utilization_label.style_context().add_class("cpu-util");
-        let freq_label = gtkiconloader::load_font_icon(IconName::Empty);
+        let freq_label = gtk_icon_loader::load_font_icon(IconName::Empty);
         freq_label.style_context().add_class("cpu-freq");
         let temp_label = gtk::Label::builder().build();
         temp_label.style_context().add_class("cpu-temp");
@@ -134,17 +132,14 @@ impl Block for CpuBlock {
 
         right_holder.pack_start(&label_holder, false, false, 0);
 
-        let user_serie = Series::new("cpu_user", 100., 50, RGBA::new(0.5, 0.2, 0.2, 0.6));
-        let system_serie = Series::new("cpu_system", 100., 50, RGBA::new(0.7, 0.2, 0.1, 0.6));
-        /*         let cpu_temp = Series::new("cpu_temp", 100., 30, RGBA::new(1.0, 0.3, 0.1, 0.6))
-        .with_baseline(crate::widgets::chart::BaselineType::FixedPercent(0.))
-        .with_height_percent(1.)
-        .with_line_type(LineType::Line); */
+        let user_column = Column::new("cpu_user", 100., 50, RGBA::new(0.5, 0.2, 0.2, 0.6));
+        let system_column = Column::new("cpu_system", 100., 50, RGBA::new(0.7, 0.2, 0.1, 0.6));
+
         let chart = Chart::builder()
             .with_width(30)
             .with_line_width(1.)
-            .with_series(system_serie.clone())
-            .with_series(user_serie.clone());
+            .with_columns(system_column.clone())
+            .with_columns(user_column.clone());
         chart.draw_in_seconds(2);
 
         right_holder.pack_end(&chart.drawing_box, true, true, 0);
@@ -163,20 +158,20 @@ impl Block for CpuBlock {
                                 .unwrap_or(&0.);
 
                             let icon = if max < &(1. * 1e9) {
-                                gtkiconloader::load_label(IconName::FreqShell)
+                                gtk_icon_loader::load_label(IconName::FreqShell)
                             } else if max < &(2. * 1e9) {
-                                gtkiconloader::load_label(IconName::FreqSnail)
+                                gtk_icon_loader::load_label(IconName::FreqSnail)
                             } else if max < &(3. * 1e9) {
-                                gtkiconloader::load_label(IconName::FreqTurtle)
+                                gtk_icon_loader::load_label(IconName::FreqTurtle)
                             } else {
-                                gtkiconloader::load_label(IconName::FreqRabbit)
+                                gtk_icon_loader::load_label(IconName::FreqRabbit)
                             };
 
                             freq_label.set_label(icon)
                         }
                         CpuOut::UtilizationAvg(user, system) => {
-                            system_serie.add_value(system * 100.);
-                            user_serie.add_value(user * 100.);
+                            system_column.add_value(system * 100.);
+                            user_column.add_value(user * 100.);
                             utilization_label
                                 .set_label(format!("{:.1}%", (system + user) * 100.).as_str());
                         }
@@ -195,7 +190,7 @@ impl Block for CpuBlock {
 
 // Read frequencies (read in MHz, store in Hz)
 fn read_frequencies() -> Result<Vec<f64>> {
-    let freqs: Vec<f64> = fileutils::read_lines("/proc/cpuinfo")
+    let freqs: Vec<f64> = fileutil::read_lines("/proc/cpuinfo")
         .expect("Unable to read /proc/cpuinfo")
         .filter_map(|f| {
             if let Ok(line) = f {
@@ -269,7 +264,7 @@ fn read_proc_stat() -> Result<(CpuTime, Vec<CpuTime>)> {
     let mut utilizations = Vec::with_capacity(32);
     let mut total = None;
 
-    fileutils::read_lines("/proc/stat")?.for_each(|l| {
+    fileutil::read_lines("/proc/stat")?.for_each(|l| {
         {
             if let Ok(line) = l {
                 // Total time

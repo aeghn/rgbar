@@ -1,7 +1,7 @@
 use std::{
     fs::File,
-    io::{BufRead, BufReader, Read},
-    path::{Path, PathBuf},
+    io::{BufReader, Read},
+    path::PathBuf,
 };
 
 use glob::glob;

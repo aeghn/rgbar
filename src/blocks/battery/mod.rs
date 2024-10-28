@@ -4,17 +4,17 @@ use std::time::UNIX_EPOCH;
 use crate::datahodler::channel::DualChannel;
 
 use crate::statusbar::WidgetShareInfo;
-use crate::utils::gtkiconloader::load_label;
-use crate::utils::timeutils::second_to_human;
+use crate::util::gtk_icon_loader::load_label;
+use crate::util::timeutil::second_to_human;
 
 use self::common::get_battery_info;
 use self::ideapad::get_conservation_mode;
 use self::ideapad::ConvervationMode;
 
 use super::Block;
-use crate::utils::gtkiconloader;
-use crate::utils::gtkiconloader::IconName;
-use gdk::glib::Cast;
+use crate::prelude::*;
+use crate::util::gtk_icon_loader;
+use crate::util::gtk_icon_loader::IconName;
 use glib::clone;
 use glib::MainContext;
 
@@ -105,32 +105,49 @@ impl Block for BatteryBlock {
 
         glib::timeout_add_seconds(
             1,
-            clone!(@strong sender => move || {
-                match get_battery_info() {
-                    Ok(info) => {
-                        if let PowerStatus::Discharging = info.status {
-                            if Some(&PowerStatus::Discharging) != last_info.as_ref() {
-                                let seconds = mills();
+            clone!(
+                #[strong]
+                sender,
+                move || {
+                    match get_battery_info() {
+                        Ok(info) => {
+                            if let PowerStatus::Discharging = info.status {
+                                if Some(&PowerStatus::Discharging) != last_info.as_ref() {
+                                    let seconds = mills();
 
-                                sender.send(Self::Out::BatteryPowerDisconnected(seconds, info.energy_now.clone() as usize)).expect("send disconnected info");
+                                    sender
+                                        .send(Self::Out::BatteryPowerDisconnected(
+                                            seconds,
+                                            info.energy_now.clone() as usize,
+                                        ))
+                                        .expect("send disconnected info");
 
-                                last_info.replace(PowerStatus::Discharging);
+                                    last_info.replace(PowerStatus::Discharging);
+                                }
+                            } else if PowerStatus::Charging == info.status
+                                || PowerStatus::NotCharging == info.status
+                            {
+                                if Some(&PowerStatus::Discharging) == last_info.as_ref() {
+                                    sender
+                                        .send(Self::Out::BatteryPowerConnected)
+                                        .expect("unable to send");
+                                    last_info.take();
+                                }
                             }
-                        } else if PowerStatus::Charging == info.status || PowerStatus::NotCharging == info.status {
-                            if Some(&PowerStatus::Discharging) == last_info.as_ref() {
-                                sender.send(Self::Out::BatteryPowerConnected).expect("unable to send");
-                                last_info.take();
-                            }
+                            sender
+                                .send(Self::Out::BatteryInfo(info))
+                                .expect("send battery info message")
                         }
-                        sender.send(Self::Out::BatteryInfo(info)).expect("send battery info message")
-                    },
-                    Err(_) => sender.send(Self::Out::UnknownBatteryInfo).expect("todo"),
-                };
+                        Err(_) => sender.send(Self::Out::UnknownBatteryInfo).expect("todo"),
+                    };
 
-                sender.send(BatteryOut::ConvervationMode(get_conservation_mode())).unwrap();
+                    sender
+                        .send(BatteryOut::ConvervationMode(get_conservation_mode()))
+                        .unwrap();
 
-                glib::ControlFlow::Continue
-            }),
+                    glib::ControlFlow::Continue
+                }
+            ),
         );
 
         let receiver = self.dualchannel.get_in_recevier();
@@ -153,7 +170,7 @@ impl Block for BatteryBlock {
             .orientation(gtk::Orientation::Horizontal)
             .build();
 
-        let battery_status_icon = gtkiconloader::load_font_icon(IconName::Empty);
+        let battery_status_icon = gtk_icon_loader::load_font_icon(IconName::Empty);
         battery_status_icon.style_context().add_class("f-20");
 
         let battery_info = gtk::Label::builder().build();
@@ -161,9 +178,9 @@ impl Block for BatteryBlock {
         let remain_time = gtk::Label::builder().build();
         remain_time.style_context().add_class("battery-label");
 
-        let convervation_icon = gtkiconloader::load_font_icon(IconName::Empty);
+        let convervation_icon = gtk_icon_loader::load_font_icon(IconName::Empty);
 
-        let power_status_icon = gtkiconloader::load_font_icon(IconName::Empty);
+        let power_status_icon = gtk_icon_loader::load_font_icon(IconName::Empty);
 
         holder.pack_start(&battery_status_icon, false, false, 0);
         holder.pack_start(&power_status_icon, false, false, 0);

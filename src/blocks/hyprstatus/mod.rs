@@ -1,14 +1,14 @@
 pub mod hyprclients;
 pub mod hyprevents;
+use crate::prelude::*;
 
 use crate::statusbar::WidgetShareInfo;
-use crate::utils::{self};
+use crate::util::{self};
 use anyhow::anyhow;
 
-use gio::prelude::{DataInputStreamExtManual, IOStreamExtManual};
-use gio::traits::SocketClientExt;
+use gio::prelude::{DataInputStreamExtManual, IOStreamExtManual, SocketClientExt};
 use gio::{DataInputStream, SocketClient};
-use glib::{Cast, MainContext, Priority};
+use glib::{MainContext, Priority};
 use hyprevents::ParsedEventType;
 
 use std::cell::RefCell;
@@ -21,7 +21,7 @@ use self::hyprclients::HyprMonitor;
 use super::Block;
 use crate::blocks::hyprstatus::hyprclients::HyprWorkspace;
 use crate::datahodler::channel::{DualChannel, MReceiver, SSender};
-use crate::utils::gtkiconloader::GtkIconLoader;
+use crate::util::gtk_icon_loader::GtkIconLoader;
 use gtk::prelude::{ContainerExt, ImageExt, LabelExt};
 use gtk::traits::WidgetExt;
 use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
@@ -95,7 +95,7 @@ impl HyprWidget {
         holder.pack_start(&title_container.0, false, false, 0);
         holder.pack_start(&title_container.1, false, false, 0);
 
-        let icon_loader = utils::gtkiconloader::GtkIconLoader::new();
+        let icon_loader = util::gtk_icon_loader::GtkIconLoader::new();
 
         HyprWidget {
             ww_vec: Default::default(),

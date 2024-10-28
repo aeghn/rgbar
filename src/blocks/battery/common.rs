@@ -1,4 +1,4 @@
-use crate::utils::fileutils;
+use crate::util::fileutil;
 
 use super::PowerStatus::{Charging, Discharging, NotCharging, Unknown};
 
@@ -29,7 +29,7 @@ fn read_event(_path: &str) -> anyhow::Result<BatteryInfo> {
     let mut serial_numer: String = "".to_string();
 
     // File hosts must exist in current path before this produces output
-    if let Ok(lines) = fileutils::read_lines(POWER_INFO_PATH) {
+    if let Ok(lines) = fileutil::read_lines(POWER_INFO_PATH) {
         // Consumes the iterator, returns an (Optional) String
         for line in lines {
             if let Ok(ip) = line {

@@ -36,7 +36,7 @@ pub enum IconName {
     Headphone,
 
     VolumeHigh,
-    VolumeMidium,
+    VolumeMedium,
     VolumeLow,
     VolumeMute,
     Empty,
@@ -74,8 +74,10 @@ impl GtkIconLoader {
         }
 
         let icon_theme = gtk::IconTheme::default().unwrap();
-        let icon = icon_theme.load_icon(key, 18, gtk::IconLookupFlags::FORCE_SVG);
-        if let Ok(Some(pbf)) = icon {
+        let icon = icon_theme.load_icon(key, 24, gtk::IconLookupFlags::FORCE_SVG);
+        if let Ok(Some(pbf)) = icon
+            .map(|pbf| pbf.and_then(|p| p.scale_simple(24, 24, gdk::gdk_pixbuf::InterpType::Hyper)))
+        {
             self.cache.borrow_mut().insert(key.to_string(), pbf.clone());
             match self.cache.borrow().get(key) {
                 None => None,
@@ -109,7 +111,7 @@ pub fn load_label(icon_name: IconName) -> &'static str {
         IconName::BatteryConservationUnknown => "",
         IconName::Headphone => "",
         IconName::VolumeHigh => "",
-        IconName::VolumeMidium => "",
+        IconName::VolumeMedium => "",
         IconName::VolumeLow => "",
         IconName::VolumeMute => "",
         IconName::Empty => "",

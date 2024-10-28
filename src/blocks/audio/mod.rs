@@ -1,26 +1,36 @@
 #[allow(dead_code)]
 pub mod pulse;
 
-use std::{cell::RefCell, rc::Rc};
+use crate::prelude::*;
+
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    time::{Duration, SystemTime},
+};
 
 use crate::{
     datahodler::channel::{DualChannel, MSender},
-    utils::gtkiconloader::{self, load_label, IconName},
+    util::gtk_icon_loader::{self, load_label, IconName},
 };
 
 use self::pulse::Device;
 
 use anyhow::Result;
 
-use glib::{Cast, MainContext};
-use gtk::prelude::{BoxExt, LabelExt, WidgetExt};
+use gdk::{glib::Propagation, EventMask};
+use glib::MainContext;
+use gtk::{
+    prelude::{BoxExt, LabelExt, WidgetExt, WidgetExtManual},
+    EventBox,
+};
 
 use super::Block;
 
 #[derive(Clone)]
 #[allow(dead_code)]
 pub enum PulseBM {
-    Mute,
+    ToggleMute,
     SetVolume(u32),
     Increase(u32),
     Decrease(u32),
@@ -45,9 +55,8 @@ trait SoundDevice {
     fn form_factor(&self) -> Option<&str>;
 
     async fn get_info(&mut self) -> Result<()>;
-    async fn set_volume(&mut self, step: i32, max_vol: Option<u32>) -> Result<()>;
-    async fn toggle(&mut self) -> Result<()>;
-    async fn wait_for_update(&self) -> Result<()>;
+    fn set_volume(&self, step: i32, max_vol: Option<u32>) -> Result<()>;
+    async fn toggle(&self) -> Result<()>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -60,21 +69,23 @@ pub enum DeviceKind {
 pub struct PulseBlock {
     dualchannel: DualChannel<PulseWM, PulseBM>,
     default_sink: Rc<RefCell<Device>>,
-    default_source: Rc<Device>,
 }
 
 impl PulseBlock {
     pub fn new() -> Self {
-        let dualchannel = DualChannel::new(32);
+        let dualchannel: DualChannel<PulseWM, PulseBM> = DualChannel::new(32);
         let default_sink = Rc::new(RefCell::new(
-            Device::new(pulse::DeviceKind::Sink, None).unwrap(),
+            Device::new(
+                crate::blocks::audio::DeviceKind::Sink,
+                None,
+                dualchannel.get_in_sender(),
+            )
+            .unwrap(),
         ));
-        let default_source = Rc::new(Device::new(pulse::DeviceKind::Source, None).unwrap());
 
         PulseBlock {
             dualchannel,
             default_sink,
-            default_source,
         }
     }
 
@@ -95,7 +106,7 @@ impl PulseBlock {
         }
     }
 
-    fn handle_update(sender: &MSender<PulseWM>, device: &Device) {
+    fn vol_changed(sender: &MSender<PulseWM>, device: &Device) {
         let is_headphone = Self::is_headphone(device);
         let is_muted = device.muted();
         let volume = device.volume();
@@ -112,34 +123,48 @@ impl Block for PulseBlock {
     type In = PulseBM;
 
     fn run(&mut self) -> anyhow::Result<()> {
-        let sender = self.dualchannel.get_out_sender();
-        let default_sink = self.default_sink.clone();
-        MainContext::ref_thread_default().spawn_local(async move {
-            let default_sink = default_sink.clone();
-            loop {
-                let sink = default_sink.borrow().wait_for_update().await;
-                if sink.is_ok() {
-                    default_sink.borrow_mut().get_info().await.unwrap();
-                    Self::handle_update(&sender, &default_sink.borrow())
-                }
-            }
-        });
-
         let receiver = self.dualchannel.get_in_recevier();
         let sender = self.dualchannel.get_out_sender();
         let default_sink = self.default_sink.clone();
+        let mut last_time = SystemTime::now();
         MainContext::ref_thread_default().spawn_local(async move {
-            let default_sink = default_sink.clone();
             loop {
                 match receiver.recv().await {
                     Ok(msg) => match msg {
-                        PulseBM::Mute => todo!(),
-                        PulseBM::SetVolume(_) => todo!(),
-                        PulseBM::Increase(_) => todo!(),
-                        PulseBM::Decrease(_) => todo!(),
-                        PulseBM::GetVolume => {
+                        PulseBM::ToggleMute => {
                             let sink = default_sink.borrow();
-                            Self::handle_update(&sender, &sink)
+                            let _ = sink.toggle().await;
+                        }
+                        PulseBM::SetVolume(_) => {}
+                        PulseBM::Increase(v) => {
+                            let now = SystemTime::now();
+
+                            if now.duration_since(last_time).unwrap_or_default()
+                                > Duration::from_millis(100)
+                            {
+                                let sink = default_sink.borrow();
+                                let _ = sink
+                                    .set_volume(v as i32, Some(150))
+                                    .map_err(|e| tracing::info!("error: {e}"));
+                                last_time = now;
+                            }
+                        }
+                        PulseBM::Decrease(v) => {
+                            let now = SystemTime::now();
+
+                            if now.duration_since(last_time).unwrap_or_default()
+                                > Duration::from_millis(100)
+                            {
+                                let sink = default_sink.borrow();
+                                let _ = sink
+                                    .set_volume(-1 * v as i32, Some(150))
+                                    .map_err(|e| tracing::info!("error: {e}"));
+                                last_time = now;
+                            }
+                        }
+                        PulseBM::GetVolume => {
+                            default_sink.borrow_mut().get_info().await.unwrap();
+                            Self::vol_changed(&sender, &default_sink.borrow())
                         }
                     },
                     Err(_) => {}
@@ -156,8 +181,8 @@ impl Block for PulseBlock {
             .build();
 
         let volume = gtk::Label::builder().build();
-        let headphone_icon = gtkiconloader::load_font_icon(IconName::Headphone);
-        let vol_icon = gtkiconloader::load_font_icon(IconName::VolumeMidium);
+        let headphone_icon = gtk_icon_loader::load_font_icon(IconName::Headphone);
+        let vol_icon = gtk_icon_loader::load_font_icon(IconName::VolumeMedium);
 
         holder.pack_start(&headphone_icon, false, false, 0);
 
@@ -179,16 +204,18 @@ impl Block for PulseBlock {
                             }
 
                             if mute {
-                                vol_icon.set_label(&load_label(gtkiconloader::IconName::VolumeMute))
+                                vol_icon
+                                    .set_label(&load_label(gtk_icon_loader::IconName::VolumeMute))
                             } else {
                                 match vol {
-                                    0..=30 => vol_icon
-                                        .set_label(&load_label(gtkiconloader::IconName::VolumeLow)),
+                                    0..=30 => vol_icon.set_label(&load_label(
+                                        gtk_icon_loader::IconName::VolumeLow,
+                                    )),
                                     31..=65 => vol_icon.set_label(&load_label(
-                                        gtkiconloader::IconName::VolumeMidium,
+                                        gtk_icon_loader::IconName::VolumeMedium,
                                     )),
                                     31.. => vol_icon.set_label(&load_label(
-                                        gtkiconloader::IconName::VolumeHigh,
+                                        gtk_icon_loader::IconName::VolumeHigh,
                                     )),
                                 }
                             }
@@ -200,6 +227,37 @@ impl Block for PulseBlock {
                 }
             }
         });
+        let holder = EventBox::builder().child(&holder).build();
+
+        let sender = self.dualchannel.in_sender.clone();
+        holder.connect_scroll_event(move |_, v| {
+            if let Some((_, v)) = v.scroll_deltas() {
+                if v > 0.02 {
+                    let _ = sender.send_blocking(PulseBM::Increase(3));
+                    return Propagation::Stop;
+                } else if v < -0.02 {
+                    let _ = sender.send_blocking(PulseBM::Decrease(3));
+                    return Propagation::Stop;
+                } else {
+                    Propagation::Proceed
+                }
+            } else {
+                Propagation::Proceed
+            }
+        });
+
+        let sender = self.dualchannel.in_sender.clone();
+        holder.connect_button_release_event(move |_, v1| match v1.button() {
+            1 => {
+                let _ = sender.send_blocking(PulseBM::ToggleMute);
+                Propagation::Stop
+            }
+            _ => Propagation::Proceed,
+        });
+
+        holder.add_events(EventMask::SCROLL_MASK | EventMask::SMOOTH_SCROLL_MASK);
+
+        let holder = gtk::Box::builder().child(&holder).build();
 
         holder.upcast()
     }

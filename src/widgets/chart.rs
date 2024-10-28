@@ -10,9 +10,8 @@ use gtk::prelude::WidgetExt;
 
 use crate::datahodler::ring::Ring;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum LineType {
-    Line,
     Fill,
 }
 
@@ -23,7 +22,8 @@ pub enum BaselineType {
 }
 
 #[derive(Clone)]
-pub struct Series<E: Into<f64> + Clone> {
+#[allow(dead_code)]
+pub struct Column<E: Into<f64> + Clone> {
     id: String,
     threshold: E,
     ring: Ring<E>,
@@ -33,9 +33,9 @@ pub struct Series<E: Into<f64> + Clone> {
     line_type: LineType,
 }
 
-impl<E: Into<f64> + Clone> Series<E> {
+impl<E: Into<f64> + Clone> Column<E> {
     pub fn new(id: &str, threshold: E, ring_size: usize, color: RGBA) -> Self {
-        Series {
+        Column {
             id: id.to_string(),
             threshold,
             ring: Ring::new(ring_size),
@@ -56,11 +56,6 @@ impl<E: Into<f64> + Clone> Series<E> {
         self
     }
 
-    pub fn with_line_type(mut self, line_type: LineType) -> Self {
-        self.line_type = line_type;
-        self
-    }
-
     pub fn add_value(&self, value: E) {
         self.ring.add(value);
     }
@@ -71,7 +66,7 @@ pub struct Chart<E: Into<f64> + Clone> {
     line_width: f64,
     phondata: PhantomData<E>,
     pub drawing_box: gtk::Box,
-    series: Vec<Series<E>>,
+    columns: Vec<Column<E>>,
 }
 
 impl<E: Into<f64> + Clone + 'static> Chart<E> {
@@ -91,19 +86,23 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
             line_width: 1.0,
             phondata: Default::default(),
             drawing_box,
-            series: vec![],
+            columns: vec![],
         }
     }
 
     pub fn draw_in_seconds(&self, secs: u32) {
-        let series = self.series.clone();
+        let columns = self.columns.clone();
         let line_width = self.line_width.clone();
-        self.drawing_area.connect_draw(
-            glib::clone!(@strong series, @strong line_width => move |da, cr| {
-                Self::draw(&series, line_width, da, cr);
+        self.drawing_area.connect_draw(glib::clone!(
+            #[strong]
+            columns,
+            #[strong]
+            line_width,
+            move |da, cr| {
+                Self::draw(&columns, line_width, da, cr);
                 Propagation::Proceed
-            }),
-        );
+            }
+        ));
 
         let drawing_area = self.drawing_area.clone();
         glib::timeout_add_seconds_local(secs, move || {
@@ -114,7 +113,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
     }
 
     fn draw(
-        series: &Vec<Series<E>>,
+        columns: &Vec<Column<E>>,
         line_width: f64,
         da: &gtk::DrawingArea,
         cr: &gdk::cairo::Context,
@@ -126,22 +125,22 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
 
         cr.set_line_width(line_width);
 
-        let max_serie_size = series.iter().map(|s| s.ring.size).max().unwrap_or(30);
-        let interval = 1.0 / ((max_serie_size - 2) as f64);
+        let max_column_size = columns.iter().map(|s| s.ring.size).max().unwrap_or(30);
+        let interval = 1.0 / ((max_column_size - 2) as f64);
 
         let mut sum_heights_percent = vec![0.; alloc_w as usize + 2];
-        let mut cur_x = 0;
+        let mut curx;
 
         let mut prev_alloc_ys: Option<Vec<(f64, f64)>> = None;
 
-        for serie in series {
-            let (ys, _max_y) = Self::scale(&serie);
+        for column in columns {
+            let (ys, _max_y) = Self::scale(&column);
 
             if ys.len() <= 1 {
                 continue;
             }
 
-            cur_x = 0;
+            curx = 0;
 
             let mut alloc_ys: Vec<(f64, f64)> = Vec::with_capacity(alloc_w as usize);
             let def_baseline = alloc_h;
@@ -149,27 +148,27 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
             for (i, yt) in ys.iter().enumerate() {
                 // get x and y
                 let alloc_x = i as f64 * interval * alloc_w as f64;
-                let base_percent = match serie.baseline_type {
+                let base_percent = match column.baseline_type {
                     BaselineType::FixedPercent(base) => base,
                     BaselineType::Upon => sum_heights_percent[alloc_x as usize],
                 };
 
-                let y_percent = base_percent + yt * serie.height_percent;
+                let y_percent = base_percent + yt * column.height_percent;
 
                 // build sum_heights_percent
-                if let BaselineType::Upon = serie.baseline_type {
-                    let last_x = cur_x;
+                if let BaselineType::Upon = column.baseline_type {
+                    let last_x = curx;
                     let last_y = sum_heights_percent[last_x];
 
-                    let step = if alloc_x as usize - cur_x > 0 {
-                        (y_percent - last_y) / (alloc_x - cur_x as f64)
+                    let step = if alloc_x as usize - curx > 0 {
+                        (y_percent - last_y) / (alloc_x - curx as f64)
                     } else {
                         0.
                     };
 
                     for x in last_x..=(alloc_x as usize) {
                         sum_heights_percent[x] = last_y + (x - last_x) as f64 * step;
-                        cur_x = x;
+                        curx = x;
                     }
 
                     if last_x == 0 {
@@ -177,21 +176,27 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
                     }
                 }
 
+                let alloc_x = alloc_w as f64 - alloc_x;
+
                 let alloc_y = (1. - y_percent) * alloc_h as f64;
                 alloc_ys.push((alloc_x, alloc_y));
 
                 if i == 0 {
                     cr.move_to(alloc_x, alloc_y);
-                    cr.set_source_rgb(serie.color.red(), serie.color.green(), serie.color.blue());
+                    cr.set_source_rgb(
+                        column.color.red(),
+                        column.color.green(),
+                        column.color.blue(),
+                    );
                 } else {
                     cr.line_to(alloc_x, alloc_y);
                 }
             }
 
-            if let LineType::Fill = serie.line_type {
+            if LineType::Fill == column.line_type {
                 cr.stroke_preserve().unwrap();
 
-                match serie.baseline_type {
+                match column.baseline_type {
                     BaselineType::FixedPercent(baseline) => {
                         let base = 1. - baseline;
                         if let Some((x, _)) = alloc_ys.last() {
@@ -222,10 +227,10 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
                 }
 
                 cr.set_source_rgba(
-                    serie.color.red(),
-                    serie.color.green(),
-                    serie.color.blue(),
-                    serie.color.alpha(),
+                    column.color.red(),
+                    column.color.green(),
+                    column.color.blue(),
+                    column.color.alpha(),
                 );
                 cr.fill().unwrap();
             } else {
@@ -236,10 +241,15 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         }
     }
 
-    fn scale(serie: &Series<E>) -> (Vec<f64>, f64) {
-        let originals: Vec<f64> = serie.ring.get_all().into_iter().map(|e| e.into()).collect();
+    fn scale(column: &Column<E>) -> (Vec<f64>, f64) {
+        let originals: Vec<f64> = column
+            .ring
+            .get_all()
+            .into_iter()
+            .map(|e| e.into())
+            .collect();
 
-        let threshold_def: f64 = serie.threshold.clone().into();
+        let threshold_def: f64 = column.threshold.clone().into();
         let mut true_threshold = threshold_def;
 
         for h in originals.as_slice() {
@@ -270,14 +280,14 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         self
     }
 
-    pub fn with_series(mut self, series: Series<E>) -> Self {
-        if !self.series.is_empty() {
-            if self.series[0].ring.size != series.ring.size {
-                tracing::warn!("the series should have same sizes.");
+    pub fn with_columns(mut self, columns: Column<E>) -> Self {
+        if !self.columns.is_empty() {
+            if self.columns[0].ring.size != columns.ring.size {
+                tracing::warn!("the columns should have same sizes.");
             }
         }
 
-        self.series.push(series);
+        self.columns.push(columns);
         self
     }
 

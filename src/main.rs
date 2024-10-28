@@ -1,10 +1,10 @@
 #![no_main]
 
 mod blocks;
-mod constants;
 mod datahodler;
+mod prelude;
 mod statusbar;
-mod utils;
+mod util;
 mod widgets;
 mod window;
 
@@ -24,10 +24,11 @@ use tracing::{info, warn};
 fn main() {
     tracing_subscriber::registry()
         .with(tracing_tree::HierarchicalLayer::new(2))
-        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .with(tracing_subscriber::EnvFilter::new("info"))
         .init();
 
     info!("Building application...");
+
     let application = gtk::Application::new(None, gio::ApplicationFlags::default());
     info!("Loading CSS...");
     let _style_path = PathBuf::new();
