@@ -1,6 +1,7 @@
 use crate::datahodler::channel::DualChannel;
 use crate::prelude::*;
 use crate::statusbar::WidgetShareInfo;
+#[cfg(feature = "chinese")]
 use chinese_lunisolar_calendar::LunisolarDate;
 use chrono::Timelike;
 use chrono::{DateTime, Local};
@@ -17,6 +18,7 @@ pub enum TimeIn {}
 
 #[derive(Clone)]
 pub enum TimeOut {
+    #[cfg(feature = "chinese")]
     Chinese {
         year: String,
         month: String,
@@ -46,6 +48,7 @@ impl TimeBlock {
         )
     }
 
+    #[cfg(feature = "chinese")]
     fn get_chinese_date() -> (String, String, String) {
         let now: DateTime<Local> = Local::now();
 
@@ -78,15 +81,18 @@ impl Block for TimeBlock {
 
             let oldt = hour.replace(h);
 
-            if oldt != h && h >= 11 {
-                let d = Self::get_chinese_date();
-                sender
-                    .send(TimeOut::Chinese {
-                        year: d.0,
-                        month: d.1,
-                        day: d.2,
-                    })
-                    .unwrap();
+            #[cfg(feature = "chinese")]
+            {
+                if oldt != h && h >= 11 {
+                    let d = Self::get_chinese_date();
+                    sender
+                        .send(TimeOut::Chinese {
+                            year: d.0,
+                            month: d.1,
+                            day: d.2,
+                        })
+                        .unwrap();
+                }
             }
 
             glib::ControlFlow::Continue
@@ -110,6 +116,7 @@ impl Block for TimeBlock {
                 loop {
                     match mreceiver.recv().await {
                         Ok(msg) => match msg {
+                            #[cfg(feature = "chinese")]
                             TimeOut::Chinese { year, month, day } => {
                                 let cn_date = format!("{year}年 {month} {day}");
                                 wes_date.set_tooltip_text(Some(cn_date.as_str()));

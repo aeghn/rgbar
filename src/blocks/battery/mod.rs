@@ -8,8 +8,8 @@ use crate::util::gtk_icon_loader::load_label;
 use crate::util::timeutil::second_to_human;
 
 use self::common::get_battery_info;
-use self::ideapad::get_conservation_mode;
-use self::ideapad::ConvervationMode;
+#[cfg(feature = "ideapad")]
+use self::ideapad::{get_conservation_mode, ConvervationMode};
 
 use super::Block;
 use crate::prelude::*;
@@ -25,6 +25,7 @@ use gtk::prelude::WidgetExt;
 use tracing::warn;
 
 mod common;
+#[cfg(feature = "ideapad")]
 mod ideapad;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -66,6 +67,7 @@ impl BatteryInfo {
 
 #[derive(Clone)]
 pub enum BatteryOut {
+    #[cfg(feature = "ideapad")]
     ConvervationMode(ConvervationMode),
     BatteryInfo(BatteryInfo),
     UnknownBatteryInfo,
@@ -141,6 +143,7 @@ impl Block for BatteryBlock {
                         Err(_) => sender.send(Self::Out::UnknownBatteryInfo).expect("todo"),
                     };
 
+                    #[cfg(feature = "ideapad")]
                     sender
                         .send(BatteryOut::ConvervationMode(get_conservation_mode()))
                         .unwrap();
@@ -189,6 +192,8 @@ impl Block for BatteryBlock {
         holder.pack_start(&remain_time, false, false, 0);
 
         let mut percent = 0;
+
+        #[cfg(feature = "ideapad")]
         let mut cm_status = ConvervationMode::Unknown;
         let mut power_status = PowerStatus::Unknown;
         let mut last_refresh_label_time = 0;
@@ -201,6 +206,7 @@ impl Block for BatteryBlock {
             loop {
                 if let Ok(msg) = receiver.recv().await {
                     match msg {
+                        #[cfg(feature = "ideapad")]
                         BatteryOut::ConvervationMode(cm) => {
                             if cm_status != cm {
                                 cm_status = cm;
