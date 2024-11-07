@@ -31,7 +31,7 @@ impl<OutMsg: Clone, InMsg: Clone> DualChannel<OutMsg, InMsg> {
         self.out_recevier.clone().into()
     }
 
-    pub fn get_in_recevier(&self) -> SReceiver<InMsg> {
+    pub fn get_in_receiver(&self) -> SReceiver<InMsg> {
         self.in_recevier.clone()
     }
 

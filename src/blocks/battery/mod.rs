@@ -153,7 +153,7 @@ impl Block for BatteryBlock {
             ),
         );
 
-        let receiver = self.dualchannel.get_in_recevier();
+        let receiver = self.dualchannel.get_in_receiver();
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
                 match receiver.recv().await {
