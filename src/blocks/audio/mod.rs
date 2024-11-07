@@ -123,7 +123,7 @@ impl Block for PulseBlock {
     type In = PulseBM;
 
     fn run(&mut self) -> anyhow::Result<()> {
-        let receiver = self.dualchannel.get_in_recevier();
+        let receiver = self.dualchannel.get_in_receiver();
         let sender = self.dualchannel.get_out_sender();
         let default_sink = self.default_sink.clone();
         let mut last_time = SystemTime::now();

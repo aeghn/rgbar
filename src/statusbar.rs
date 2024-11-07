@@ -10,6 +10,7 @@ use tracing::error;
 
 use crate::blocks::manager::BlockManager;
 use crate::blocks::Block;
+use crate::util::gdk_util::get_monitor_plug_name;
 
 pub struct StatusBar {
     window_map: HashMap<i32, ApplicationWindow>,
@@ -19,7 +20,8 @@ pub struct StatusBar {
 
 #[derive(Clone, Default)]
 pub struct WidgetShareInfo {
-    pub monitor: i32,
+    pub monitor_num: i32,
+    pub plug_name: Option<String>,
 }
 
 impl StatusBar {
@@ -33,12 +35,13 @@ impl StatusBar {
         }
     }
 
-    pub fn new_window(&self, monitor_num: i32) -> ApplicationWindow {
+    pub fn new_window(&self, monitor_num: i32, plug_name: Option<String>) -> ApplicationWindow {
         let window = crate::window::create_window(&self.application, monitor_num.clone());
 
-        let mut share_info = WidgetShareInfo::default();
-
-        share_info.monitor = monitor_num.clone();
+        let share_info = WidgetShareInfo {
+            monitor_num,
+            plug_name,
+        };
 
         self.build_widgets(&window, share_info);
 
@@ -52,24 +55,24 @@ impl StatusBar {
     }
 
     pub fn check_monitors(&mut self, screen: &gdk::Screen) {
-        tracing::info!("Screen {:?}", screen);
-        let monitor_count = screen.display().n_monitors();
-        for i in 0..monitor_count {
-            if self.window_map.contains_key(&i) {
+        let display = screen.display();
+        for monitor_num in 0..display.n_monitors() {
+            if self.window_map.contains_key(&monitor_num) {
                 continue;
             }
+            let plug_name = get_monitor_plug_name(&display, monitor_num).map(|e| e.to_string());
 
-            let win = self.new_window(i);
+            let win = self.new_window(monitor_num, plug_name);
 
-            self.window_map.insert(i, win);
+            self.window_map.insert(monitor_num, win);
         }
 
-        let new_keys: Vec<i32> = self.window_map.keys().map(|i| i.clone()).collect();
-        for key in new_keys {
-            match screen.display().monitor(key) {
+        let new_monitors: Vec<i32> = self.window_map.keys().map(|i| i.clone()).collect();
+        for monitor_num in new_monitors {
+            match display.monitor(monitor_num) {
                 None => {
-                    if let Some(win) = self.window_map.remove(&key) {
-                        error!("destroy: {:?}", key);
+                    if let Some(win) = self.window_map.remove(&monitor_num) {
+                        error!("destroy: {:?}", monitor_num);
                         win.close();
                     }
                 }
@@ -108,8 +111,14 @@ impl StatusBar {
         netspeed.style_context().add_class("block");
         bar.pack_end(&netspeed, false, false, 0);
 
-        let hyprstatus = self.block_manager.hypr_block.widget(share_info);
-        bar.pack_start(&hyprstatus, false, false, 0);
+        #[cfg(feature = "hyprland")]
+        {
+            let hyprstatus = self.block_manager.hypr_block.widget(share_info);
+            bar.pack_start(&hyprstatus, false, false, 0);
+        }
+
+        let wayland = self.block_manager.wayland_block.widget(share_info);
+        bar.pack_start(&wayland, false, false, 0);
 
         window.add(&bar);
         bar.show_all();
