@@ -11,8 +11,6 @@ mod window;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use tracing_subscriber::prelude::*;
-
 use crate::statusbar::StatusBar;
 use gtk::gdk::*;
 use gtk::prelude::*;
@@ -22,9 +20,10 @@ use tracing::{info, warn};
 /// Called upon application startup.
 #[no_mangle]
 fn main() {
-    tracing_subscriber::registry()
-        .with(tracing_tree::HierarchicalLayer::new(2))
-        .with(tracing_subscriber::EnvFilter::new("info"))
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_line_number(true)
+        .with_target(true)
         .init();
 
     info!("Building application...");

@@ -20,7 +20,7 @@
       "env": {
         "WAYLAND_DISPLAY": "wayland-1",
         "DISPLAY": "",
-        "HYPRLAND_INSTANCE_SIGNATURE": "4520b30d498daca8079365bdb909a8dea38e8d55_1730071344_2009746224"
+        "NIRI_SOCKET": "/run/user/1000/niri.wayland-1.1896.sock"
       }
     },
     {

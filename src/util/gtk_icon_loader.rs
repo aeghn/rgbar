@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use gdk::gdk_pixbuf::Pixbuf;
 
@@ -8,7 +9,13 @@ use gtk::traits::IconThemeExt;
 
 #[derive(Clone)]
 pub struct GtkIconLoader {
-    cache: RefCell<HashMap<String, gtk::gdk_pixbuf::Pixbuf>>,
+    cache: Rc<RefCell<HashMap<String, gtk::gdk_pixbuf::Pixbuf>>>,
+}
+
+impl std::fmt::Debug for GtkIconLoader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GtkIconLoader").finish()
+    }
 }
 
 #[derive(PartialEq, Clone)]
@@ -50,7 +57,7 @@ pub enum IconName {
 impl GtkIconLoader {
     pub fn new() -> Self {
         GtkIconLoader {
-            cache: RefCell::new(HashMap::new()),
+            cache: RefCell::new(HashMap::new()).into(),
         }
     }
 

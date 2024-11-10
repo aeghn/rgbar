@@ -6,7 +6,7 @@ use gtk::traits::StyleContextExt;
 use gtk::traits::WidgetExt;
 use gtk::ApplicationWindow;
 use gtk::Orientation;
-use tracing::error;
+use tracing::info;
 
 use crate::blocks::manager::BlockManager;
 use crate::blocks::Block;
@@ -72,7 +72,7 @@ impl StatusBar {
             match display.monitor(monitor_num) {
                 None => {
                     if let Some(win) = self.window_map.remove(&monitor_num) {
-                        error!("destroy: {:?}", monitor_num);
+                        info!("destroy: {:?}", monitor_num);
                         win.close();
                     }
                 }

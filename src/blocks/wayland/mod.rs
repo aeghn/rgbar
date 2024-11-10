@@ -1,20 +1,23 @@
-pub mod backend;
+pub mod window_widget;
+pub mod workspace_widget;
 
-use backend::WaylandWidget;
-use chin_tools::wayland::{into_wl_event, WLCompositor, WLEvent, WLWorkspace};
-use chin_tools::wrapper::anyhow::AResult;
+use chin_tools::wayland::{into_wl_event, WLEvent, WLWorkspace};
 use gdk::glib::Cast;
 use gtk::Widget;
+use window_widget::{WindowContainer, WindowContainerManager};
+use workspace_widget::WorkspaceContainer;
 
-use crate::datahodler::channel::{DualChannel, MReceiver, SSender};
+use crate::datahodler::channel::DualChannel;
 use crate::statusbar::WidgetShareInfo;
-use gio::{DataInputStream, SocketClient};
-use glib::{MainContext, Priority};
+use glib::MainContext;
 
 use super::Block;
-use std::cell::RefCell;
-use std::path::Path;
-use std::process::Command;
+
+use chin_tools::utils::idutils;
+
+use gtk::traits::WidgetExt;
+use gtk::traits::BoxExt;
+use tracing::error;
 
 #[derive(Clone)]
 pub enum OutEvent {
@@ -23,27 +26,10 @@ pub enum OutEvent {
 }
 
 #[derive(Clone)]
-pub enum InEvent {
-    NewBar,
-}
+pub enum InEvent {}
 
 pub struct WaylandBlock {
     dualchannel: DualChannel<OutEvent, InEvent>,
-}
-
-impl WaylandBlock {
-    pub fn new() -> Self {
-        Self {
-            dualchannel: DualChannel::new(30),
-        }
-    }
-
-    fn new_client() -> AResult<Vec<WLWorkspace>> {
-        let com = WLCompositor::current()?;
-        let workspaces = com.get_all_workspaces()?;
-
-        Ok(workspaces)
-    }
 }
 
 impl Block for WaylandBlock {
@@ -76,17 +62,10 @@ impl Block for WaylandBlock {
         });
 
         let in_receiver = self.dualchannel.get_in_receiver();
-        let sender = self.dualchannel.get_out_sender();
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
-                match in_receiver.recv().await {
-                    Ok(msg) => match msg {
-                        InEvent::NewBar => {
-                            let all = Self::new_client().unwrap();
-                            sender.send(OutEvent::AllWorkspaces(all)).unwrap();
-                        }
-                    },
-                    Err(_) => todo!(),
+                if let Ok(msg) = in_receiver.recv().await {
+                    match msg {}
                 }
             }
         });
@@ -95,18 +74,110 @@ impl Block for WaylandBlock {
     }
 
     fn widget(&self, share_info: &WidgetShareInfo) -> Widget {
-        let in_sender = self.dualchannel.get_in_sender();
-        let out_receiver = self.dualchannel.get_out_receiver();
+        let output_name = share_info
+            .plug_name
+            .as_ref()
+            .map_or_else(|| idutils::generate_uuid(), |s| s.to_owned());
 
-        let wayland_widget = WaylandWidget::new(&in_sender, &out_receiver, share_info).unwrap();
+        let mut workspace_container = WorkspaceContainer::new(output_name.clone())
+            .unwrap()
+            .init()
+            .unwrap();
 
-        {
-            let wayland_widget = wayland_widget.clone();
-            MainContext::ref_thread_default().spawn_local(async move {
-                wayland_widget.receive_out_events().await;
-            });
+        let mut window_container = WindowContainerManager::new()
+            .unwrap()
+            .init(workspace_container.get_workspace_ids())
+            .unwrap();
+
+        let holder = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .build();
+
+        holder.pack_start(&workspace_container.holder, false, false, 0);
+
+        holder.pack_start(&window_container.stack, false, false, 0);
+
+        let mut receiver = self.dualchannel.get_out_receiver().clone();
+
+        MainContext::ref_thread_default().spawn_local(async move {
+            loop {
+                match receiver.recv().await {
+                    Ok(msg) => match msg {
+                        OutEvent::WLEvent(event) => match event {
+                            WLEvent::WorkspaceFocused(ws) => {
+                                if ws
+                                    .get_output_name()
+                                    .map_or(true, |name| name != output_name)
+                                {
+                                    continue;
+                                }
+                                window_container.on_workspace_change(ws.get_id());
+                                workspace_container.on_workspace_focused(&ws)
+                            }
+                            WLEvent::WorkspaceDeleted(ws) => {
+                                if ws
+                                    .get_output_name()
+                                    .map_or(true, |name| name != output_name)
+                                {
+                                    continue;
+                                }
+                                window_container.on_workspace_delete(ws.get_id());
+                                workspace_container.on_workspace_delete(&ws);
+                            }
+                            WLEvent::WorkspaceAdded(ws) => {
+                                if ws
+                                    .get_output_name()
+                                    .map_or(true, |name| name != output_name)
+                                {
+                                    continue;
+                                }
+                                window_container
+                                    .on_workspace_overwrite(WindowContainer::new(ws.get_id()));
+
+                                workspace_container.on_workspace_added(&ws);
+                            }
+                            WLEvent::WorkspaceChanged(ws) => {
+                                if ws
+                                    .get_output_name()
+                                    .map_or(true, |name| name != output_name)
+                                {
+                                    continue;
+                                }
+                                window_container.on_workspace_change(ws.get_id());
+                                workspace_container.on_workspace_changed(&ws);
+                            }
+                            WLEvent::WindowFocused(window) => {
+                                window_container.on_window_change_focus(window)
+                            }
+                            WLEvent::MonitorFocused(output) => {
+                                workspace_container.on_active_monitor_changed(&output)
+                            }
+                            WLEvent::WindowDeleted(window) => {
+                                window_container.on_window_delete(window)
+                            }
+                            WLEvent::WindowOverwrite(window) => {
+                                window_container.on_window_overwrite(window)
+                            }
+                        },
+                        OutEvent::AllWorkspaces(vec) => {
+                            workspace_container.update_all_workspaces(vec)
+                        }
+                    },
+                    Err(err) => {
+                        error!("unable to receive message: {}", err)
+                    }
+                }
+            }
+        });
+
+        holder.clone().upcast()
+    }
+}
+
+impl WaylandBlock {
+    pub fn new() -> Self {
+        Self {
+            dualchannel: DualChannel::new(30),
         }
-
-        wayland_widget.holder.upcast()
     }
 }
