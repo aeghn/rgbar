@@ -2,10 +2,9 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use gdk::gdk_pixbuf::Pixbuf;
-
-use gtk::prelude::{StyleContextExt, WidgetExt};
-use gtk::traits::IconThemeExt;
+use gdk::gio::Cancellable;
+use gdk::prelude::{InputStreamExt, PixbufLoaderExt};
+use gtk::prelude::IconThemeExt;
 
 #[derive(Clone)]
 pub struct GtkIconLoader {
@@ -46,12 +45,6 @@ pub enum IconName {
     VolumeMedium,
     VolumeLow,
     VolumeMute,
-    Empty,
-
-    FreqShell,
-    FreqSnail,
-    FreqTurtle,
-    FreqRabbit,
 }
 
 impl GtkIconLoader {
@@ -71,7 +64,7 @@ impl GtkIconLoader {
         }
     }
 
-    pub fn load_from_name(&self, key: &str) -> Option<Pixbuf> {
+    pub fn load_from_name(&self, key: &str) -> Option<gdk::gdk_pixbuf::Pixbuf> {
         let key = Self::map_name(key);
         match self.cache.borrow().get(key) {
             None => {}
@@ -98,39 +91,153 @@ impl GtkIconLoader {
     }
 }
 
-pub fn load_label(icon_name: IconName) -> &'static str {
-    match icon_name {
-        IconName::CPU => "",
-        IconName::RAM => "",
-        IconName::WIFI => "",
-        IconName::BatteryFull => "",
-        IconName::BatteryHigh => "",
-        IconName::BatteryMid => "",
-        IconName::BatteryLow => "",
-        IconName::BatteryEmpty => "",
-        IconName::BattetyPowerCharging => "",
-        IconName::BatteryPowerNotCharging => "",
-        IconName::BatteryPowerDisconnected => "",
-        IconName::BatteryPowerFull => "",
-        IconName::BatteryPowerUnknown => "",
-        IconName::BatteryConservationOn => "",
-        IconName::BatteryConservationOff => "",
-        IconName::BatteryConservationUnknown => "",
-        IconName::Headphone => "",
-        IconName::VolumeHigh => "",
-        IconName::VolumeMedium => "",
-        IconName::VolumeLow => "",
-        IconName::VolumeMute => "",
-        IconName::Empty => "",
-        IconName::FreqShell => "",
-        IconName::FreqSnail => "",
-        IconName::FreqTurtle => "",
-        IconName::FreqRabbit => "",
-    }
+fn read_into_pixbuf(svg_data: &str, width: i32, height: i32) -> gtk::gdk_pixbuf::Pixbuf {
+    let fill_svg = "";
+    // The fastest way to add/change fill color
+/*     let svg_data = if svg_data.contains("fill=") {
+        let reg = regex::Regex::new(r#"fill="[^"]*""#).unwrap();
+        reg.replace(&svg_data, &format!("fill=\"{}\"", fill_svg))
+    } else {
+        let reg = regex::Regex::new(r"<svg").unwrap();
+        reg.replace(&svg_data, &format!("<svg fill=\"{}\"", fill_svg))
+    }; */
+    let stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from(svg_data.as_bytes()));
+    let pixbuf = gtk::gdk_pixbuf::Pixbuf::from_stream_at_scale(&stream, width, height, true, None::<&gtk::gio::Cancellable>).unwrap();
+    stream.close(None::<&gtk::gio::Cancellable>).unwrap();
+
+    pixbuf
 }
 
-pub fn load_font_icon(icon_name: IconName) -> gtk::Label {
-    let label = gtk::Label::builder().label(load_label(icon_name)).build();
-    label.style_context().add_class("lucide");
-    label
+#[macro_export]
+macro_rules! include_surface {
+    ($path:expr, $width:expr, $height:expr) => {{
+        let data = include_str!($path);
+        read_into_pixbuf(data, $width, $height)
+    }};
+}
+
+pub fn load_label(icon_name: IconName) -> gdk::gdk_pixbuf::Pixbuf {
+    const BASE_SIZE: i32 = 18;
+    let pixbuf = match icon_name {
+        IconName::CPU => include_surface!(
+            "../../res/icons/cpu.svg",
+            BASE_SIZE * 10 / 7,
+            BASE_SIZE * 8 / 7
+        ),
+        IconName::RAM => include_surface!(
+            "../../res/icons/memory.svg",
+            BASE_SIZE * 6 / 5,
+            BASE_SIZE * 6 / 5
+        ),
+        IconName::WIFI => include_surface!("../../res/icons/wifi.svg", BASE_SIZE, BASE_SIZE),
+        IconName::BatteryFull => {
+            include_surface!(
+                "../../res/icons/battery-full.svg",
+                BASE_SIZE * 3 / 2,
+                BASE_SIZE
+            )
+        }
+        IconName::BatteryHigh => {
+            include_surface!(
+                "../../res/icons/battery-high.svg",
+                BASE_SIZE * 3 / 2,
+                BASE_SIZE
+            )
+        }
+        IconName::BatteryMid => {
+            include_surface!(
+                "../../res/icons/battery-medium.svg",
+                BASE_SIZE * 3 / 2,
+                BASE_SIZE
+            )
+        }
+        IconName::BatteryLow => include_surface!(
+            "../../res/icons/battery-low.svg",
+            BASE_SIZE * 3 / 2,
+            BASE_SIZE
+        ),
+        IconName::BatteryEmpty => {
+            include_surface!(
+                "../../res/icons/battery-empty.svg",
+                BASE_SIZE * 3 / 2,
+                BASE_SIZE
+            )
+        }
+        IconName::BattetyPowerCharging => {
+            include_surface!(
+                "../../res/icons/battery-charging.svg",
+                BASE_SIZE * 3 / 2,
+                BASE_SIZE
+            )
+        }
+        IconName::BatteryPowerNotCharging => {
+            include_surface!(
+                "../../res/icons/battery-connected.svg",
+                BASE_SIZE,
+                BASE_SIZE
+            )
+        }
+        IconName::BatteryPowerDisconnected => {
+            include_surface!(
+                "../../res/icons/battery-disconnected.svg",
+                BASE_SIZE,
+                BASE_SIZE
+            )
+        }
+        IconName::BatteryPowerFull => {
+            include_surface!("../../res/icons/cpu.svg", BASE_SIZE, BASE_SIZE)
+        }
+        IconName::BatteryPowerUnknown => {
+            include_surface!("../../res/icons/cpu.svg", BASE_SIZE, BASE_SIZE)
+        }
+        IconName::BatteryConservationOn => {
+            include_surface!("../../res/icons/battery-conser.svg", BASE_SIZE, BASE_SIZE)
+        }
+        IconName::BatteryConservationOff => {
+            include_surface!(
+                "../../res/icons/battery-not-conser.svg",
+                BASE_SIZE,
+                BASE_SIZE
+            )
+        }
+        IconName::BatteryConservationUnknown => {
+            include_surface!(
+                "../../res/icons/battery-not-conser.svg",
+                BASE_SIZE,
+                BASE_SIZE
+            )
+        }
+        IconName::Headphone => {
+            include_surface!("../../res/icons/audio-headset.svg", BASE_SIZE, BASE_SIZE)
+        }
+        IconName::VolumeHigh => {
+            include_surface!(
+                "../../res/icons/audio-volume-high.svg",
+                BASE_SIZE,
+                BASE_SIZE
+            )
+        }
+        IconName::VolumeMedium => {
+            include_surface!(
+                "../../res/icons/audio-volume-medium.svg",
+                BASE_SIZE,
+                BASE_SIZE
+            )
+        }
+        IconName::VolumeLow => {
+            include_surface!("../../res/icons/audio-volume-low.svg", BASE_SIZE, BASE_SIZE)
+        }
+        IconName::VolumeMute => {
+            include_surface!(
+                "../../res/icons/audio-volume-muted.svg",
+                BASE_SIZE,
+                BASE_SIZE
+            )
+        }
+    };
+    pixbuf
+}
+
+pub fn load_font_icon(icon_name: IconName) -> gtk::Image {
+    gtk::Image::from_pixbuf(Some(&load_label(icon_name)))
 }

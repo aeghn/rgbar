@@ -120,15 +120,12 @@ impl Block for CpuBlock {
 
         let utilization_label = gtk::Label::builder().build();
         utilization_label.style_context().add_class("cpu-util");
-        let freq_label = gtk_icon_loader::load_font_icon(IconName::Empty);
-        freq_label.style_context().add_class("cpu-freq");
         let temp_label = gtk::Label::builder().build();
         temp_label.style_context().add_class("cpu-temp");
 
         label_holder.pack_start(&utilization_label, false, false, 0);
 
         label_holder.pack_start(&temp_label, false, false, 0);
-        label_holder.pack_start(&freq_label, false, false, 0);
 
         right_holder.pack_start(&label_holder, false, false, 0);
 
@@ -151,23 +148,7 @@ impl Block for CpuBlock {
             loop {
                 if let Ok(msg) = receiver.recv().await {
                     match msg {
-                        CpuOut::Frequencies(freqs) => {
-                            let max = freqs
-                                .iter()
-                                .max_by(|f1, f2| f64::total_cmp(&f1, &f2))
-                                .unwrap_or(&0.);
-
-                            let icon = if max < &(1. * 1e9) {
-                                gtk_icon_loader::load_label(IconName::FreqShell)
-                            } else if max < &(2. * 1e9) {
-                                gtk_icon_loader::load_label(IconName::FreqSnail)
-                            } else if max < &(3. * 1e9) {
-                                gtk_icon_loader::load_label(IconName::FreqTurtle)
-                            } else {
-                                gtk_icon_loader::load_label(IconName::FreqRabbit)
-                            };
-
-                            freq_label.set_label(icon)
+                        CpuOut::Frequencies(_) => {
                         }
                         CpuOut::UtilizationAvg(user, system) => {
                             system_column.add_value(system * 100.);

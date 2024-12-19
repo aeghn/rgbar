@@ -5,7 +5,7 @@
    width="16px"
    version="1.1"
    id="svg1"
-   sodipodi:docname="audio-headphones-symbolic.svg"
+   sodipodi:docname="audio-headset.svg"
    inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -23,17 +23,17 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:zoom="22.4375"
-     inkscape:cx="13.727019"
+     inkscape:cx="8"
      inkscape:cy="8.0222841"
-     inkscape:window-width="1903"
+     inkscape:window-width="1282"
      inkscape:window-height="1025"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg1" />
   <path
-     d="m 8 0 c -1.230469 0 -2.4375 0.324219 -3.5 0.9375 c -2.164062 1.25 -3.5 3.5625 -3.5 6.0625 v 6 s 0 2 2 2 h 1 c 0.554688 0 1 -0.445312 1 -1 v -4 c 0 -0.554688 -0.5 -1 -1 -1 c 0 0 -1 0 -1 -1 v -1 c 0 -1.785156 0.953125 -3.4375 2.5 -4.332031 c 1.546875 -0.890625 3.453125 -0.890625 5 0 c 1.546875 0.894531 2.5 2.546875 2.5 4.332031 v 1 c 0 1 -1 1 -1 1 c -0.5 0 -1 0.445312 -1 1 v 4 c 0 0.554688 0.445312 1 1 1 h 1 c 2 0 2 -2 2 -2 v -6 c 0 -2.5 -1.335938 -4.8125 -3.5 -6.0625 c -1.0625 -0.613281 -2.269531 -0.9375 -3.5 -0.9375 z m 0 0"
+     d="m 8 0 c -1.230469 0 -2.4375 0.324219 -3.5 0.9375 c -2.164062 1.25 -3.5 3.5625 -3.5 6.0625 v 3 c 0 2 2 2 2 2 h 1 c 0.554688 0 1 -0.445312 1 -1 v -3 c 0 -0.554688 -0.445312 -1 -1 -1 h -1 c 0 -1.785156 0.953125 -3.4375 2.5 -4.332031 c 1.546875 -0.890625 3.453125 -0.890625 5 0 c 1.546875 0.894531 2.5 2.546875 2.5 4.332031 h -1 c -0.554688 0 -1 0.445312 -1 1 v 3 c 0 0.554688 0.5 1 1 1 h 1 c 0 1.167969 -0.4375 1.476562 -0.949219 1.730469 c -0.507812 0.253906 -1.050781 0.269531 -1.050781 0.269531 h -4 c -0.550781 0 -1 0.449219 -1 1 s 0.449219 1 1 1 h 4 s 0.957031 0.011719 1.949219 -0.480469 c 0.988281 -0.496093 2.050781 -1.6875 2.050781 -3.519531 v -5 c 0 -2.5 -1.335938 -4.8125 -3.5 -6.0625 c -1.0625 -0.613281 -2.269531 -0.9375 -3.5 -0.9375 z m 0 0"
      fill="#ffffff"
      id="path1"
-     style="fill:#030303;fill-opacity:0.97925937" />
+     style="fill:#050505;fill-opacity:1" />
 </svg>

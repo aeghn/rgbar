@@ -1,12 +1,88 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cpu">
-   <rect width="16" height="16" x="4" y="4" rx="2"/>
-   <rect width="6" height="6" x="9" y="9" rx="1"/>
-   <path d="M15 2v2"/>
-   <path d="M15 20v2"/>
-   <path d="M2 15h2"/>
-   <path d="M2 9h2"/>
-   <path d="M20 15h2"/>
-   <path d="M20 9h2"/>
-   <path d="M9 2v2"/>
-   <path d="M9 20v2"/>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="24"
+   height="24"
+   viewBox="0 0 24 24"
+   fill="none"
+   stroke="currentColor"
+   stroke-width="2"
+   stroke-linecap="round"
+   stroke-linejoin="round"
+   class="lucide lucide-cpu"
+   version="1.1"
+   id="svg9"
+   sodipodi:docname="cpu.svg"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs9" />
+  <sodipodi:namedview
+     id="namedview9"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="22.708333"
+     inkscape:cx="12"
+     inkscape:cy="11.977982"
+     inkscape:window-width="1282"
+     inkscape:window-height="1025"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg9" />
+  <rect
+     width="16"
+     height="16"
+     x="4"
+     y="4"
+     rx="2"
+     id="rect1"
+     style="stroke-width:1.5;stroke-dasharray:none" />
+  <rect
+     width="6"
+     height="6"
+     x="9"
+     y="9"
+     rx="1"
+     id="rect2"
+     style="stroke-width:1.5;stroke-dasharray:none" />
+  <path
+     d="M15 2v2"
+     id="path2"
+     style="stroke-width:1.5;stroke-dasharray:none" />
+  <path
+     d="M15 20v2"
+     id="path3"
+     style="stroke-width:1.5;stroke-dasharray:none" />
+  <path
+     d="M2 15h2"
+     id="path4"
+     style="stroke-width:1.5;stroke-dasharray:none" />
+  <path
+     d="M2 9h2"
+     id="path5"
+     style="stroke-width:1.5;stroke-dasharray:none" />
+  <path
+     d="M20 15h2"
+     id="path6"
+     style="stroke-width:1.5;stroke-dasharray:none" />
+  <path
+     d="M20 9h2"
+     id="path7"
+     style="stroke-width:1.5;stroke-dasharray:none" />
+  <path
+     d="M9 2v2"
+     id="path8"
+     style="stroke-width:1.5;stroke-dasharray:none" />
+  <path
+     d="M9 20v2"
+     id="path9"
+     style="stroke-width:1.5;stroke-dasharray:none" />
 </svg>

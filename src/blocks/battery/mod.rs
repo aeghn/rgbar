@@ -19,6 +19,7 @@ use glib::clone;
 use glib::MainContext;
 
 use gtk::prelude::BoxExt;
+use gtk::prelude::ImageExt;
 use gtk::prelude::LabelExt;
 use gtk::prelude::StyleContextExt;
 use gtk::prelude::WidgetExt;
@@ -173,7 +174,7 @@ impl Block for BatteryBlock {
             .orientation(gtk::Orientation::Horizontal)
             .build();
 
-        let battery_status_icon = gtk_icon_loader::load_font_icon(IconName::Empty);
+        let battery_status_icon = gtk_icon_loader::load_font_icon(IconName::BatteryMid);
         battery_status_icon.style_context().add_class("f-20");
 
         let battery_info = gtk::Label::builder().build();
@@ -181,9 +182,9 @@ impl Block for BatteryBlock {
         let remain_time = gtk::Label::builder().build();
         remain_time.style_context().add_class("battery-label");
 
-        let convervation_icon = gtk_icon_loader::load_font_icon(IconName::Empty);
+        let convervation_icon = gtk_icon_loader::load_font_icon(IconName::BatteryConservationOff);
 
-        let power_status_icon = gtk_icon_loader::load_font_icon(IconName::Empty);
+        let power_status_icon = gtk_icon_loader::load_font_icon(IconName::BatteryPowerDisconnected);
 
         holder.pack_start(&battery_status_icon, false, false, 0);
         holder.pack_start(&power_status_icon, false, false, 0);
@@ -232,7 +233,7 @@ impl Block for BatteryBlock {
                                     _ => IconName::BatteryFull,
                                 };
 
-                                battery_status_icon.set_label(&load_label(mapped));
+                                battery_status_icon.set_from_pixbuf(Some(&load_label(mapped)));
 
                                 percent = status;
                             }
@@ -270,7 +271,7 @@ impl Block for BatteryBlock {
                                     PowerStatus::Unknown => IconName::BatteryPowerUnknown,
                                 };
 
-                                power_status_icon.set_label(&load_label(mapped))
+                                power_status_icon.set_from_pixbuf(Some(&load_label(mapped)))
                             }
                         }
                         BatteryOut::UnknownBatteryInfo => {}

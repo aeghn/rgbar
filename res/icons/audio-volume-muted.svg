@@ -8,19 +8,19 @@
    stroke-width="2"
    stroke-linecap="round"
    stroke-linejoin="round"
-   class="lucide lucide-shield-off"
+   class="lucide lucide-volume-x"
    version="1.1"
-   id="svg3"
-   sodipodi:docname="battery-not-conser.svg"
+   id="svg2"
+   sodipodi:docname="audio-volume-muted.svg"
    inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
   <defs
-     id="defs3" />
+     id="defs2" />
   <sodipodi:namedview
-     id="namedview3"
+     id="namedview2"
      pagecolor="#ffffff"
      bordercolor="#000000"
      borderopacity="0.25"
@@ -28,25 +28,31 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="14.875"
+     inkscape:zoom="14.958333"
      inkscape:cx="12"
-     inkscape:cy="12.033613"
+     inkscape:cy="11.966574"
      inkscape:window-width="1282"
      inkscape:window-height="1025"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
-     inkscape:current-layer="svg3" />
-  <path
-     d="m2 2 20 20"
-     id="path1"
+     inkscape:current-layer="svg2" />
+  <polygon
+     points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"
+     id="polygon1"
      style="stroke-width:1.5;stroke-dasharray:none" />
-  <path
-     d="M5 5a1 1 0 0 0-1 1v7c0 5 3.5 7.5 7.67 8.94a1 1 0 0 0 .67.01c2.35-.82 4.48-1.97 5.9-3.71"
-     id="path2"
+  <line
+     x1="22"
+     x2="16"
+     y1="9"
+     y2="15"
+     id="line1"
      style="stroke-width:1.5;stroke-dasharray:none" />
-  <path
-     d="M9.309 3.652A12.252 12.252 0 0 0 11.24 2.28a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1v7a9.784 9.784 0 0 1-.08 1.264"
-     id="path3"
+  <line
+     x1="16"
+     x2="22"
+     y1="9"
+     y2="15"
+     id="line2"
      style="stroke-width:1.5;stroke-dasharray:none" />
 </svg>

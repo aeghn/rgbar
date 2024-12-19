@@ -21,7 +21,7 @@ use anyhow::Result;
 use gdk::{glib::Propagation, EventMask};
 use glib::MainContext;
 use gtk::{
-    prelude::{BoxExt, LabelExt, WidgetExt, WidgetExtManual},
+    prelude::{BoxExt, ImageExt, LabelExt, WidgetExt, WidgetExtManual},
     EventBox,
 };
 
@@ -205,18 +205,18 @@ impl Block for PulseBlock {
 
                             if mute {
                                 vol_icon
-                                    .set_label(&load_label(gtk_icon_loader::IconName::VolumeMute))
+                                    .set_from_pixbuf(Some(&load_label(gtk_icon_loader::IconName::VolumeMute)))
                             } else {
                                 match vol {
-                                    0..=30 => vol_icon.set_label(&load_label(
+                                    0..=30 => vol_icon.set_from_pixbuf(Some(&load_label(
                                         gtk_icon_loader::IconName::VolumeLow,
-                                    )),
-                                    31..=65 => vol_icon.set_label(&load_label(
+                                    ))),
+                                    31..=65 => vol_icon.set_from_pixbuf(Some(&load_label(
                                         gtk_icon_loader::IconName::VolumeMedium,
-                                    )),
-                                    31.. => vol_icon.set_label(&load_label(
+                                    ))),
+                                    31.. => vol_icon.set_from_pixbuf(Some(&load_label(
                                         gtk_icon_loader::IconName::VolumeHigh,
-                                    )),
+                                    ))),
                                 }
                             }
 

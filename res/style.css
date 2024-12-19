@@ -1,6 +1,7 @@
 * {
   padding: 0px 0px 0px 0px;
   margin: 0px 0px 0px 0px;
+ 
 }
 
 button {
@@ -19,10 +20,6 @@ button {
   background-color: rgba(230, 230, 230, 0.6);
 }
 
-.lucide {
-  font-family: lucide;
-  font-size: 16px;
-}
 
 .chart {
   margin: 0 2px 0 2px;
@@ -82,13 +79,14 @@ button {
 
 /* Block Common Config */
 .block {
-  font-family: "Readex Pro", sans-serif;
+  font-family: "Readex Pro", "lucide", sans-serif;
   background-color: #d9d9d9;
   color: #222;
   border: 1px solid #686868;
   border-radius: 5px;
   padding: 2px 5px 2px 5px;
   margin: 3px 1px 5px 1px;
+  min-height: 26px;
 }
 
 /* NetSpeed */
