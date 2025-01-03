@@ -82,6 +82,7 @@ impl StatusBar {
     }
 
     fn build_widgets(&self, window: &ApplicationWindow, share_info: WidgetShareInfo) {
+        tracing::info!("create bar window for monitor-{}", share_info.monitor_num);
         let bar = gtk::Box::new(Orientation::Horizontal, 10);
 
         bar.style_context().add_class("bar");

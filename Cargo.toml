@@ -57,6 +57,7 @@ debug = true
 
 
 [features]
+default = []
 ideapad = []
 chinese = ["chinese-lunisolar-calendar"]
 hyprland = []

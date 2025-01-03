@@ -46,6 +46,7 @@ pub enum PulseWM {
     Full(bool, u32, bool), // Muted, volume, earphone
 }
 
+#[allow(dead_code)]
 trait SoundDevice {
     fn volume(&self) -> u32;
     fn muted(&self) -> bool;

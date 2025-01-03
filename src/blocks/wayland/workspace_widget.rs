@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use chin_tools::wayland::{WLCompositor, WLOutput, WLWorkspace};
 use chin_tools::wrapper::anyhow::AResult;
-use gtk::prelude::{ContainerExt, LabelExt};
+use gtk::prelude::ContainerExt;
 use gtk::traits::WidgetExt;
 use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
 
@@ -13,15 +13,6 @@ pub struct WorkspaceWidget {
     button: gtk::Button,
 }
 
-impl WorkspaceWidget {
-    pub fn new(workspace: WLWorkspace) -> Self {
-        let button = gtk::Button::builder()
-            .name(workspace.get_id().to_string().as_str())
-            .label(workspace.get_name().as_str())
-            .build();
-        Self { workspace, button }
-    }
-}
 
 #[derive(Debug)]
 pub struct WorkspaceContainer {
@@ -118,7 +109,7 @@ impl WorkspaceContainer {
     }
 
     pub fn on_active_monitor_changed(&mut self, output: &WLOutput) {
-        tracing::error!("[WS] not implmented");
+        tracing::error!("[WS] not implmented {:?}", output);
     }
 
     pub fn on_workspace_added(&mut self, workspace: &WLWorkspace) {
@@ -184,10 +175,4 @@ impl WorkspaceContainer {
             button: workspace_button,
         }
     }
-}
-
-#[derive(Debug)]
-pub struct WorkspaceManager {
-    workspace_widget_map: HashMap<u64, WorkspaceWidget>,
-    ws_box: Option<gtk::Box>,
 }

@@ -1,7 +1,7 @@
 pub mod window_widget;
 pub mod workspace_widget;
 
-use chin_tools::wayland::{into_wl_event, WLEvent, WLWorkspace};
+use chin_tools::wayland::{into_wl_event, WLEvent};
 use gdk::glib::Cast;
 use gtk::Widget;
 use window_widget::{WindowContainer, WindowContainerManager};
@@ -15,14 +15,12 @@ use super::Block;
 
 use chin_tools::utils::idutils;
 
-use gtk::traits::WidgetExt;
 use gtk::traits::BoxExt;
 use tracing::error;
 
 #[derive(Clone)]
 pub enum OutEvent {
     WLEvent(WLEvent),
-    AllWorkspaces(Vec<WLWorkspace>),
 }
 
 #[derive(Clone)]
@@ -158,9 +156,6 @@ impl Block for WaylandBlock {
                             WLEvent::WindowOverwrite(window) => {
                                 window_container.on_window_overwrite(window)
                             }
-                        },
-                        OutEvent::AllWorkspaces(vec) => {
-                            workspace_container.update_all_workspaces(vec)
                         }
                     },
                     Err(err) => {

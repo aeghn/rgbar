@@ -9,7 +9,6 @@ use glib::MainContext;
 use gtk::prelude::LabelExt;
 use gtk::traits::StyleContextExt;
 use gtk::traits::WidgetExt;
-use std::cell::RefCell;
 
 use super::Block;
 
@@ -72,18 +71,18 @@ impl Block for TimeBlock {
 
     fn run(&mut self) -> anyhow::Result<()> {
         let sender = self.dualchannel.get_out_sender();
-        let hour = RefCell::new(0);
+        #[cfg(feature = "chinese")]
+        let hour = std::cell::RefCell::new(0);
 
         glib::timeout_add_seconds_local(1, move || {
-            let (d, t, h) = Self::get_wes_time();
+            let (d, t, _h) = Self::get_wes_time();
 
             sender.send(TimeOut::Westen(d, t)).unwrap();
 
-            let oldt = hour.replace(h);
-
             #[cfg(feature = "chinese")]
             {
-                if oldt != h && h >= 11 {
+                let oldt = hour.replace(_h);
+                if oldt != _h && _h >= 11 {
                     let d = Self::get_chinese_date();
                     sender
                         .send(TimeOut::Chinese {

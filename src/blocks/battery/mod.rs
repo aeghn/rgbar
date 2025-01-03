@@ -182,12 +182,14 @@ impl Block for BatteryBlock {
         let remain_time = gtk::Label::builder().build();
         remain_time.style_context().add_class("battery-label");
 
+        #[cfg(feature = "ideapad")]
         let convervation_icon = gtk_icon_loader::load_font_icon(IconName::BatteryConservationOff);
 
         let power_status_icon = gtk_icon_loader::load_font_icon(IconName::BatteryPowerDisconnected);
 
         holder.pack_start(&battery_status_icon, false, false, 0);
         holder.pack_start(&power_status_icon, false, false, 0);
+        #[cfg(feature = "ideapad")]
         holder.pack_start(&convervation_icon, false, false, 0);
         holder.pack_start(&battery_info, false, false, 0);
         holder.pack_start(&remain_time, false, false, 0);
@@ -218,7 +220,7 @@ impl Block for BatteryBlock {
                                         IconName::BatteryConservationUnknown
                                     }
                                 };
-                                convervation_icon.set_label(&load_label(mapped))
+                                convervation_icon.set_from_pixbuf(Some(&load_label(mapped)))
                             }
                         }
                         BatteryOut::BatteryInfo(bi) => {

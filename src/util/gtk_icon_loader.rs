@@ -2,8 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use gdk::gio::Cancellable;
-use gdk::prelude::{InputStreamExt, PixbufLoaderExt};
+use gdk::prelude::InputStreamExt;
 use gtk::prelude::IconThemeExt;
 
 #[derive(Clone)]
@@ -92,15 +91,6 @@ impl GtkIconLoader {
 }
 
 fn read_into_pixbuf(svg_data: &str, width: i32, height: i32) -> gtk::gdk_pixbuf::Pixbuf {
-    let fill_svg = "";
-    // The fastest way to add/change fill color
-/*     let svg_data = if svg_data.contains("fill=") {
-        let reg = regex::Regex::new(r#"fill="[^"]*""#).unwrap();
-        reg.replace(&svg_data, &format!("fill=\"{}\"", fill_svg))
-    } else {
-        let reg = regex::Regex::new(r"<svg").unwrap();
-        reg.replace(&svg_data, &format!("<svg fill=\"{}\"", fill_svg))
-    }; */
     let stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from(svg_data.as_bytes()));
     let pixbuf = gtk::gdk_pixbuf::Pixbuf::from_stream_at_scale(&stream, width, height, true, None::<&gtk::gio::Cancellable>).unwrap();
     stream.close(None::<&gtk::gio::Cancellable>).unwrap();

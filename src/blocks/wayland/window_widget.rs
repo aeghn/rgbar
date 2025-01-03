@@ -1,7 +1,7 @@
 use chin_tools::wayland::{WLCompositor, WLWindow};
 use chin_tools::wrapper::anyhow::AResult;
 use gdk::glib::Propagation;
-use gtk::{Image, Label};
+use gtk::Label;
 
 use std::collections::HashMap;
 
@@ -17,7 +17,6 @@ pub struct WindowWidget {
     pub window: WLWindow,
     pub container: gtk::Box,
     pub title: Label,
-    pub icon: Image,
 }
 
 impl WindowWidget {
@@ -75,7 +74,6 @@ impl WindowWidget {
             window,
             container,
             title,
-            icon,
         }
     }
 
@@ -208,7 +206,6 @@ pub struct WindowContainerManager {
     pub workspace_containers: HashMap<u64, WindowContainer>,
     pub current_window_id: Option<u64>,
     pub current_workspace_id: i64,
-    pub is_hide: bool,
 }
 
 impl WindowContainerManager {
@@ -229,7 +226,6 @@ impl WindowContainerManager {
             stack,
             workspace_containers: containers,
             current_window_id,
-            is_hide: false,
             current_workspace_id: -1,
         })
     }
