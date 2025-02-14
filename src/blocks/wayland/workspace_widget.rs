@@ -6,13 +6,11 @@ use gtk::prelude::ContainerExt;
 use gtk::traits::WidgetExt;
 use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
 
-
 #[derive(Debug)]
 pub struct WorkspaceWidget {
     workspace: WLWorkspace,
     button: gtk::Button,
 }
-
 
 #[derive(Debug)]
 pub struct WorkspaceContainer {
@@ -98,6 +96,14 @@ impl WorkspaceContainer {
                 style.add_class("ws-focus");
             }
         }
+
+        self.workspace_widget_map.values().for_each(|e| {
+            if e.workspace.get_id() != workspace.get_id() {
+                e.button.hide()
+            } else {
+                e.button.show()
+            }
+        });
 
         self.current_workspace_id.replace(workspace.get_id());
     }

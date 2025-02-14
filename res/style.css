@@ -43,28 +43,28 @@ button {
 
 /* Window Manger Part */
 .wm {
-  font-family: "Readex Pro", "Noto Sans CJK SC", sans-serif;
+  font-family: "Noto Sans CJK SC", sans-serif;
   font-size: 13px;
   margin: 2px 3px 2px 3px;
 }
 
 .wss {
-  background-color: #e0e0e0;
-  border-radius: 5px;
-  border: 1px #606060 solid;
-  margin: 3px 0 3px;
+    background-color: transparent; 
+  margin: 3px 5px 3px 5px;
 }
 
 .ws {
   color: #222;
   font-size: 12px;
   padding: 0 8px 0 8px;
+  border-radius: 6px;
   background-color: #d9d9d9;
 }
 
 .ws-focus {
   color: #fff;
-  border-radius: 4px;
+  padding: 0 10px 0 10px;
+  margin: 3px 1px 5px 1px;
   background-color: #404040;
 }
 
@@ -77,13 +77,18 @@ button {
   margin-left: 10px;
 }
 
+.wm-cw-focus {
+  border-radius: 6px;
+  border: 1px solid #686868;
+  margin: 3px 1px 5px 1px;
+}
+
 /* Block Common Config */
 .block {
-  font-family: "Readex Pro", "lucide", sans-serif;
   background-color: #d9d9d9;
   color: #222;
   border: 1px solid #686868;
-  border-radius: 5px;
+  border-radius: 6px;
   padding: 2px 5px 2px 5px;
   margin: 3px 1px 5px 1px;
   min-height: 26px;

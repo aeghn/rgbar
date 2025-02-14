@@ -93,9 +93,11 @@ impl WindowWidget {
                     .map_or("Unknown Title", |v| v),
             );
             self.title.show();
+            self.container.style_context().add_class("wm-cw-focus")
         } else {
             self.title.set_label("");
             self.title.hide();
+            self.container.style_context().remove_class("wm-cw-focus")
         }
     }
 }
@@ -211,7 +213,6 @@ pub struct WindowContainerManager {
 impl WindowContainerManager {
     pub fn new() -> AResult<Self> {
         let stack = gtk::Stack::builder()
-            .transition_type(gtk::StackTransitionType::SlideDown)
             .build();
 
         stack.add_named(
