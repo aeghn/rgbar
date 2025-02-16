@@ -174,7 +174,7 @@ impl Block for BatteryBlock {
             .orientation(gtk::Orientation::Horizontal)
             .build();
 
-        let battery_status_icon = gtk_icon_loader::load_font_icon(IconName::BatteryMid);
+        let battery_status_icon = gtk_icon_loader::load_icon(IconName::BatteryMid);
         battery_status_icon.style_context().add_class("f-20");
 
         let battery_info = gtk::Label::builder().build();
@@ -183,9 +183,9 @@ impl Block for BatteryBlock {
         remain_time.style_context().add_class("battery-label");
 
         #[cfg(feature = "ideapad")]
-        let convervation_icon = gtk_icon_loader::load_font_icon(IconName::BatteryConservationOff);
+        let convervation_icon = gtk_icon_loader::load_icon(IconName::BatteryConservationOff);
 
-        let power_status_icon = gtk_icon_loader::load_font_icon(IconName::BatteryPowerDisconnected);
+        let power_status_icon = gtk_icon_loader::load_icon(IconName::BatteryPowerDisconnected);
 
         holder.pack_start(&battery_status_icon, false, false, 0);
         holder.pack_start(&power_status_icon, false, false, 0);

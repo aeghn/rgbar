@@ -105,7 +105,7 @@ impl Block for CpuBlock {
             .hexpand(false)
             .build();
 
-        let icon = gtk_icon_loader::load_font_icon(IconName::CPU);
+        let icon = gtk_icon_loader::load_icon(IconName::CPU);
 
         let right_holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)

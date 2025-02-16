@@ -1,9 +1,13 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fs::read_to_string;
 use std::rc::Rc;
+use std::{cell::RefCell, path::PathBuf};
 
+use anyhow::Context;
+use chin_tools::wrapper::anyhow::AResult;
 use gdk::prelude::InputStreamExt;
-use gtk::prelude::IconThemeExt;
+
+use crate::config::{get_config, Config};
 
 #[derive(Clone)]
 pub struct GtkIconLoader {
@@ -53,32 +57,48 @@ impl GtkIconLoader {
         }
     }
 
-    fn map_name(key: &str) -> &str {
-        if "code-url-handler".eq_ignore_ascii_case(key) {
-            "code"
-        } else if "jetbrains-studio".eq_ignore_ascii_case(key) {
-            "androidstudio"
-        } else {
-            key
-        }
-    }
+    pub fn load_from_name(&self, name: &str) -> Option<gdk::gdk_pixbuf::Pixbuf> {
+        if let Some(image) = self.cache.borrow().get(name) {
+            return Some(image.clone());
+        };
 
-    pub fn load_from_name(&self, key: &str) -> Option<gdk::gdk_pixbuf::Pixbuf> {
-        let key = Self::map_name(key);
-        match self.cache.borrow().get(key) {
-            None => {}
-            Some(image) => {
-                return Some(image.clone());
+        let config = get_config();
+        let config: &Option<Config> = config.as_ref();
+        let config = config.as_ref()?;
+
+        let name = config.alias.iter().filter_map(|(key, v)| {
+            if v.iter().any(|n| n == name) {
+                Some(key.as_str())
+            } else {
+                None
             }
-        }
+        }).nth(0)
+            .unwrap_or(name);
 
-        let icon_theme = gtk::IconTheme::default().unwrap();
-        let icon = icon_theme.load_icon(key, 24, gtk::IconLookupFlags::FORCE_SVG);
-        if let Ok(Some(pbf)) = icon
-            .map(|pbf| pbf.and_then(|p| p.scale_simple(24, 24, gdk::gdk_pixbuf::InterpType::Hyper)))
+        let icon = config
+            .paths
+            .iter()
+            .filter_map(|e| {
+                let svg_path = PathBuf::new().join(e).join(format!("{}.svg", name));
+                if svg_path.exists() {
+                    read_to_string(svg_path)
+                        .ok()
+                        .and_then(|e| read_into_pixbuf(&e, 22, 22).ok())
+                } else {
+                    None
+                }
+            })
+            .nth(0);
+
+        /* let icon_theme = gtk::IconTheme::default().unwrap();
+        let icon = icon_theme.load_icon(key, 24, gtk::IconLookupFlags::FORCE_SVG); */
+        if let Some(pbf) =
+            icon.and_then(|pbf| pbf.scale_simple(22, 22, gdk::gdk_pixbuf::InterpType::Hyper))
         {
-            self.cache.borrow_mut().insert(key.to_string(), pbf.clone());
-            match self.cache.borrow().get(key) {
+            self.cache
+                .borrow_mut()
+                .insert(name.to_string(), pbf.clone());
+            match self.cache.borrow().get(name) {
                 None => None,
                 Some(pbf) => {
                     return Some(pbf.clone());
@@ -90,10 +110,20 @@ impl GtkIconLoader {
     }
 }
 
-fn read_into_pixbuf(svg_data: &str, width: i32, height: i32) -> gtk::gdk_pixbuf::Pixbuf {
-    let stream = gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from(svg_data.as_bytes()));
-    let pixbuf = gtk::gdk_pixbuf::Pixbuf::from_stream_at_scale(&stream, width, height, true, None::<&gtk::gio::Cancellable>).unwrap();
-    stream.close(None::<&gtk::gio::Cancellable>).unwrap();
+fn read_into_pixbuf(svg_data: &str, width: i32, height: i32) -> AResult<gtk::gdk_pixbuf::Pixbuf> {
+    let stream =
+        gtk::gio::MemoryInputStream::from_bytes(&gtk::glib::Bytes::from(svg_data.as_bytes()));
+    let pixbuf = gtk::gdk_pixbuf::Pixbuf::from_stream_at_scale(
+        &stream,
+        width,
+        height,
+        true,
+        None::<&gtk::gio::Cancellable>,
+    )
+    .context("unable to read pixbuf");
+    stream
+        .close(None::<&gtk::gio::Cancellable>)
+        .context("unable to close stream")?;
 
     pixbuf
 }
@@ -102,7 +132,7 @@ fn read_into_pixbuf(svg_data: &str, width: i32, height: i32) -> gtk::gdk_pixbuf:
 macro_rules! include_surface {
     ($path:expr, $width:expr, $height:expr) => {{
         let data = include_str!($path);
-        read_into_pixbuf(data, $width, $height)
+        read_into_pixbuf(data, $width, $height).unwrap()
     }};
 }
 
@@ -228,6 +258,6 @@ pub fn load_label(icon_name: IconName) -> gdk::gdk_pixbuf::Pixbuf {
     pixbuf
 }
 
-pub fn load_font_icon(icon_name: IconName) -> gtk::Image {
+pub fn load_icon(icon_name: IconName) -> gtk::Image {
     gtk::Image::from_pixbuf(Some(&load_label(icon_name)))
 }

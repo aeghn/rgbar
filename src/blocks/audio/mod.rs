@@ -182,8 +182,8 @@ impl Block for PulseBlock {
             .build();
 
         let volume = gtk::Label::builder().build();
-        let headphone_icon = gtk_icon_loader::load_font_icon(IconName::Headphone);
-        let vol_icon = gtk_icon_loader::load_font_icon(IconName::VolumeMedium);
+        let headphone_icon = gtk_icon_loader::load_icon(IconName::Headphone);
+        let vol_icon = gtk_icon_loader::load_icon(IconName::VolumeMedium);
 
         holder.pack_start(&headphone_icon, false, false, 0);
 

@@ -1,12 +1,16 @@
 pub mod window_widget;
 pub mod workspace_widget;
 
+use std::sync::Arc;
+
 use chin_tools::wayland::{into_wl_event, WLEvent};
-use gdk::glib::Cast;
+use gdk::glib::{Cast, ObjectExt};
+use gtk::prelude::{StyleContextExt, WidgetExt};
 use gtk::Widget;
 use window_widget::{WindowContainer, WindowContainerManager};
 use workspace_widget::WorkspaceContainer;
 
+use crate::config::Config;
 use crate::datahodler::channel::DualChannel;
 use crate::statusbar::WidgetShareInfo;
 use glib::MainContext;
@@ -90,6 +94,7 @@ impl Block for WaylandBlock {
         let holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .build();
+        holder.style_context().add_class("wm");
 
         holder.pack_start(&workspace_container.holder, false, false, 0);
 
@@ -129,8 +134,9 @@ impl Block for WaylandBlock {
                                 {
                                     continue;
                                 }
-                                window_container
-                                    .on_workspace_overwrite(WindowContainer::new(ws.get_id()));
+                                window_container.on_workspace_overwrite(WindowContainer::new(
+                                    ws.get_id(),
+                                ));
 
                                 workspace_container.on_workspace_added(&ws);
                             }
@@ -156,7 +162,7 @@ impl Block for WaylandBlock {
                             WLEvent::WindowOverwrite(window) => {
                                 window_container.on_window_overwrite(window)
                             }
-                        }
+                        },
                     },
                     Err(err) => {
                         error!("unable to receive message: {}", err)

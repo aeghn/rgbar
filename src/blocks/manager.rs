@@ -1,3 +1,7 @@
+use std::sync::Arc;
+
+use crate::config::Config;
+
 use super::{
     audio::PulseBlock, battery::BatteryBlock, cpu::CpuBlock, memory::MemoryBlock,
     netspeed::NetspeedBlock, time::TimeBlock, wayland::WaylandBlock, Block,

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use chin_tools::wayland::{WLCompositor, WLOutput, WLWorkspace};
 use chin_tools::wrapper::anyhow::AResult;
-use gtk::prelude::ContainerExt;
+use gtk::prelude::{ContainerExt, LabelExt};
 use gtk::traits::WidgetExt;
 use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
 
@@ -12,10 +12,33 @@ pub struct WorkspaceWidget {
     button: gtk::Button,
 }
 
+impl WorkspaceWidget {
+    pub fn new(workspace: WLWorkspace) -> WorkspaceWidget {
+        let workspace_button = gtk::Button::builder()
+            .label(workspace.get_name().as_str())
+            .name(workspace.get_id().to_string())
+            .build();
+
+        workspace_button.style_context().add_class("ws");
+        {
+            let ws = workspace.clone();
+            workspace_button.connect_clicked(move |_| {
+                let _ = ws.focus();
+            });
+        }
+
+        WorkspaceWidget {
+            workspace: workspace,
+            button: workspace_button,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct WorkspaceContainer {
     workspace_widget_map: HashMap<u64, WorkspaceWidget>,
     pub holder: gtk::Box,
+    indicator: gtk::Label,
     output_name: String,
     current_workspace_id: Option<u64>,
 }
@@ -25,19 +48,19 @@ impl WorkspaceContainer {
         let holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .build();
+        let indicator = gtk::Label::builder().build();
+        indicator.style_context().add_class("ws");
 
         holder.style_context().add_class("wss");
+        holder.pack_start(&indicator, false, true, 0);
 
         Ok(Self {
             workspace_widget_map: Default::default(),
             holder,
             output_name,
             current_workspace_id: Default::default(),
+            indicator,
         })
-    }
-
-    pub fn get_workspace_ids(&self) -> Vec<u64> {
-        self.workspace_widget_map.keys().map(|e| *e).collect()
     }
 
     pub fn init(mut self) -> AResult<Self> {
@@ -69,116 +92,90 @@ impl WorkspaceContainer {
         self.holder.show_all();
     }
 
-    pub fn on_workspace_changed(&mut self, workspace: &WLWorkspace) {
-        if let Some(ws) = self.workspace_widget_map.get(&workspace.get_id()) {
-            ws.button.set_label(&workspace.get_name());
-        } else {
-            self.on_workspace_added(workspace);
-        }
-    }
-
-    pub fn on_workspace_focused(&mut self, workspace: &WLWorkspace) {
-        {
-            if let Some(ww) = self
-                .current_workspace_id
-                .and_then(|old| self.workspace_widget_map.get(&old))
-            {
-                let style = ww.button.style_context();
-                if style.has_class("ws-focus") {
-                    style.remove_class("ws-focus");
-                }
-            }
-        }
-
-        if let Some(ww) = self.workspace_widget_map.get(&workspace.get_id()) {
-            let style = ww.button.style_context();
-            if !style.has_class("ws-focus") {
-                style.add_class("ws-focus");
-            }
-        }
-
-        self.workspace_widget_map.values().for_each(|e| {
-            if e.workspace.get_id() != workspace.get_id() {
-                e.button.hide()
-            } else {
-                e.button.show()
-            }
-        });
-
-        self.current_workspace_id.replace(workspace.get_id());
+    pub fn on_workspace_added(&mut self, workspace: &WLWorkspace) {
+        self.workspace_widget_map
+            .insert(workspace.get_id(), WorkspaceWidget::new(workspace.clone()));
+        self.update_view();
     }
 
     pub fn on_workspace_delete(&mut self, workspace: &WLWorkspace) {
-        if let Some(ws) = self.workspace_widget_map.remove(&workspace.get_id()) {
-            self.holder.remove(&ws.button);
-        }
+        self.workspace_widget_map.remove(&workspace.get_id());
+        self.update_view();
+    }
+
+    pub fn on_workspace_changed(&mut self, workspace: &WLWorkspace) {
+        self.workspace_widget_map.get_mut(&workspace.get_id()).map(|e| e.workspace = workspace.clone());
+        self.update_view();
+    }
+
+    pub fn on_workspace_focused(&mut self, workspace: &WLWorkspace) {
+        self.current_workspace_id.replace(workspace.get_id());
+        self.update_view();
     }
 
     pub fn on_active_monitor_changed(&mut self, output: &WLOutput) {
         tracing::error!("[WS] not implmented {:?}", output);
     }
 
-    pub fn on_workspace_added(&mut self, workspace: &WLWorkspace) {
-        tracing::debug!(
-            "[WS] workspace added wsid2idx: {} -> {}",
-            workspace.get_id(),
-            workspace.get_name()
-        );
-        if let None = self.workspace_widget_map.get(&workspace.get_id()) {
-            let widget = Self::workspace_container(workspace);
-            self.holder.pack_end(&widget.button, false, false, 0);
-            self.workspace_widget_map.insert(workspace.get_id(), widget);
-        }
-        self.reorder_workspaces();
+    fn update_view(&self) {
+        let indicator = self
+            .current_workspace_id
+            .and_then(|e| self.workspace_widget_map.get(&e))
+            .map_or("Unknown".to_owned(), |e| e.workspace.get_name());
+        self.indicator.set_label(format!("{}/{}", indicator, self.workspace_widget_map.len()).as_str());
+
+        // let mut line_size = self.lines.children().len();
+
+        // let mut wss: Vec<&WorkspaceWidget> =
+        //     self.workspace_widget_map.values().into_iter().collect();
+        // wss.sort_by(|e1, e2| e1.workspace.get_id().cmp(&e2.workspace.get_id()));
+
+        // let mut current_index = None;
+        // for (index, ws) in wss.iter().enumerate() {
+        //     if Some(ws.workspace.get_id()) == self.current_workspace_id {
+        //         let end = if index + 2 >= wss.len() {
+        //             wss.len() - 1
+        //         } else {
+        //             index + 2
+        //         };
+
+        //         let start = index.saturating_sub(2);
+        //         let cur = index;
+        //         current_index.replace((start, cur, end));
+        //         break;
+        //     }
+        // }
+
+        // while wss.len() > line_size && line_size < 5 {
+        //     let indicator = gtk::Separator::builder()
+        //         .height_request(5)
+        //         .width_request(20)
+        //         .build();
+        //     indicator.style_context().add_class("ws-line");
+        //     self.lines.pack_end(&indicator, true, false, 1);
+        //     line_size += 1;
+        // }
+        // while wss.len() < line_size {
+        //     self.lines.children().get(0).map(|e| self.lines.remove(e));
+        //     line_size -= 1;
+        // }
+        // let children = self.lines.children();
+        // if let Some((start, cur, end)) = current_index {
+        //     for i in 0..=(end - start) {
+        //         if cur - start == i {
+        //             children
+        //                 .get(i)
+        //                 .map(|e| e.style_context().add_class("ws-line-focus"));
+        //         } else {
+        //             children
+        //                 .get(i)
+        //                 .map(|e| e.style_context().remove_class("ws-line-focus"));
+        //         }
+        //     }
+        // }
     }
 
-    fn reorder_workspaces(&mut self) {
-        let workspaces = self.holder.clone();
-        for (_, w) in self.workspace_widget_map.iter().filter(|(_, e)| {
-            e.workspace
-                .get_output_name()
-                .as_ref()
-                .map_or(true, |e| e != &self.output_name)
-        }) {
-            workspaces.remove(&w.button);
-        }
-
-        let mut children = workspaces.children();
-        children.sort_by(|a, b| {
-            let ai = isize::from_str_radix(a.widget_name().as_str(), 10);
-            let bi = isize::from_str_radix(b.widget_name().as_str(), 10);
-
-            if let (Ok(ai), Ok(bi)) = (ai, bi) {
-                isize::cmp(&ai, &bi)
-            } else {
-                a.widget_name().cmp(&b.widget_name())
-            }
-        });
-
-        children.iter().rev().enumerate().for_each(|(i, widget)| {
-            widget.show();
-            workspaces.reorder_child(widget, i as i32)
-        });
-    }
-
-    fn workspace_container(workspace: &WLWorkspace) -> WorkspaceWidget {
-        let workspace_button = gtk::Button::builder()
-            .label(workspace.get_name().as_str())
-            .name(workspace.get_id().to_string())
-            .build();
-
-        workspace_button.style_context().add_class("ws");
-
-        {
-            let ws = workspace.clone();
-            workspace_button.connect_clicked(move |_| {
-                let _ = ws.focus();
-            });
-        }
-
-        WorkspaceWidget {
-            workspace: workspace.clone(),
-            button: workspace_button,
-        }
+    pub fn get_workspace_ids(&self) -> Vec<u64> {
+        self.workspace_widget_map.keys().map(|e| *e).collect()
     }
 }

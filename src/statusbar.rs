@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use gtk::prelude::{BoxExt, GtkWindowExt};
 use gtk::traits::ContainerExt;
@@ -10,6 +11,7 @@ use tracing::info;
 
 use crate::blocks::manager::BlockManager;
 use crate::blocks::Block;
+use crate::config::Config;
 use crate::util::gdk_util::get_monitor_plug_name;
 
 pub struct StatusBar {
@@ -111,12 +113,6 @@ impl StatusBar {
         let netspeed = self.block_manager.net_block.widget(share_info);
         netspeed.style_context().add_class("block");
         bar.pack_end(&netspeed, false, false, 0);
-
-        #[cfg(feature = "hyprland")]
-        {
-            let hyprstatus = self.block_manager.hypr_block.widget(share_info);
-            bar.pack_start(&hyprstatus, false, false, 0);
-        }
 
         let wayland = self.block_manager.wayland_block.widget(share_info);
         bar.pack_start(&wayland, false, false, 0);

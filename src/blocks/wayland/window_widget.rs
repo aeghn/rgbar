@@ -4,7 +4,9 @@ use gdk::glib::Propagation;
 use gtk::Label;
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
+use crate::config::Config;
 use crate::util;
 
 use crate::util::gtk_icon_loader::GtkIconLoader;
@@ -26,12 +28,12 @@ impl WindowWidget {
             .build();
 
         let icon = gtk::Image::builder().build();
-        icon.style_context().add_class("wm-cw-icon");
+        icon.style_context().add_class("wmw-icon");
 
         let event_box = gtk::EventBox::builder().child(&icon).build();
 
         let title = gtk::Label::builder().build();
-        title.style_context().add_class("wm-cw-title");
+        title.style_context().add_class("wmw-title");
         if window.is_focused() {
             title.set_label(
                 window
@@ -93,11 +95,11 @@ impl WindowWidget {
                     .map_or("Unknown Title", |v| v),
             );
             self.title.show();
-            self.container.style_context().add_class("wm-cw-focus")
+            self.container.style_context().add_class("wmw-focus")
         } else {
             self.title.set_label("");
             self.title.hide();
-            self.container.style_context().remove_class("wm-cw-focus")
+            self.container.style_context().remove_class("wmw-focus")
         }
     }
 }

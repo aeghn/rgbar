@@ -19,8 +19,8 @@ chrono = "0.4"
 serde_json = "1.0.96"
 
 gtk-layer-shell = "0.8.2"
-glib = "0.20.7"
-gio = "0.20.7"
+glib = "0.20.0"
+gio = "0.20.0"
 gtk = "0.18.2"
 gdk = "0.18.2"
 gdk-sys = "0.18.2"
@@ -46,6 +46,11 @@ libc = "0.2.161"
 
 glob = "0.3.1"
 smart-default = "0.7.1"
+clap = "4.5.29"
+serde = { version = "1.0.217", features = ["serde_derive"] }
+lazy_static = "1.5.0"
+arc-swap = "1.7.1"
+smol_str = "0.3.2"
 
 
 [profile.release]

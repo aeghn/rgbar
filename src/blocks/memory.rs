@@ -85,7 +85,7 @@ impl Block for MemoryBlock {
             .hexpand(false)
             .build();
 
-        let icon = gtk_icon_loader::load_font_icon(IconName::RAM);
+        let icon = gtk_icon_loader::load_icon(IconName::RAM);
 
         let mut receiver = self.dualchannel.get_out_receiver();
 

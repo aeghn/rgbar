@@ -131,7 +131,7 @@ impl Block for NetspeedBlock {
             .hexpand(false)
             .build();
 
-        let icon = gtk_icon_loader::load_font_icon(IconName::WIFI);
+        let icon = gtk_icon_loader::load_icon(IconName::WIFI);
 
         let speed_label: gtk::Label = gtk::Label::builder().hexpand(false).xalign(1.0).build();
         speed_label.style_context().add_class("netspeed-label");
