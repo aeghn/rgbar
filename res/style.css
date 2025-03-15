@@ -1,7 +1,6 @@
 * {
     padding: 0px 0px 0px 0px;
     margin: 0px 0px 0px 0px;
-
 }
 
 button {
@@ -45,7 +44,6 @@ button {
     font-family: "Noto Sans CJK SC", sans-serif;
     font-size: 12px;
     margin: 3px 3px 3px 3px;
-    border-color: #d9d9d9;
 }
 
 .wss {
@@ -55,69 +53,69 @@ button {
 .ws {
     font-size: 12px;
     padding: 0 10px 0 10px;
-    margin: 3px 1px 5px 1px;
+    margin: 3px 3px 3px 5px;
     border-radius: 6px;
     color: #fff;
     background-color: #404040;
 }
 
- .ws-normal {
-     background-color: #d9d9d9;
- }
+.ws-normal {
+    background-color: #d9d9d9;
+}
 
- .wmw-title {
-     color: #000;
-     padding: 0px 5px 0px 5px;
- }
+.wmw-title {
+    color: #000;
+    padding: 0px 5px 0px 5px;
+}
 
- .wmw-icon {
-     margin: 0 5px 0 5px;
- }
+.wmw-icon {
+    margin: 0 5px 0 5px;
+}
 
- .wmw-focus {
-     border-radius: 6px;
-     border: 1px solid #686868;
-     padding: 0px 3px 0px 3px;
-     margin: 3px 3px 3px 3px;
- }
+.wmw-focus {
+    border-radius: 6px;
+    border: 1px solid #686868;
+    padding: 0px 3px 0px 3px;
+    margin: 3px 3px 3px 3px;
+}
 
- /* Block Common Config */
- .block {
-     background-color: #d9d9d9;
-     color: #222;
-     border: 1px solid #686868;
-     border-radius: 6px;
-     padding: 2px 5px 2px 5px;
-     margin: 3px 1px 5px 1px;
-     min-height: 26px;
- }
+/* Block Common Config */
+.block {
+    background-color: #d9d9d9;
+    color: #222;
+    border: 1px solid #686868;
+    border-radius: 6px;
+    padding: 2px 5px 2px 5px;
+    margin: 3px 1px 5px 1px;
+    min-height: 26px;
+}
 
- /* NetSpeed */
- .netspeed-label {
-     font-size: 8px;
-     min-width: 40px;
- }
+/* NetSpeed */
+.netspeed-label {
+    font-size: 8px;
+    min-width: 40px;
+}
 
- .battery-label {
-     padding-left: 5px;
- }
+.battery-label {
+    padding-left: 5px;
+}
 
- /*CPU*/
- .cpu-util {
-     min-width: 30px;
-     font-size: 8px;
- }
+/*CPU*/
+.cpu-util {
+    min-width: 30px;
+    font-size: 8px;
+}
 
- .cpu-temp {
-     min-width: 35px;
-     font-size: 8px;
- }
+.cpu-temp {
+    min-width: 35px;
+    font-size: 8px;
+}
 
- .cpu-freq {
-     font-size: 8px;
- }
+.cpu-freq {
+    font-size: 8px;
+}
 
- .time-date {
-     font-size: 12px;
-     min-width: 120px;
- }
+.time-date {
+    font-size: 12px;
+    min-width: 120px;
+}

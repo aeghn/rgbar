@@ -17,7 +17,7 @@ use glib::MainContext;
 
 use super::Block;
 
-use chin_tools::utils::idutils;
+use chin_tools::utils::id_util;
 
 use gtk::traits::BoxExt;
 use tracing::error;
@@ -79,7 +79,7 @@ impl Block for WaylandBlock {
         let output_name = share_info
             .plug_name
             .as_ref()
-            .map_or_else(|| idutils::generate_uuid(), |s| s.to_owned());
+            .map_or_else(|| id_util::generate_uuid(), |s| s.to_owned());
 
         let mut workspace_container = WorkspaceContainer::new(output_name.clone())
             .unwrap()
