@@ -1,13 +1,13 @@
 #![no_main]
 
 mod blocks;
+pub mod config;
 mod datahodler;
 mod prelude;
 mod statusbar;
 mod util;
 mod widgets;
 mod window;
-pub mod config;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -30,8 +30,6 @@ fn main() {
 
     info!("Building application...");
 
-
-
     let application = gtk::Application::new(None, gio::ApplicationFlags::default());
     info!("Loading CSS...");
     let _style_path = PathBuf::new();
@@ -41,9 +39,9 @@ fn main() {
 
     application.connect_activate(|app| {
         let config = Config::read_from_json_file(None::<PathBuf>).unwrap();
-        
+
         set_config(config);
-        
+
         let mut statusbar = StatusBar::new(app);
 
         statusbar.handle_monitors();

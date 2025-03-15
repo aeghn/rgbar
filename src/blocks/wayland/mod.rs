@@ -1,16 +1,13 @@
 pub mod window_widget;
 pub mod workspace_widget;
 
-use std::sync::Arc;
-
 use chin_tools::wayland::{into_wl_event, WLEvent};
-use gdk::glib::{Cast, ObjectExt};
+use gdk::glib::Cast;
 use gtk::prelude::{StyleContextExt, WidgetExt};
 use gtk::Widget;
 use window_widget::{WindowContainer, WindowContainerManager};
 use workspace_widget::WorkspaceContainer;
 
-use crate::config::Config;
 use crate::datahodler::channel::DualChannel;
 use crate::statusbar::WidgetShareInfo;
 use glib::MainContext;
@@ -134,9 +131,8 @@ impl Block for WaylandBlock {
                                 {
                                     continue;
                                 }
-                                window_container.on_workspace_overwrite(WindowContainer::new(
-                                    ws.get_id(),
-                                ));
+                                window_container
+                                    .on_workspace_overwrite(WindowContainer::new(ws.get_id()));
 
                                 workspace_container.on_workspace_added(&ws);
                             }

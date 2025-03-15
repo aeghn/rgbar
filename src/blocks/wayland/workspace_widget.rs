@@ -2,34 +2,19 @@ use std::collections::HashMap;
 
 use chin_tools::wayland::{WLCompositor, WLOutput, WLWorkspace};
 use chin_tools::wrapper::anyhow::AResult;
-use gtk::prelude::{ContainerExt, LabelExt};
+use gtk::prelude::LabelExt;
 use gtk::traits::WidgetExt;
-use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
+use gtk::traits::{BoxExt, StyleContextExt};
 
 #[derive(Debug)]
 pub struct WorkspaceWidget {
     workspace: WLWorkspace,
-    button: gtk::Button,
 }
 
 impl WorkspaceWidget {
     pub fn new(workspace: WLWorkspace) -> WorkspaceWidget {
-        let workspace_button = gtk::Button::builder()
-            .label(workspace.get_name().as_str())
-            .name(workspace.get_id().to_string())
-            .build();
-
-        workspace_button.style_context().add_class("ws");
-        {
-            let ws = workspace.clone();
-            workspace_button.connect_clicked(move |_| {
-                let _ = ws.focus();
-            });
-        }
-
         WorkspaceWidget {
-            workspace: workspace,
-            button: workspace_button,
+            workspace,
         }
     }
 }
@@ -104,7 +89,9 @@ impl WorkspaceContainer {
     }
 
     pub fn on_workspace_changed(&mut self, workspace: &WLWorkspace) {
-        self.workspace_widget_map.get_mut(&workspace.get_id()).map(|e| e.workspace = workspace.clone());
+        self.workspace_widget_map
+            .get_mut(&workspace.get_id())
+            .map(|e| e.workspace = workspace.clone());
         self.update_view();
     }
 
@@ -122,7 +109,8 @@ impl WorkspaceContainer {
             .current_workspace_id
             .and_then(|e| self.workspace_widget_map.get(&e))
             .map_or("Unknown".to_owned(), |e| e.workspace.get_name());
-        self.indicator.set_label(format!("{}/{}", indicator, self.workspace_widget_map.len()).as_str());
+        self.indicator
+            .set_label(format!("{}/{}", indicator, self.workspace_widget_map.len()).as_str());
 
         // let mut line_size = self.lines.children().len();
 

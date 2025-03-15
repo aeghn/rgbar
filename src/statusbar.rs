@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use gtk::prelude::{BoxExt, GtkWindowExt};
 use gtk::traits::ContainerExt;
@@ -11,7 +10,6 @@ use tracing::info;
 
 use crate::blocks::manager::BlockManager;
 use crate::blocks::Block;
-use crate::config::Config;
 use crate::util::gdk_util::get_monitor_plug_name;
 
 pub struct StatusBar {

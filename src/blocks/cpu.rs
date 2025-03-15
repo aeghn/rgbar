@@ -148,8 +148,7 @@ impl Block for CpuBlock {
             loop {
                 if let Ok(msg) = receiver.recv().await {
                     match msg {
-                        CpuOut::Frequencies(_) => {
-                        }
+                        CpuOut::Frequencies(_) => {}
                         CpuOut::UtilizationAvg(user, system) => {
                             system_column.add_value(system * 100.);
                             user_column.add_value(user * 100.);

@@ -4,9 +4,7 @@ use gdk::glib::Propagation;
 use gtk::Label;
 
 use std::collections::HashMap;
-use std::sync::Arc;
 
-use crate::config::Config;
 use crate::util;
 
 use crate::util::gtk_icon_loader::GtkIconLoader;
@@ -214,8 +212,7 @@ pub struct WindowContainerManager {
 
 impl WindowContainerManager {
     pub fn new() -> AResult<Self> {
-        let stack = gtk::Stack::builder()
-            .build();
+        let stack = gtk::Stack::builder().build();
 
         stack.add_named(
             &gtk::Label::new(Some("This workspace's windows container is missing.")),

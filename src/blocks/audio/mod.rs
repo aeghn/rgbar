@@ -205,8 +205,9 @@ impl Block for PulseBlock {
                             }
 
                             if mute {
-                                vol_icon
-                                    .set_from_pixbuf(Some(&load_label(gtk_icon_loader::IconName::VolumeMute)))
+                                vol_icon.set_from_pixbuf(Some(&load_label(
+                                    gtk_icon_loader::IconName::VolumeMute,
+                                )))
                             } else {
                                 match vol {
                                     0..=30 => vol_icon.set_from_pixbuf(Some(&load_label(

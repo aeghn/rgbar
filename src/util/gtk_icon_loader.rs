@@ -66,13 +66,17 @@ impl GtkIconLoader {
         let config: &Option<Config> = config.as_ref();
         let config = config.as_ref()?;
 
-        let name = config.alias.iter().filter_map(|(key, v)| {
-            if v.iter().any(|n| n == name) {
-                Some(key.as_str())
-            } else {
-                None
-            }
-        }).nth(0)
+        let name = config
+            .alias
+            .iter()
+            .filter_map(|(key, v)| {
+                if v.iter().any(|n| n == name) {
+                    Some(key.as_str())
+                } else {
+                    None
+                }
+            })
+            .nth(0)
             .unwrap_or(name);
 
         let icon = config
