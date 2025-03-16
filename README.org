@@ -1,9 +1,9 @@
 #+TITLE: Rust Gtk-3 Bar
 
-A system status bar for wayland and hyprland by Rust and Gtk-3.
+A system status bar for niri by Rust and Gtk-3.
 
 * Features
-  - Hyprland
+  - Niri 
     - Current Workspace (Click Support)
     - Active Window Title (Icon Support)
   - Netspeed (with Graph)
