@@ -6,8 +6,9 @@ use std::os::fd::{IntoRawFd, RawFd};
 use std::sync::Mutex;
 use std::thread;
 
-use anyhow::Context as _;
+use chin_tools::anyhow::Context as _;
 use async_channel::Sender;
+use chin_tools::anyhow::aanyhow;
 use chin_tools::wrapper::anyhow::AResult;
 use libc::c_void;
 use pulse::callbacks::ListResult;
@@ -134,7 +135,7 @@ impl Connection {
         let mut proplist = Proplist::new().unwrap();
         proplist
             .set_str(properties::APPLICATION_NAME, env!("CARGO_PKG_NAME"))
-            .map_err(|_| anyhow::anyhow!("Could not set pulseaudio APPLICATION_NAME property"))?;
+            .map_err(|_| aanyhow!("Could not set pulseaudio APPLICATION_NAME property"))?;
 
         let mainloop = Mainloop::new().context("Failed to create pulseaudio mainloop")?;
 
@@ -159,7 +160,7 @@ impl Connection {
                     break;
                 }
                 PulseState::Failed | PulseState::Terminated => {
-                    return Err(anyhow::anyhow!(
+                    return Err(aanyhow!(
                         "pulseaudio context state failed/terminated"
                     ));
                 }
@@ -173,7 +174,7 @@ impl Connection {
     fn iterate(&mut self, blocking: bool) -> AResult<()> {
         match self.mainloop.iterate(blocking) {
             IterateResult::Quit(_) | IterateResult::Err(_) => {
-                Err(anyhow::anyhow!("failed to iterate pulseaudio state"))
+                Err(aanyhow!("failed to iterate pulseaudio state"))
             }
             IterateResult::Success(_) => Ok(()),
         }
@@ -302,7 +303,7 @@ impl Client {
                 client.ml_waker.wake().unwrap();
                 Ok(())
             }
-            Err(err) => Err(anyhow::anyhow!(format!(
+            Err(err) => Err(aanyhow!(format!(
                 "pulseaudio connection failed with error: {err}",
             ))),
         }

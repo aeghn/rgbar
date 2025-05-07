@@ -12,17 +12,11 @@ use self::common::get_battery_info;
 use self::ideapad::{get_conservation_mode, ConvervationMode};
 
 use super::Block;
-use crate::prelude::*;
-use crate::util::gtk_icon_loader;
-use crate::util::gtk_icon_loader::StatusName;
-use glib::clone;
-use glib::MainContext;
 
-use gtk::prelude::BoxExt;
-use gtk::prelude::ImageExt;
-use gtk::prelude::LabelExt;
-use gtk::prelude::StyleContextExt;
-use gtk::prelude::WidgetExt;
+use crate::prelude::*;
+use chin_tools::AResult;
+
+
 use tracing::warn;
 
 mod common;
@@ -102,11 +96,11 @@ impl Block for BatteryBlock {
     type Out = BatteryOut;
     type In = BatteryIn;
 
-    fn run(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> AResult<()> {
         let sender = self.dualchannel.get_out_sender();
         let mut last_info: Option<PowerStatus> = None;
 
-        glib::timeout_add_seconds(
+        timeout_add_seconds(
             1,
             clone!(
                 
@@ -149,7 +143,7 @@ impl Block for BatteryBlock {
                         .send(BatteryOut::ConvervationMode(get_conservation_mode()))
                         .unwrap();
 
-                    glib::ControlFlow::Continue
+                    ControlFlow::Continue
                 }
             ),
         );
@@ -174,7 +168,7 @@ impl Block for BatteryBlock {
             .orientation(gtk::Orientation::Horizontal)
             .build();
 
-        let mut battery_status_icon = gtk_icon_loader::load_fixed_status_image(StatusName::BatteryMid);
+        let battery_status_icon = gtk_icon_loader::load_fixed_status_image(StatusName::BatteryMid);
         battery_status_icon.style_context().add_class("f-20");
 
         let battery_info = gtk::Label::builder().build();
@@ -185,7 +179,7 @@ impl Block for BatteryBlock {
         #[cfg(feature = "ideapad")]
         let convervation_icon = gtk_icon_loader::load_fixed_status_image(StatusName::BatteryConservationOff);
 
-        let mut power_status_icon = gtk_icon_loader::load_fixed_status_image(StatusName::BatteryPowerDisconnected);
+        let power_status_icon = gtk_icon_loader::load_fixed_status_image(StatusName::BatteryPowerDisconnected);
 
         holder.pack_start(&battery_status_icon, false, false, 0);
         holder.pack_start(&power_status_icon, false, false, 0);

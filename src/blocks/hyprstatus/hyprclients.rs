@@ -79,7 +79,7 @@ pub fn get_active_client() -> Option<HyprClient> {
     }
 }
 
-pub fn get_workspaces() -> anyhow::Result<Vec<HyprWorkspace>> {
+pub fn get_workspaces() -> AResult<Vec<HyprWorkspace>> {
     let output = Command::new("hyprctl")
         .arg("workspaces")
         .arg("-j")
@@ -107,7 +107,7 @@ pub fn get_workspaces() -> anyhow::Result<Vec<HyprWorkspace>> {
     Ok(vec)
 }
 
-pub fn get_active_workspace() -> anyhow::Result<HyprWorkspace> {
+pub fn get_active_workspace() -> AResult<HyprWorkspace> {
     let output = Command::new("hyprctl")
         .arg("activeworkspace")
         .arg("-j")

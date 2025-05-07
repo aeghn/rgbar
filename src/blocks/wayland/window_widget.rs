@@ -1,18 +1,11 @@
 use chin_tools::wayland::{WLCompositor, WLWindow};
 use chin_tools::wrapper::anyhow::AResult;
-use gdk::glib::Propagation;
-use gdk::prelude::GdkPixbufExt;
-use gdk::Window;
-use gtk::Label;
+
 
 use std::collections::HashMap;
 
 use crate::util;
-
-use crate::util::gtk_icon_loader::GtkIconLoader;
-use gtk::prelude::{ContainerExt, ImageExt, LabelExt, StackExt};
-use gtk::traits::WidgetExt;
-use gtk::traits::{BoxExt, StyleContextExt};
+use crate::prelude::*;
 
 #[derive(Debug)]
 pub struct WindowWidget {
@@ -44,10 +37,10 @@ impl WindowWidget {
         }
 
         title.set_single_line_mode(true);
-        title.set_ellipsize(gdk::pango::EllipsizeMode::End);
+        title.set_ellipsize(EllipsizeMode::End);
         title.set_lines(1);
         title.set_line_wrap(true);
-        title.set_line_wrap_mode(gdk::pango::WrapMode::Char);
+        title.set_line_wrap_mode(WrapMode::Char);
 
         container.pack_start(&event_box, false, false, 0);
         container.pack_start(&title, false, false, 0);
@@ -295,7 +288,7 @@ impl WindowContainerManager {
 
             if let Some(_) = self.workspace_containers.get(&workspace_id) {
                 let stack = self.stack.clone();
-                glib::idle_add_local_once(move || {
+                idle_add_local_once(move || {
                     tracing::debug!("[WIN] set visble child: {}", workspace_id);
                     stack.set_visible_child_name(&workspace_id.to_string().as_str());
                 });

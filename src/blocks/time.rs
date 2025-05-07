@@ -1,14 +1,12 @@
 use crate::datahodler::channel::DualChannel;
 use crate::prelude::*;
 use crate::statusbar::WidgetShareInfo;
+use chin_tools::AResult;
 #[cfg(feature = "chinese")]
 use chinese_lunisolar_calendar::LunisolarDate;
 use chrono::Timelike;
 use chrono::{DateTime, Local};
-use glib::MainContext;
-use gtk::prelude::LabelExt;
-use gtk::traits::StyleContextExt;
-use gtk::traits::WidgetExt;
+
 
 use super::Block;
 
@@ -69,12 +67,12 @@ impl Block for TimeBlock {
 
     type In = TimeIn;
 
-    fn run(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> AResult<()> {
         let sender = self.dualchannel.get_out_sender();
         #[cfg(feature = "chinese")]
         let hour = std::cell::RefCell::new(0);
 
-        glib::timeout_add_seconds_local(1, move || {
+        timeout_add_seconds_local(1, move || {
             let (d, t, _h) = Self::get_wes_time();
 
             sender.send(TimeOut::Westen(d, t)).unwrap();
@@ -94,7 +92,7 @@ impl Block for TimeBlock {
                 }
             }
 
-            glib::ControlFlow::Continue
+            ControlFlow::Continue
         });
 
         Ok(())

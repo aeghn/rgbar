@@ -1,12 +1,9 @@
 use core::f64;
 use std::marker::PhantomData;
 
-use gdk::glib::Propagation;
-use gdk::RGBA;
-use gtk::prelude::BoxExt;
+use crate::prelude::*;
 
-use gtk::prelude::StyleContextExt;
-use gtk::prelude::WidgetExt;
+
 
 use crate::datahodler::ring::Ring;
 
@@ -93,7 +90,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
     pub fn draw_in_seconds(&self, secs: u32) {
         let columns = self.columns.clone();
         let line_width = self.line_width.clone();
-        self.drawing_area.connect_draw(glib::clone!(
+        self.drawing_area.connect_draw(clone!(
             @strong columns,
             @strong line_width =>
             move |da, cr| {
@@ -103,18 +100,18 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         ));
 
         let drawing_area = self.drawing_area.clone();
-        glib::timeout_add_seconds_local(secs, move || {
+        timeout_add_seconds_local(secs, move || {
             drawing_area.queue_draw();
 
-            glib::ControlFlow::Continue
+            ControlFlow::Continue
         });
     }
 
     fn draw(
         columns: &Vec<Column<E>>,
         line_width: f64,
-        da: &gtk::DrawingArea,
-        cr: &gdk::cairo::Context,
+        da: &DrawingArea,
+        cr: &gtk::cairo::Context,
     ) {
         let alloc = da.allocation();
 

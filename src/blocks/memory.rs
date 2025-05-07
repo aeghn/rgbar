@@ -2,10 +2,9 @@ use std::cmp::min;
 use std::str::FromStr;
 
 use crate::prelude::*;
-use anyhow::Result;
-use gdk::RGBA;
-use glib::MainContext;
-use gtk::prelude::BoxExt;
+use chin_tools::AResult;
+
+
 
 use crate::statusbar::WidgetShareInfo;
 use crate::util::gtk_icon_loader::StatusName;
@@ -39,10 +38,10 @@ impl Block for MemoryBlock {
 
     type In = MemoryIn;
 
-    fn run(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> AResult<()> {
         let sender = self.dualchannel.get_out_sender();
 
-        glib::timeout_add_seconds_local(1, move || {
+        timeout_add_seconds_local(1, move || {
             let mem_state = Memstate::new().unwrap();
 
             let mem_total = mem_state.mem_total * 1024;
@@ -73,7 +72,7 @@ impl Block for MemoryBlock {
             let swap_cached = mem_state.swap_cached * 1024;
             let _swap_used = swap_total - swap_free - swap_cached;
 
-            glib::ControlFlow::Continue
+            ControlFlow::Continue
         });
 
         Ok(())
@@ -135,7 +134,7 @@ struct Memstate {
 }
 
 impl Memstate {
-    fn new() -> Result<Self> {
+    fn new() -> AResult<Self> {
         // Reference: https://www.kernel.org/doc/Documentation/filesystems/proc.txt
 
         let mut mem_state = Memstate::default();

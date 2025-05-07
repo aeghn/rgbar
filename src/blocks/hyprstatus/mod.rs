@@ -22,10 +22,7 @@ use super::Block;
 use crate::blocks::hyprstatus::hyprclients::HyprWorkspace;
 use crate::datahodler::channel::{DualChannel, MReceiver, SSender};
 use crate::util::gtk_icon_loader::GtkIconLoader;
-use gtk::prelude::{ContainerExt, ImageExt, LabelExt};
-use gtk::traits::WidgetExt;
-use gtk::traits::{BoxExt, ButtonExt, StyleContextExt};
-use gtk::{Label, Widget};
+
 use tracing::error;
 use tracing::info;
 
@@ -399,7 +396,7 @@ impl Block for HyprBlock {
     type Out = HyprOut;
     type In = HyprIn;
 
-    fn run(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> AResult<()> {
         let xdg_runtime_dir = std::env::var("XDG_RUNTIME_DIR")?;
         if let Ok(ins) = std::env::var("HYPRLAND_INSTANCE_SIGNATURE") {
             let sender = self.dualchannel.get_out_sender();

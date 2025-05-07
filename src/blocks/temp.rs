@@ -4,9 +4,10 @@ use std::{
     path::PathBuf,
 };
 
+use chin_tools::{eanyhow, AResult};
 use glob::glob;
 
-pub fn match_type_dir(type_name: &str) -> anyhow::Result<PathBuf> {
+pub fn match_type_dir(type_name: &str) -> AResult<PathBuf> {
     let entries = glob("/sys/class/thermal/thermal_zone*/type")?;
     let mut s = String::new();
     for entry in entries {
@@ -18,14 +19,14 @@ pub fn match_type_dir(type_name: &str) -> anyhow::Result<PathBuf> {
         if s.trim_end() == type_name {
             match pathbuf.parent() {
                 Some(p) => return Ok(p.to_owned()),
-                None => anyhow::bail!("no file name"),
+                None => {},
             }
         }
     }
-    anyhow::bail!("unable to get dir")
+    eanyhow!("unable to get dir")
 }
 
-pub fn read_type_temp(temp_file: &PathBuf) -> anyhow::Result<f64> {
+pub fn read_type_temp(temp_file: &PathBuf) -> AResult<f64> {
     let mut s = String::new();
     let file = File::open(&temp_file)?;
     let mut reader = BufReader::new(file);

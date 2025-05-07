@@ -1,9 +1,6 @@
 use std::{fs, str::FromStr, time::Duration};
 
-use anyhow::{anyhow, Result};
-use gdk::{glib::Cast, RGBA};
-use glib::MainContext;
-use gtk::prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
+use chin_tools::{eanyhow, AResult};
 
 use crate::prelude::*;
 use crate::util::gtk_icon_loader::StatusName;
@@ -46,12 +43,12 @@ impl Block for CpuBlock {
 
     type In = CpuIn;
 
-    fn run(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> AResult<()> {
         let mut cputime = read_proc_stat()?;
         let cores = cputime.1.len();
 
         if cores == 0 {
-            return Err(anyhow!("/proc/stat reported zero cores"));
+            return eanyhow!("/proc/stat reported zero cores");
         }
 
         let temp_file = temp::match_type_dir("x86_pkg_temp").map(|mut p| {
@@ -60,7 +57,7 @@ impl Block for CpuBlock {
         });
 
         let sender = self.dualchannel.get_out_sender();
-        glib::timeout_add_seconds_local(1, move || {
+        timeout_add_seconds_local(1, move || {
             let freqs = read_frequencies().expect("unable to read frequencies");
             sender.send(CpuOut::Frequencies(freqs)).unwrap();
 
@@ -79,11 +76,11 @@ impl Block for CpuBlock {
 
             cputime = new_cputime;
 
-            glib::ControlFlow::Continue
+            ControlFlow::Continue
         });
 
         let sender = self.dualchannel.get_out_sender();
-        glib::timeout_add_local(Duration::from_millis(1600), move || {
+        timeout_add_local(Duration::from_millis(1600), move || {
             if let Ok(temp_path) = temp_file.as_ref() {
                 let temp = temp::read_type_temp(temp_path);
                 if let Ok(temp) = temp {
@@ -91,7 +88,7 @@ impl Block for CpuBlock {
                 }
             };
 
-            glib::ControlFlow::Continue
+            ControlFlow::Continue
         });
 
         Ok(())
@@ -169,7 +166,7 @@ impl Block for CpuBlock {
 }
 
 // Read frequencies (read in MHz, store in Hz)
-fn read_frequencies() -> Result<Vec<f64>> {
+fn read_frequencies() -> AResult<Vec<f64>> {
     let freqs: Vec<f64> = fileutil::read_lines("/proc/cpuinfo")
         .expect("Unable to read /proc/cpuinfo")
         .filter_map(|f| {
@@ -240,7 +237,7 @@ impl CpuTime {
     }
 }
 
-fn read_proc_stat() -> Result<(CpuTime, Vec<CpuTime>)> {
+fn read_proc_stat() -> AResult<(CpuTime, Vec<CpuTime>)> {
     let mut utilizations = Vec::with_capacity(32);
     let mut total = None;
 

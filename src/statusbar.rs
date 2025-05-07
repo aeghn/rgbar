@@ -1,11 +1,7 @@
 use std::collections::HashMap;
 
-use gtk::prelude::{BoxExt, GtkWindowExt};
-use gtk::traits::ContainerExt;
-use gtk::traits::StyleContextExt;
-use gtk::traits::WidgetExt;
-use gtk::ApplicationWindow;
-use gtk::Orientation;
+use crate::prelude::*;
+
 use tracing::info;
 
 use crate::blocks::manager::BlockManager;
@@ -49,12 +45,12 @@ impl StatusBar {
     }
 
     pub fn handle_monitors(&mut self) {
-        let screen = gdk::Screen::default().expect("Failed to get the default screen.");
+        let screen = Screen::default().expect("Failed to get the default screen.");
 
         self.check_monitors(&screen);
     }
 
-    pub fn check_monitors(&mut self, screen: &gdk::Screen) {
+    pub fn check_monitors(&mut self, screen: &Screen) {
         let display = screen.display();
         for monitor_num in 0..display.n_monitors() {
             if self.window_map.contains_key(&monitor_num) {
@@ -119,7 +115,7 @@ impl StatusBar {
         bar.show_all();
 
         let window = window.clone();
-        glib::idle_add_local_once(move || {
+        idle_add_local_once(move || {
             window.show();
         });
     }

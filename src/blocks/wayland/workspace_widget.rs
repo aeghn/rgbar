@@ -2,9 +2,8 @@ use std::collections::HashMap;
 
 use chin_tools::wayland::{WLCompositor, WLOutput, WLWorkspace};
 use chin_tools::wrapper::anyhow::AResult;
-use gtk::prelude::LabelExt;
-use gtk::traits::WidgetExt;
-use gtk::traits::{BoxExt, StyleContextExt};
+pub use gtk::traits::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
+
 
 #[derive(Debug)]
 pub struct WorkspaceWidget {
@@ -49,6 +48,7 @@ impl WorkspaceContainer {
     }
 
     pub fn init(mut self) -> AResult<Self> {
+        tracing::info!("monitor_name: {}", self.output_name);
         let mut current_workspace_id = None;
         let mut containers: Vec<WLWorkspace> = Default::default();
 

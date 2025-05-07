@@ -1,8 +1,6 @@
 use crate::prelude::*;
-use gdk::RGBA;
-use glib::MainContext;
+use chin_tools::AResult;
 
-use gtk::prelude::{ContainerExt, LabelExt, StyleContextExt, WidgetExt};
 use human_bytes::human_bytes;
 use regex::Regex;
 
@@ -88,13 +86,13 @@ impl Block for NetspeedBlock {
     type In = NetspeedIn;
     type Out = NetspeedOut;
 
-    fn run(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> AResult<()> {
         let (mut last_total_download, mut last_total_upload) = Self::read_total_bytes();
         let mut last_update_time = None;
 
         let sender = self.dualchannel.get_out_sender();
 
-        glib::timeout_add_seconds_local(1, move || {
+        timeout_add_seconds_local(1, move || {
             let (download, upload) = Self::read_total_bytes();
             let now = std::time::SystemTime::now();
             if let Some(last) = last_update_time.replace(now) {
@@ -119,7 +117,7 @@ impl Block for NetspeedBlock {
                 }
             }
 
-            glib::ControlFlow::Continue
+            ControlFlow::Continue
         });
 
         Ok(())

@@ -2,21 +2,19 @@ pub mod window_widget;
 pub mod workspace_widget;
 
 use chin_tools::wayland::{into_wl_event, WLEvent};
-use gdk::glib::Cast;
-use gtk::prelude::{StyleContextExt, WidgetExt};
-use gtk::Widget;
+
+
 use window_widget::{WindowContainer, WindowContainerManager};
 use workspace_widget::WorkspaceContainer;
 
 use crate::datahodler::channel::DualChannel;
 use crate::statusbar::WidgetShareInfo;
-use glib::MainContext;
 
 use super::Block;
 
 use chin_tools::utils::id_util;
+use crate::prelude::*;
 
-use gtk::traits::BoxExt;
 use tracing::error;
 
 #[derive(Clone)]
@@ -35,7 +33,7 @@ impl Block for WaylandBlock {
     type Out = OutEvent;
     type In = InEvent;
 
-    fn run(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> AResult<()> {
         let sender = self.dualchannel.get_out_sender();
 
         std::thread::spawn(move || {

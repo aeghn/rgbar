@@ -1,7 +1,9 @@
 #[allow(dead_code)]
 pub mod pulse;
 
-use crate::{prelude::*, util::gtk_icon_loader::load_fixed_status_surface};
+
+use crate::prelude::*;
+use crate::util::gtk_icon_loader::load_fixed_status_surface;
 
 use std::{
     cell::RefCell,
@@ -15,15 +17,6 @@ use crate::{
 };
 
 use self::pulse::Device;
-
-use anyhow::Result;
-
-use gdk::{glib::Propagation, EventMask};
-use glib::MainContext;
-use gtk::{
-    prelude::{BoxExt, ImageExt, LabelExt, WidgetExt, WidgetExtManual},
-    EventBox,
-};
 
 use super::Block;
 
@@ -69,9 +62,9 @@ trait SoundDevice {
     fn active_port(&self) -> Option<String>;
     fn form_factor(&self) -> Option<&str>;
 
-    async fn get_info(&mut self) -> Result<()>;
-    fn set_volume(&self, step: i32, max_vol: Option<u32>) -> Result<()>;
-    async fn toggle(&self) -> Result<()>;
+    async fn get_info(&mut self) -> AResult<()>;
+    fn set_volume(&self, step: i32, max_vol: Option<u32>) -> AResult<()>;
+    async fn toggle(&self) -> AResult<()>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -145,7 +138,7 @@ impl Block for PulseBlock {
 
     type In = PulseBM;
 
-    fn run(&mut self) -> anyhow::Result<()> {
+    fn run(&mut self) -> AResult<()> {
         let receiver = self.dualchannel.get_in_receiver();
         let sender = self.dualchannel.get_out_sender();
         let default_sink = self.default_sink.clone();
@@ -249,9 +242,7 @@ impl Block for PulseBlock {
                                     31.. => StatusName::VolumeHigh,
                                 }
                             };
-                            vol_icon.set_from_surface(
-                                load_fixed_status_surface(mapped).as_ref(),
-                            );
+                            vol_icon.set_from_surface(load_fixed_status_surface(mapped).as_ref());
                             volume.set_text(format!(" {}%", vol).as_str());
                         };
                     }

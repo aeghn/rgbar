@@ -1,6 +1,4 @@
-use gtk::prelude::*;
 use cairo::Context;
-use gtk::{Application, ApplicationWindow, DrawingArea};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy)]

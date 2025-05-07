@@ -6,7 +6,7 @@ use std::{
 };
 
 use arc_swap::ArcSwap;
-use chin_tools::{wrapper::anyhow::AResult, EResult};
+use chin_tools::{anyhow::aanyhow, wrapper::anyhow::AResult, EResult};
 use serde::{Deserialize, Serialize};
 
 lazy_static::lazy_static! {
@@ -62,7 +62,7 @@ impl Config {
         let icon_path = if PathBuf::from(config.icon_path.as_str()).is_absolute() {
             config.icon_path.clone().into()
         } else {
-            config_path.parent().ok_or(anyhow::anyhow!("Parent dir is none"))?.join(&config.icon_path)
+            config_path.parent().ok_or(aanyhow!("Parent dir is none"))?.join(&config.icon_path)
         };
 
         let config_content = std::fs::read_to_string(&icon_path)?;
@@ -80,8 +80,6 @@ mod test {
     use std::collections::HashMap;
 
     use crate::config::IconConfig;
-
-    use super::Config;
 
     #[test]
     fn ser_test() {

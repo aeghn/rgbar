@@ -1,3 +1,5 @@
+use chin_tools::AResult;
+
 use crate::statusbar::WidgetShareInfo;
 
 mod audio;
@@ -20,7 +22,7 @@ pub trait Block {
     type Out;
     type In;
 
-    fn run(&mut self) -> anyhow::Result<()>;
+    fn run(&mut self) -> AResult<()>;
 
     fn widget(&self, share_info: &WidgetShareInfo) -> gtk::Widget;
 }

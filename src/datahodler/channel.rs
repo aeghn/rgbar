@@ -1,5 +1,5 @@
-use anyhow::anyhow;
 use async_broadcast::{Receiver, Sender};
+use chin_tools::{ anyhow::aanyhow, AResult};
 
 #[derive(Clone)]
 pub struct DualChannel<OutMsg: Clone, InMsg: Clone> {
@@ -46,10 +46,10 @@ pub struct MSender<Msg: Clone> {
 }
 
 impl<Msg: Clone> MSender<Msg> {
-    pub fn send(&self, msg: Msg) -> anyhow::Result<Option<Msg>> {
+    pub fn send(&self, msg: Msg) -> AResult<Option<Msg>> {
         self.sender
             .try_broadcast(msg)
-            .map_err(|err| anyhow!("unable to send: {}", err))
+            .map_err(|err| aanyhow!("unable to send: {}", err))
     }
 }
 

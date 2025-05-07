@@ -1,3 +1,5 @@
+use chin_tools::AResult;
+
 use crate::util::fileutil;
 
 use super::PowerStatus::{Charging, Discharging, NotCharging, Unknown};
@@ -6,11 +8,11 @@ use super::{BatteryInfo, PowerStatus};
 
 static POWER_INFO_PATH: &str = "/sys/class/power_supply/BAT0/uevent";
 
-pub fn get_battery_info() -> anyhow::Result<BatteryInfo> {
+pub fn get_battery_info() -> AResult<BatteryInfo> {
     read_event(POWER_INFO_PATH)
 }
 
-fn read_event(_path: &str) -> anyhow::Result<BatteryInfo> {
+fn read_event(_path: &str) -> AResult<BatteryInfo> {
     let mut name: String = "".to_string();
     let mut status: PowerStatus = PowerStatus::Unknown;
     let mut present: u8 = 0;

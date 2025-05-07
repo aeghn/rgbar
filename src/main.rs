@@ -8,16 +8,14 @@ mod statusbar;
 mod util;
 mod widgets;
 mod window;
+use crate::prelude::*;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use crate::statusbar::StatusBar;
-use config::{set_config, Config};
-use gtk::gdk::*;
-use gtk::prelude::*;
-use gtk::*;
-use tracing::{info, warn};
+use config::set_config;
+use tracing::info;
 
 /// Called upon application startup.
 #[no_mangle]
@@ -30,7 +28,7 @@ fn main() {
 
     info!("Building application...");
 
-    let application = gtk::Application::new(None, gio::ApplicationFlags::default());
+    let application = gtk::Application::new(None, ApplicationFlags::default());
     info!("Loading CSS...");
     let _style_path = PathBuf::new();
     application.connect_startup(|_| load_css());
@@ -45,7 +43,7 @@ fn main() {
         statusbar.handle_monitors();
 
         let self_arc = Arc::new(Mutex::new(statusbar));
-        let screen = gdk::Screen::default().expect("Failed to get the default screen.");
+        let screen = Screen::default().expect("Failed to get the default screen.");
 
         screen.connect_monitors_changed(move |m| {
             info!("monitor changed");

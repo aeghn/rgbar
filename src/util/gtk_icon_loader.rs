@@ -1,19 +1,10 @@
 use std::collections::HashMap;
-use std::fs::{read_to_string, File};
-use std::io::Write;
-use std::os::unix::process::CommandExt;
+use std::fs::read_to_string;
 use std::rc::Rc;
 use std::{cell::RefCell, path::PathBuf};
 
-use anyhow::Context;
-use chin_tools::wrapper::anyhow::AResult;
-use gdk::gdk_pixbuf::Pixbuf;
-use gdk::prelude::{GdkPixbufExt, GdkSurfaceExt};
-use gdk::Window;
-use gdk_sys::gdk_cairo_surface_create_from_pixbuf;
-use gio::traits::InputStreamExt;
-use glib::uuid_string_random;
-use libc::sleep;
+
+use crate::prelude::*;
 
 use crate::config::{get_config, ParsedConfig};
 
@@ -29,6 +20,7 @@ impl std::fmt::Debug for GtkIconLoader {
 }
 
 #[derive(PartialEq, Clone, Debug)]
+#[allow(dead_code)]
 pub enum StatusName {
     CPU,
     RAM,
@@ -66,7 +58,7 @@ impl GtkIconLoader {
         }
     }
 
-    pub fn load_named_pixbuf(&self, name: &str) -> Option<gdk::gdk_pixbuf::Pixbuf> {
+    pub fn load_named_pixbuf(&self, name: &str) -> Option<Pixbuf> {
         if let Some(image) = self.cache.borrow().get(name) {
             return Some(image.clone());
         };
@@ -138,8 +130,8 @@ fn load_svg_into_pixbuf(
 
 
     let pixbuf = pixbuf
-        .scale_simple(width * 2, height * 2, gdk::gdk_pixbuf::InterpType::Bilinear)
-        .ok_or(anyhow::anyhow!("unable to load from svg"))?;
+        .scale_simple(width * 2, height * 2, InterpType::Bilinear)
+        .ok_or(aanyhow!("unable to load from svg"))?;
 
     Ok(pixbuf)
 }
@@ -152,7 +144,7 @@ macro_rules! include_surface {
     }};
 }
 
-fn load_fixed_status_pixbuf(status_name: StatusName) -> gdk::gdk_pixbuf::Pixbuf {
+fn load_fixed_status_pixbuf(status_name: StatusName) -> Pixbuf {
     const BASE_SIZE: i32 = 18;
     let pixbuf = match status_name {
         StatusName::CPU => include_surface!("cpu", BASE_SIZE, BASE_SIZE),
@@ -222,6 +214,6 @@ pub fn load_fixed_status_image(icon_name: StatusName) -> gtk::Image {
     
 }
 
-pub fn load_fixed_status_surface(status_name: StatusName) -> Option<cairo::Surface> {
+pub fn load_fixed_status_surface(status_name: StatusName) -> Option<gtk::cairo::Surface> {
     load_fixed_status_pixbuf(status_name).create_surface(2, None::<&Window>)
 }

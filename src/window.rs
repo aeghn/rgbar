@@ -1,8 +1,8 @@
-use gtk::gdk::*;
-use gtk::prelude::*;
-use gtk::*;
+
 use gtk_layer_shell::Edge;
 use gtk_layer_shell::LayerShell;
+use crate::prelude::*;
+
 
 pub(crate) fn create_window(application: &Application, monitor_num: i32) -> ApplicationWindow {
     let window = ApplicationWindow::new(application);
