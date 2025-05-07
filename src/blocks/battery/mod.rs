@@ -4,7 +4,7 @@ use std::time::UNIX_EPOCH;
 use crate::datahodler::channel::DualChannel;
 
 use crate::statusbar::WidgetShareInfo;
-use crate::util::gtk_icon_loader::load_label;
+use crate::util::gtk_icon_loader::load_fixed_status_surface;
 use crate::util::timeutil::second_to_human;
 
 use self::common::get_battery_info;
@@ -14,7 +14,7 @@ use self::ideapad::{get_conservation_mode, ConvervationMode};
 use super::Block;
 use crate::prelude::*;
 use crate::util::gtk_icon_loader;
-use crate::util::gtk_icon_loader::IconName;
+use crate::util::gtk_icon_loader::StatusName;
 use glib::clone;
 use glib::MainContext;
 
@@ -72,7 +72,7 @@ pub enum BatteryOut {
     ConvervationMode(ConvervationMode),
     BatteryInfo(BatteryInfo),
     UnknownBatteryInfo,
-    BatteryPowerDisconnected(u64, usize), // Timestamp, battery
+    BatteryPowerDisconnected(usize, usize), // Timestamp, battery
     BatteryPowerConnected,                // Timestamp, battery
 }
 
@@ -109,8 +109,8 @@ impl Block for BatteryBlock {
         glib::timeout_add_seconds(
             1,
             clone!(
-                #[strong]
-                sender,
+                
+                @strong sender =>
                 move || {
                     match get_battery_info() {
                         Ok(info) => {
@@ -120,7 +120,7 @@ impl Block for BatteryBlock {
 
                                     sender
                                         .send(Self::Out::BatteryPowerDisconnected(
-                                            seconds,
+                                            seconds.try_into().unwrap(),
                                             info.energy_now.clone() as usize,
                                         ))
                                         .expect("send disconnected info");
@@ -174,7 +174,7 @@ impl Block for BatteryBlock {
             .orientation(gtk::Orientation::Horizontal)
             .build();
 
-        let battery_status_icon = gtk_icon_loader::load_icon(IconName::BatteryMid);
+        let mut battery_status_icon = gtk_icon_loader::load_fixed_status_image(StatusName::BatteryMid);
         battery_status_icon.style_context().add_class("f-20");
 
         let battery_info = gtk::Label::builder().build();
@@ -183,9 +183,9 @@ impl Block for BatteryBlock {
         remain_time.style_context().add_class("battery-label");
 
         #[cfg(feature = "ideapad")]
-        let convervation_icon = gtk_icon_loader::load_icon(IconName::BatteryConservationOff);
+        let convervation_icon = gtk_icon_loader::load_fixed_status_image(StatusName::BatteryConservationOff);
 
-        let power_status_icon = gtk_icon_loader::load_icon(IconName::BatteryPowerDisconnected);
+        let mut power_status_icon = gtk_icon_loader::load_fixed_status_image(StatusName::BatteryPowerDisconnected);
 
         holder.pack_start(&battery_status_icon, false, false, 0);
         holder.pack_start(&power_status_icon, false, false, 0);
@@ -201,7 +201,7 @@ impl Block for BatteryBlock {
         let mut power_status = PowerStatus::Unknown;
         let mut last_refresh_label_time = 0;
 
-        let mut disconnect_info: Option<(u64, usize)> = None;
+        let mut disconnect_info: Option<(usize, usize)> = None;
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
@@ -214,13 +214,13 @@ impl Block for BatteryBlock {
                             if cm_status != cm {
                                 cm_status = cm;
                                 let mapped = match cm_status {
-                                    ConvervationMode::Enable => IconName::BatteryConservationOn,
-                                    ConvervationMode::Disable => IconName::BatteryConservationOff,
+                                    ConvervationMode::Enable => StatusName::BatteryConservationOn,
+                                    ConvervationMode::Disable => StatusName::BatteryConservationOff,
                                     ConvervationMode::Unknown => {
-                                        IconName::BatteryConservationUnknown
+                                        StatusName::BatteryConservationUnknown
                                     }
                                 };
-                                convervation_icon.set_from_pixbuf(Some(&load_label(mapped)))
+                                convervation_icon.set_from_pixbuf(Some(&load_fixed_from_svg(mapped)))
                             }
                         }
                         BatteryOut::BatteryInfo(bi) => {
@@ -228,21 +228,21 @@ impl Block for BatteryBlock {
 
                             if status != percent {
                                 let mapped = match status {
-                                    0..=9 => IconName::BatteryEmpty,
-                                    10..=30 => IconName::BatteryLow,
-                                    31..=60 => IconName::BatteryMid,
-                                    61..=99 => IconName::BatteryHigh,
-                                    _ => IconName::BatteryFull,
+                                    0..=9 => StatusName::BatteryEmpty,
+                                    10..=30 => StatusName::BatteryLow,
+                                    31..=60 => StatusName::BatteryMid,
+                                    61..=99 => StatusName::BatteryHigh,
+                                    _ => StatusName::BatteryFull,
                                 };
 
-                                battery_status_icon.set_from_pixbuf(Some(&load_label(mapped)));
+                                battery_status_icon.set_from_surface(load_fixed_status_surface(mapped).as_ref());
 
                                 percent = status;
                             }
 
                             if let Some((time, value)) = disconnect_info {
                                 let seconds = mills();
-                                let time_diff = (seconds - time) as f64;
+                                let time_diff = (seconds - time as u64) as f64;
 
                                 let cap_diff = value as u32 - bi.energy_now;
                                 if cap_diff > 0 && seconds - last_refresh_label_time > 10 {
@@ -266,14 +266,15 @@ impl Block for BatteryBlock {
                             if power_status != pstatus {
                                 power_status = pstatus;
                                 let mapped = match power_status {
-                                    PowerStatus::NotCharging => IconName::BatteryPowerNotCharging,
-                                    PowerStatus::Discharging => IconName::BatteryPowerDisconnected,
-                                    PowerStatus::Charging => IconName::BattetyPowerCharging,
-                                    PowerStatus::Full => IconName::BatteryPowerFull,
-                                    PowerStatus::Unknown => IconName::BatteryPowerUnknown,
+                                    PowerStatus::NotCharging => StatusName::BatteryPowerNotCharging,
+                                    PowerStatus::Discharging => StatusName::BatteryPowerDisconnected,
+                                    PowerStatus::Charging => StatusName::BattetyPowerCharging,
+                                    PowerStatus::Full => StatusName::BatteryPowerFull,
+                                    PowerStatus::Unknown => StatusName::BatteryPowerUnknown,
                                 };
 
-                                power_status_icon.set_from_pixbuf(Some(&load_label(mapped)))
+                                power_status_icon.set_from_surface(load_fixed_status_surface(mapped).as_ref());
+
                             }
                         }
                         BatteryOut::UnknownBatteryInfo => {}

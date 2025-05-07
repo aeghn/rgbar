@@ -7,7 +7,7 @@ use human_bytes::human_bytes;
 use regex::Regex;
 
 use crate::statusbar::WidgetShareInfo;
-use crate::util::gtk_icon_loader::IconName;
+use crate::util::gtk_icon_loader::StatusName;
 use crate::util::{fileutil, gtk_icon_loader};
 use crate::widgets::chart::{BaselineType, Chart, Column};
 
@@ -34,7 +34,7 @@ impl NetspeedBlock {
         NetspeedBlock { dualchannel }
     }
 
-    fn read_total_bytes() -> (u64, u64) {
+    fn read_total_bytes() -> (usize, usize) {
         let mut total_download = 0;
         let mut total_upload = 0;
 
@@ -56,8 +56,8 @@ impl NetspeedBlock {
                         continue;
                     }
 
-                    let cidb: u64 = fields[1].parse().unwrap();
-                    let diub: u64 = fields[9].parse().unwrap();
+                    let cidb: usize = fields[1].parse().unwrap();
+                    let diub: usize = fields[9].parse().unwrap();
 
                     let interface = &fields[0];
                     if Regex::new(r"^lo:?").unwrap().is_match(&interface) ||
@@ -108,7 +108,7 @@ impl Block for NetspeedBlock {
 
                     let secs = (dur.as_millis() as f64) / 1000.0;
 
-                    let convert = |bytes: u64| -> f64 { (bytes as f64) / secs };
+                    let convert = |bytes: usize| -> f64 { (bytes as f64) / secs };
 
                     sender
                         .send(Self::Out::NetspeedDiff(
@@ -131,7 +131,7 @@ impl Block for NetspeedBlock {
             .hexpand(false)
             .build();
 
-        let icon = gtk_icon_loader::load_icon(IconName::WIFI);
+        let icon = gtk_icon_loader::load_fixed_status_image(StatusName::WIFI);
 
         let speed_label: gtk::Label = gtk::Label::builder().hexpand(false).xalign(1.0).build();
         speed_label.style_context().add_class("netspeed-label");

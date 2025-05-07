@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 pub mod pulse;
 
-use crate::prelude::*;
+use crate::{prelude::*, util::gtk_icon_loader::load_fixed_status_surface};
 
 use std::{
     cell::RefCell,
@@ -11,7 +11,7 @@ use std::{
 
 use crate::{
     datahodler::channel::{DualChannel, MSender},
-    util::gtk_icon_loader::{self, load_label, IconName},
+    util::gtk_icon_loader::{self, StatusName},
 };
 
 use self::pulse::Device;
@@ -43,7 +43,21 @@ pub enum PulseWM {
     Muted(bool),
     Volume(u32),
     Earphone(bool),
-    Full(bool, u32, bool), // Muted, volume, earphone
+    Full {
+        muted: bool,
+        vol: u32,
+        device_type: DeviceType,
+    }, // Muted, volume, earphone
+}
+
+#[derive(Clone, Debug)]
+#[allow(dead_code)]
+pub enum DeviceType {
+    Headset,
+    Headphone,
+    HandsFree,
+    Portable,
+    Default,
 }
 
 #[allow(dead_code)]
@@ -90,30 +104,38 @@ impl PulseBlock {
         }
     }
 
-    fn is_headphone(device: &Device) -> bool {
-        match device.form_factor() {
-            // form_factor's possible values are listed at:
-            // https://docs.rs/libpulse-binding/2.25.0/libpulse_binding/proplist/properties/constant.DEVICE_FORM_FACTOR.html
-            Some("headset") | Some("headphone") | Some("hands-free") | Some("portable") => true,
-            // Per discussion at
-            // https://github.com/greshake/i3status-rust/pull/1363#issuecomment-1046095869,
-            // some sinks may not have the form_factor property, so we should fall back to the
-            // active_port if that property is not present.
-            None => device
-                .active_port()
-                .is_some_and(|p| p.contains("headphones")),
-            // form_factor is present and is some non-headphone value
-            _ => false,
+    fn is_headphone(device: &Device) -> DeviceType {
+        let active_port = device.active_port();
+
+        macro_rules! check {
+            ($key:expr, $res:tt) => {
+                if let Some($key) = device.form_factor() {
+                    return DeviceType::$res;
+                }
+                if active_port.as_ref().is_some_and(|p| p.contains($key)) {
+                    return DeviceType::$res;
+                }
+            };
         }
+
+        check!("headset", Headset);
+        check!("headphone", Headphone);
+        check!("hands-free", HandsFree);
+        check!("portable", Portable);
+        DeviceType::Default
     }
 
     fn vol_changed(sender: &MSender<PulseWM>, device: &Device) {
-        let is_headphone = Self::is_headphone(device);
-        let is_muted = device.muted();
-        let volume = device.volume();
+        let dt = Self::is_headphone(device);
+        let muted = device.muted();
+        let vol = device.volume();
 
         sender
-            .send(PulseWM::Full(is_muted, volume, is_headphone))
+            .send(PulseWM::Full {
+                muted,
+                vol,
+                device_type: dt,
+            })
             .unwrap();
     }
 }
@@ -182,9 +204,11 @@ impl Block for PulseBlock {
             .build();
 
         let volume = gtk::Label::builder().build();
-        let headphone_icon = gtk_icon_loader::load_icon(IconName::Headphone);
-        let vol_icon = gtk_icon_loader::load_icon(IconName::VolumeMedium);
+        let headphone_icon = gtk_icon_loader::load_fixed_status_image(StatusName::Headphone);
+        let headset_icon = gtk_icon_loader::load_fixed_status_image(StatusName::Headset);
+        let vol_icon = gtk_icon_loader::load_fixed_status_image(StatusName::VolumeMedium);
 
+        holder.pack_start(&headset_icon, false, false, 0);
         holder.pack_start(&headphone_icon, false, false, 0);
 
         holder.pack_start(&vol_icon, false, false, 0);
@@ -195,33 +219,39 @@ impl Block for PulseBlock {
             loop {
                 match receiver.recv().await {
                     Ok(msg) => {
-                        if let PulseWM::Full(mute, vol, headphone) = msg {
-                            if headphone {
-                                if !headphone_icon.is_visible() {
+                        if let PulseWM::Full {
+                            muted,
+                            vol,
+                            device_type,
+                        } = msg
+                        {
+                            match device_type {
+                                DeviceType::Headset => {
+                                    headset_icon.show();
+                                    headphone_icon.hide();
+                                }
+                                DeviceType::Headphone => {
+                                    headset_icon.hide();
                                     headphone_icon.show();
                                 }
-                            } else {
-                                headphone_icon.hide();
-                            }
-
-                            if mute {
-                                vol_icon.set_from_pixbuf(Some(&load_label(
-                                    gtk_icon_loader::IconName::VolumeMute,
-                                )))
-                            } else {
-                                match vol {
-                                    0..=30 => vol_icon.set_from_pixbuf(Some(&load_label(
-                                        gtk_icon_loader::IconName::VolumeLow,
-                                    ))),
-                                    31..=65 => vol_icon.set_from_pixbuf(Some(&load_label(
-                                        gtk_icon_loader::IconName::VolumeMedium,
-                                    ))),
-                                    31.. => vol_icon.set_from_pixbuf(Some(&load_label(
-                                        gtk_icon_loader::IconName::VolumeHigh,
-                                    ))),
+                                _ => {
+                                    headset_icon.hide();
+                                    headphone_icon.hide();
                                 }
                             }
 
+                            let mapped = if muted {
+                                StatusName::VolumeMute
+                            } else {
+                                match vol {
+                                    0..=30 => StatusName::VolumeLow,
+                                    31..=65 => StatusName::VolumeMedium,
+                                    31.. => StatusName::VolumeHigh,
+                                }
+                            };
+                            vol_icon.set_from_surface(
+                                load_fixed_status_surface(mapped).as_ref(),
+                            );
                             volume.set_text(format!(" {}%", vol).as_str());
                         };
                     }

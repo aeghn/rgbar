@@ -8,19 +8,19 @@
    stroke-width="2"
    stroke-linecap="round"
    stroke-linejoin="round"
-   class="lucide lucide-headset-icon lucide-headset"
+   class="lucide lucide-headphones-icon lucide-headphones"
    version="1.1"
-   id="svg2"
-   sodipodi:docname="audio-headset.svg"
+   id="svg1"
+   sodipodi:docname="audio-headphone.svg"
    inkscape:version="1.4.1 (93de688d07, 2025-03-30)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
   <defs
-     id="defs2" />
+     id="defs1" />
   <sodipodi:namedview
-     id="namedview2"
+     id="namedview1"
      pagecolor="#505050"
      bordercolor="#eeeeee"
      borderopacity="1"
@@ -36,13 +36,9 @@
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
-     inkscape:current-layer="svg2" />
+     inkscape:current-layer="svg1" />
   <path
-     d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm0 0a9 9 0 1 1 18 0m0 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z"
+     d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"
      id="path1"
-     style="stroke-width:1.5;stroke-dasharray:none" />
-  <path
-     d="M21 16v2a4 4 0 0 1-4 4h-5"
-     id="path2"
      style="stroke-width:1.5;stroke-dasharray:none" />
 </svg>

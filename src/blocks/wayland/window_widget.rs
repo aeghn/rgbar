@@ -1,6 +1,8 @@
 use chin_tools::wayland::{WLCompositor, WLWindow};
 use chin_tools::wrapper::anyhow::AResult;
 use gdk::glib::Propagation;
+use gdk::prelude::GdkPixbufExt;
+use gdk::Window;
 use gtk::Label;
 
 use std::collections::HashMap;
@@ -52,8 +54,8 @@ impl WindowWidget {
         container.show_all();
 
         if let Some(app_id) = window.get_app_id() {
-            if let Some(img) = icon_loader.load_from_name(&app_id) {
-                icon.set_from_pixbuf(Some(&img));
+            if let Some(img) = icon_loader.load_named_pixbuf(&app_id) {
+                icon.set_from_surface(img.create_surface(2, None::<&Window>).as_ref());
             } else {
                 tracing::warn!("unable to get icon for {}", app_id);
             }
@@ -104,15 +106,15 @@ impl WindowWidget {
 
 #[derive(Debug)]
 pub struct WindowContainer {
-    pub workspace_id: u64,
-    pub widget_map: HashMap<u64, WindowWidget>,
+    pub workspace_id: usize,
+    pub widget_map: HashMap<usize, WindowWidget>,
     pub container: gtk::Box,
-    pub focused_id: Option<u64>,
+    pub focused_id: Option<usize>,
     pub icon_loader: GtkIconLoader,
 }
 
 impl WindowContainer {
-    pub fn new(workspace_id: u64) -> Self {
+    pub fn new(workspace_id: usize) -> Self {
         let container = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .build();
@@ -155,14 +157,14 @@ impl WindowContainer {
         }
     }
 
-    pub fn on_window_delete(&mut self, window: u64) {
+    pub fn on_window_delete(&mut self, window: usize) {
         tracing::debug!("{:?}", window);
         if let Some(window) = self.widget_map.remove(&window) {
             self.container.remove(&window.container);
         }
     }
 
-    pub fn on_change_focus(&mut self, id: Option<u64>) {
+    pub fn on_change_focus(&mut self, id: Option<usize>) {
         if self.focused_id != id {
             if let Some(id) = self.focused_id {
                 if let Some(w) = self.widget_map.get(&id) {
@@ -180,7 +182,7 @@ impl WindowContainer {
 
     pub fn on_reorder(&self) {
         tracing::debug!("reorder");
-        let mut ids: Vec<(u64, &gtk::Box)> = self
+        let mut ids: Vec<(usize, &gtk::Box)> = self
             .widget_map
             .iter()
             .map(|(i, w)| (*i, &w.container))
@@ -193,7 +195,7 @@ impl WindowContainer {
         }
     }
 
-    pub fn deal_with_window_id<F>(&self, id: u64, func: F)
+    pub fn deal_with_window_id<F>(&self, id: usize, func: F)
     where
         F: Fn(&WindowWidget),
     {
@@ -205,8 +207,8 @@ impl WindowContainer {
 
 pub struct WindowContainerManager {
     pub stack: gtk::Stack,
-    pub workspace_containers: HashMap<u64, WindowContainer>,
-    pub current_window_id: Option<u64>,
+    pub workspace_containers: HashMap<usize, WindowContainer>,
+    pub current_window_id: Option<usize>,
     pub current_workspace_id: i64,
 }
 
@@ -220,7 +222,7 @@ impl WindowContainerManager {
         );
 
         let current_window_id = None;
-        let containers: HashMap<u64, WindowContainer> = Default::default();
+        let containers: HashMap<usize, WindowContainer> = Default::default();
 
         Ok(Self {
             stack,
@@ -230,9 +232,9 @@ impl WindowContainerManager {
         })
     }
 
-    pub fn init(mut self, workspace_ids: Vec<u64>) -> AResult<Self> {
+    pub fn init(mut self, workspace_ids: Vec<usize>) -> AResult<Self> {
         let mut current_window_id = None;
-        let mut containers: HashMap<u64, WindowContainer> = Default::default();
+        let mut containers: HashMap<usize, WindowContainer> = Default::default();
 
         for window in WLCompositor::current()?.get_all_windows()? {
             if let Some(wsid) = window.get_workspace_id() {
@@ -272,14 +274,14 @@ impl WindowContainerManager {
             .insert(container.workspace_id, container);
     }
 
-    pub fn on_workspace_delete(&mut self, workspace_id: u64) {
+    pub fn on_workspace_delete(&mut self, workspace_id: usize) {
         tracing::debug!("[WIN] workspace delete {:?}", workspace_id);
         if let Some(old) = self.workspace_containers.remove(&workspace_id) {
             self.stack.remove(&old.container);
         }
     }
 
-    pub fn on_workspace_change(&mut self, workspace_id: u64) {
+    pub fn on_workspace_change(&mut self, workspace_id: usize) {
         tracing::debug!("workspace change {:?}", workspace_id);
         if self.current_workspace_id != workspace_id as i64 {
             if !self.workspace_containers.contains_key(&workspace_id) {
@@ -302,7 +304,7 @@ impl WindowContainerManager {
         }
     }
 
-    pub fn on_window_delete(&mut self, window_id: u64) {
+    pub fn on_window_delete(&mut self, window_id: usize) {
         tracing::debug!("{:?}", window_id);
 
         for (_, wc) in self.workspace_containers.iter_mut() {

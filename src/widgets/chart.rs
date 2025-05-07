@@ -94,10 +94,8 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         let columns = self.columns.clone();
         let line_width = self.line_width.clone();
         self.drawing_area.connect_draw(glib::clone!(
-            #[strong]
-            columns,
-            #[strong]
-            line_width,
+            @strong columns,
+            @strong line_width =>
             move |da, cr| {
                 Self::draw(&columns, line_width, da, cr);
                 Propagation::Proceed

@@ -8,7 +8,7 @@ use glib::MainContext;
 use gtk::prelude::BoxExt;
 
 use crate::statusbar::WidgetShareInfo;
-use crate::util::gtk_icon_loader::IconName;
+use crate::util::gtk_icon_loader::StatusName;
 use crate::util::{fileutil, gtk_icon_loader};
 use crate::widgets::chart::{Chart, Column};
 
@@ -16,7 +16,7 @@ use super::Block;
 
 #[derive(Clone)]
 pub enum MemoryOut {
-    MemoryUsedAndCache(u64, u64, u64), // USED / Cache / total
+    MemoryUsedAndCache(usize, usize, usize), // USED / Cache / total
 }
 
 #[derive(Clone)]
@@ -85,7 +85,7 @@ impl Block for MemoryBlock {
             .hexpand(false)
             .build();
 
-        let icon = gtk_icon_loader::load_icon(IconName::RAM);
+        let icon = gtk_icon_loader::load_fixed_status_image(StatusName::RAM);
 
         let mut receiver = self.dualchannel.get_out_receiver();
 
@@ -120,18 +120,18 @@ impl Block for MemoryBlock {
 
 #[derive(Clone, Copy, Debug, Default)]
 struct Memstate {
-    mem_total: u64,
-    mem_free: u64,
-    mem_available: u64,
-    buffers: u64,
-    pagecache: u64,
-    s_reclaimable: u64,
-    shmem: u64,
-    swap_total: u64,
-    swap_free: u64,
-    swap_cached: u64,
-    zfs_arc_cache: u64,
-    zfs_arc_min: u64,
+    mem_total: usize,
+    mem_free: usize,
+    mem_available: usize,
+    buffers: usize,
+    pagecache: usize,
+    s_reclaimable: usize,
+    shmem: usize,
+    swap_total: usize,
+    swap_free: usize,
+    swap_cached: usize,
+    zfs_arc_cache: usize,
+    zfs_arc_min: usize,
 }
 
 impl Memstate {
@@ -155,7 +155,7 @@ impl Memstate {
                 };
                 let val = words
                     .next()
-                    .and_then(|x| u64::from_str(x).ok())
+                    .and_then(|x| usize::from_str(x).ok())
                     .expect("failed to parse /proc/meminfo");
 
                 match name {

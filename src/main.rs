@@ -38,9 +38,7 @@ fn main() {
     info!("Creating viewport...");
 
     application.connect_activate(|app| {
-        let config = Config::read_from_json_file(None::<PathBuf>).unwrap();
-
-        set_config(config);
+        set_config().unwrap();
 
         let mut statusbar = StatusBar::new(app);
 
@@ -50,7 +48,7 @@ fn main() {
         let screen = gdk::Screen::default().expect("Failed to get the default screen.");
 
         screen.connect_monitors_changed(move |m| {
-            warn!("monitor changed");
+            info!("monitor changed");
             let mut self_lock = self_arc.lock().unwrap();
             (*self_lock).check_monitors(m);
         });

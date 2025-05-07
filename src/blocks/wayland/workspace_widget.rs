@@ -21,11 +21,11 @@ impl WorkspaceWidget {
 
 #[derive(Debug)]
 pub struct WorkspaceContainer {
-    workspace_widget_map: HashMap<u64, WorkspaceWidget>,
+    workspace_widget_map: HashMap<usize, WorkspaceWidget>,
     pub holder: gtk::Box,
     indicator: gtk::Label,
     output_name: String,
-    current_workspace_id: Option<u64>,
+    current_workspace_id: Option<usize>,
 }
 
 impl WorkspaceContainer {
@@ -163,7 +163,7 @@ impl WorkspaceContainer {
         // }
     }
 
-    pub fn get_workspace_ids(&self) -> Vec<u64> {
+    pub fn get_workspace_ids(&self) -> Vec<usize> {
         self.workspace_widget_map.keys().map(|e| *e).collect()
     }
 }

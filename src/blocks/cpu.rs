@@ -6,7 +6,7 @@ use glib::MainContext;
 use gtk::prelude::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
 
 use crate::prelude::*;
-use crate::util::gtk_icon_loader::IconName;
+use crate::util::gtk_icon_loader::StatusName;
 use crate::{statusbar::WidgetShareInfo, util::gtk_icon_loader};
 use crate::{
     util::fileutil,
@@ -105,7 +105,7 @@ impl Block for CpuBlock {
             .hexpand(false)
             .build();
 
-        let icon = gtk_icon_loader::load_icon(IconName::CPU);
+        let icon = gtk_icon_loader::load_fixed_status_image(StatusName::CPU);
 
         let right_holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
@@ -192,22 +192,22 @@ fn read_frequencies() -> Result<Vec<f64>> {
 
 #[derive(Debug, Clone, Copy)]
 struct CpuTime {
-    idle: u64,
-    non_idle: u64,
-    user: u64,
-    system_total: u64,
+    idle: usize,
+    non_idle: usize,
+    user: usize,
+    system_total: usize,
 }
 
 impl CpuTime {
     fn from_str(s: &str) -> Option<Self> {
         let mut s = s.trim().split_ascii_whitespace();
-        let user = u64::from_str(s.next()?).ok()?;
-        let nice = u64::from_str(s.next()?).ok()?;
-        let system = u64::from_str(s.next()?).ok()?;
-        let idle = u64::from_str(s.next()?).ok()?;
-        let iowait = u64::from_str(s.next()?).ok()?;
-        let irq = u64::from_str(s.next()?).ok()?;
-        let softirq = u64::from_str(s.next()?).ok()?;
+        let user = usize::from_str(s.next()?).ok()?;
+        let nice = usize::from_str(s.next()?).ok()?;
+        let system = usize::from_str(s.next()?).ok()?;
+        let idle = usize::from_str(s.next()?).ok()?;
+        let iowait = usize::from_str(s.next()?).ok()?;
+        let irq = usize::from_str(s.next()?).ok()?;
+        let softirq = usize::from_str(s.next()?).ok()?;
 
         let system_total = nice + system + irq + softirq;
         Some(Self {
