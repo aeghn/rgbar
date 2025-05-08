@@ -4,6 +4,8 @@ use std::rc::Rc;
 use std::{cell::RefCell, path::PathBuf};
 
 
+use tracing::info;
+
 use crate::prelude::*;
 
 use crate::config::{get_config, ParsedConfig};
@@ -59,7 +61,8 @@ impl GtkIconLoader {
     }
 
     pub fn load_named_pixbuf(&self, name: &str) -> Option<Pixbuf> {
-        if let Some(image) = self.cache.borrow().get(name) {
+        info!("get icon {}", name);
+        if let Some(image) = self.cache.borrow().get(&name.to_lowercase()) {
             return Some(image.clone());
         };
 
@@ -72,7 +75,7 @@ impl GtkIconLoader {
             .alias
             .iter()
             .filter_map(|(key, v)| {
-                if v.iter().any(|n| n == name) {
+                if v.iter().any(|n| n.to_lowercase() == name.to_lowercase()) {
                     Some(key.as_str())
                 } else {
                     None
@@ -80,6 +83,7 @@ impl GtkIconLoader {
             })
             .nth(0)
             .unwrap_or(name);
+            
 
         let icon = config
             .icon
@@ -100,7 +104,7 @@ impl GtkIconLoader {
         if let Some(pbf) = icon.and_then(|pbf| Some(pbf.clone())) {
             self.cache
                 .borrow_mut()
-                .insert(name.to_string(), pbf.clone());
+                .insert(name.to_lowercase(), pbf.clone());
             match self.cache.borrow().get(name) {
                 None => None,
                 Some(pbf) => {

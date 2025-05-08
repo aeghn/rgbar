@@ -1,6 +1,6 @@
 use chin_tools::AResult;
 
-use crate::statusbar::WidgetShareInfo;
+use crate::window::WidgetShareInfo;
 
 mod audio;
 #[allow(dead_code)]

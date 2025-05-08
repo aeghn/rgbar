@@ -1,6 +1,6 @@
 use crate::datahodler::channel::DualChannel;
 use crate::prelude::*;
-use crate::statusbar::WidgetShareInfo;
+use crate::window::WidgetShareInfo;
 use chin_tools::AResult;
 #[cfg(feature = "chinese")]
 use chinese_lunisolar_calendar::LunisolarDate;

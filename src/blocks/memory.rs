@@ -6,7 +6,7 @@ use chin_tools::AResult;
 
 
 
-use crate::statusbar::WidgetShareInfo;
+use crate::window::WidgetShareInfo;
 use crate::util::gtk_icon_loader::StatusName;
 use crate::util::{fileutil, gtk_icon_loader};
 use crate::widgets::chart::{Chart, Column};

@@ -1,3 +1,5 @@
+use chin_tools::AResult;
+
 use super::{
     audio::PulseBlock, battery::BatteryBlock, cpu::CpuBlock, memory::MemoryBlock,
     netspeed::NetspeedBlock, time::TimeBlock, wayland::WaylandBlock, Block,
@@ -14,29 +16,29 @@ pub struct BlockManager {
 }
 
 impl BlockManager {
-    pub fn launch() -> BlockManager {
+    pub fn launch() -> AResult<BlockManager> {
         let mut net_block = NetspeedBlock::new();
-        net_block.run().unwrap();
+        net_block.run()?;
 
         let mut time_block = TimeBlock::new();
-        time_block.run().unwrap();
+        time_block.run()?;
 
         let mut cpu_block = CpuBlock::new();
-        cpu_block.run().unwrap();
+        cpu_block.run()?;
 
         let mut battery_block = BatteryBlock::new();
-        battery_block.run().unwrap();
+        battery_block.run()?;
 
         let mut memory_block = MemoryBlock::new();
-        memory_block.run().unwrap();
+        memory_block.run()?;
 
         let mut vol_block = PulseBlock::new();
-        vol_block.run().unwrap();
+        vol_block.run()?;
 
         let mut wayland_block = WaylandBlock::new();
-        wayland_block.run().unwrap();
+        wayland_block.run()?;
 
-        BlockManager {
+        Ok(BlockManager {
             net_block,
             time_block,
             cpu_block,
@@ -44,6 +46,6 @@ impl BlockManager {
             memory_block,
             wayland_block,
             vol_block,
-        }
+        })
     }
 }

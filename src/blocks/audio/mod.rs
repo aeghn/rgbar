@@ -191,7 +191,7 @@ impl Block for PulseBlock {
         Ok(())
     }
 
-    fn widget(&self, _: &crate::statusbar::WidgetShareInfo) -> gtk::Widget {
+    fn widget(&self, _: &crate::window::WidgetShareInfo) -> gtk::Widget {
         let holder = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .build();

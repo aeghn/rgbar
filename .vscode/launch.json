@@ -20,7 +20,7 @@
       "env": {
         "WAYLAND_DISPLAY": "wayland-1",
         "DISPLAY": "",
-        "NIRI_SOCKET": "/run/user/1000/niri.wayland-1.1896.sock"
+        "NIRI_SOCKET": "/run/user/1000/niri.wayland-1.1140.sock"
       }
     },
     {

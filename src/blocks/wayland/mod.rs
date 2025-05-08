@@ -8,7 +8,7 @@ use window_widget::{WindowContainer, WindowContainerManager};
 use workspace_widget::WorkspaceContainer;
 
 use crate::datahodler::channel::DualChannel;
-use crate::statusbar::WidgetShareInfo;
+use crate::window::WidgetShareInfo;
 
 use super::Block;
 

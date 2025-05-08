@@ -4,11 +4,11 @@ use chin_tools::{eanyhow, AResult};
 
 use crate::prelude::*;
 use crate::util::gtk_icon_loader::StatusName;
-use crate::{statusbar::WidgetShareInfo, util::gtk_icon_loader};
 use crate::{
     util::fileutil,
     widgets::chart::{Chart, Column},
 };
+use crate::{util::gtk_icon_loader, window::WidgetShareInfo};
 
 use super::{temp, Block};
 
