@@ -42,7 +42,7 @@ impl RGBWindow {
 
         let mi = monitor_info.clone();
         window.connect_destroy(move |_| {
-            tracing::info!("window is destroied {:?}", mi);
+            log::info!("window is destroied {:?}", mi);
         });
 
         Ok(Self {
@@ -54,7 +54,7 @@ impl RGBWindow {
 
     pub(crate) fn inject_widgets(&self, bm: &BlockManager) {
         let share_info = &self.share_info;
-        tracing::info!("create bar window for monitor-{:?}", share_info.plug_name);
+        log::info!("create bar window for monitor-{:?}", share_info.plug_name);
 
         let bar = gtk::Box::new(Orientation::Horizontal, 10);
 
@@ -97,7 +97,7 @@ impl RGBWindow {
     }
 
     pub fn close(&self) {
-        tracing::info!("destroy window: {}, {:?}", 1, self.share_info.plug_name);
+        log::info!("destroy window: {}, {:?}", 1, self.share_info.plug_name);
         let win = self.window.clone();
         idle_add_local_once(move || {
             win.close();

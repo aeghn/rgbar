@@ -56,7 +56,7 @@ impl WindowWidget {
             if let Some(img) = icon_loader.load_named_pixbuf(&app_id) {
                 icon.set_from_surface(img.create_surface(2, None::<&Window>).as_ref());
             } else {
-                tracing::warn!("unable to get icon for {}", app_id);
+                log::warn!("unable to get icon for {}", app_id);
             }
         }
 

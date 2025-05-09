@@ -23,8 +23,8 @@ use crate::blocks::hyprstatus::hyprclients::HyprWorkspace;
 use crate::datahodler::channel::{DualChannel, MReceiver, SSender};
 use crate::util::gtk_icon_loader::GtkIconLoader;
 
-use tracing::error;
-use tracing::info;
+use log::error;
+use log::info;
 
 #[derive(Clone)]
 pub enum HyprOut {

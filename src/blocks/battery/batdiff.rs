@@ -100,7 +100,7 @@ impl BatDiff {
         self.last_record_energy = energy_now;
 
         if self.energy_diff > 0 {
-            tracing::info!(
+            log::info!(
                 " {} * {} / {}",
                 energy_now,
                 self.time_diff,

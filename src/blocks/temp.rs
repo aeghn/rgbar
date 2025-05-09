@@ -4,7 +4,7 @@ use std::{
     path::PathBuf,
 };
 
-use chin_tools::{eanyhow, AResult};
+use chin_tools::{anyhow, eanyhow, AResult};
 use glob::glob;
 
 pub fn match_type_dir(type_name: &str) -> AResult<PathBuf> {
@@ -23,7 +23,7 @@ pub fn match_type_dir(type_name: &str) -> AResult<PathBuf> {
             }
         }
     }
-    eanyhow!("unable to get dir")
+    Err(anyhow::aanyhow!("unable to get dir"))
 }
 
 pub fn read_type_temp(temp_file: &PathBuf) -> AResult<f64> {

@@ -14,10 +14,10 @@ pub fn get_monitor_plug_name(display: &gtk::gdk::Display, monitor_num: i32) -> O
         use std::ffi::CStr;
         if !plug_name_pointer.is_null() {
             let monitor_name = CStr::from_ptr(plug_name_pointer).to_str().ok();
-            tracing::info!("get_monitor_plug_name: {:?}", monitor_name);
+            log::info!("get_monitor_plug_name: {:?}", monitor_name);
             monitor_name
         } else {
-            tracing::error!("unable get monitor plug name by gdk_screen_get_monitor_plug_name");
+            log::error!("unable get monitor plug name by gdk_screen_get_monitor_plug_name");
             None
         }
     }

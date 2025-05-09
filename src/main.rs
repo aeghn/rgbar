@@ -1,29 +1,29 @@
 #![no_main]
 
+mod application;
 mod blocks;
 pub mod config;
 mod datahodler;
 mod prelude;
-mod application;
 mod util;
 mod widgets;
 mod window;
 use crate::prelude::*;
 
-use std::cell::RefCell;
 use std::path::PathBuf;
 
 use crate::application::RGBApplication;
 use config::set_config;
-use tracing::info;
+use log::info;
+use tracing_subscriber::EnvFilter;
 
 /// Called upon application startup.
 #[no_mangle]
 fn main() -> EResult {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
         .with_line_number(true)
         .with_target(true)
+        .with_env_filter(EnvFilter::from_default_env())
         .init();
 
     set_config()?;
@@ -44,12 +44,10 @@ fn main() -> EResult {
     });
     info!("hold on.");
     let _holder = application.hold();
-    
+
     info!("Start GTK Application.");
     let _args: Vec<String> = vec![];
     application.run_with_args(&_args);
-
-
 
     Ok(())
 }

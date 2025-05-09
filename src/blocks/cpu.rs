@@ -48,7 +48,7 @@ impl Block for CpuBlock {
         let cores = cputime.1.len();
 
         if cores == 0 {
-            return eanyhow!("/proc/stat reported zero cores");
+            Err(aanyhow!("/proc/stat reported zero cores"))?
         }
 
         let temp_file = temp::match_type_dir("x86_pkg_temp").map(|mut p| {

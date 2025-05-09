@@ -4,7 +4,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use gtk::gdk::Monitor;
-use tracing::info;
+use log::info;
 
 use crate::prelude::*;
 use crate::util::gdk_util::get_monitor_plug_name;

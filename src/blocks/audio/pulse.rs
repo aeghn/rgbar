@@ -357,7 +357,7 @@ impl Client {
             .retain(|sender| match sender.try_send(PulseBM::GetVolume) {
                 Ok(_) => true,
                 Err(err) => {
-                    tracing::info!("not true: {err}");
+                    log::info!("not true: {err}");
                     false
                 }
             });

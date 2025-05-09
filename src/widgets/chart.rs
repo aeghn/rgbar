@@ -278,7 +278,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
     pub fn with_columns(mut self, columns: Column<E>) -> Self {
         if !self.columns.is_empty() {
             if self.columns[0].ring.size != columns.ring.size {
-                tracing::warn!("the columns should have same sizes.");
+                log::warn!("the columns should have same sizes.");
             }
         }
 

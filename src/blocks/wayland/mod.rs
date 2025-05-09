@@ -14,7 +14,7 @@ use super::Block;
 use crate::prelude::*;
 use chin_tools::utils::id_util;
 
-use tracing::error;
+use log::error;
 
 #[derive(Clone)]
 pub enum OutEvent {
@@ -86,7 +86,7 @@ impl Block for WaylandBlock {
                     Ok(msg) => {
                         match msg {
                             OutEvent::WLEvent(event) => {
-                                tracing::debug!("Receive wm event: {:?}", event);
+                                log::debug!("Receive wm event: {:?}", event);
 
                                 match event {
                                     WLEvent::WorkspaceDelete(id) => {

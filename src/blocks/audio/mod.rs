@@ -161,7 +161,7 @@ impl Block for PulseBlock {
                                 let sink = default_sink.borrow();
                                 let _ = sink
                                     .set_volume(v as i32, Some(150))
-                                    .map_err(|e| tracing::info!("error: {e}"));
+                                    .map_err(|e| log::info!("error: {e}"));
                                 last_time = now;
                             }
                         }
@@ -174,7 +174,7 @@ impl Block for PulseBlock {
                                 let sink = default_sink.borrow();
                                 let _ = sink
                                     .set_volume(-1 * v as i32, Some(150))
-                                    .map_err(|e| tracing::info!("error: {e}"));
+                                    .map_err(|e| log::info!("error: {e}"));
                                 last_time = now;
                             }
                         }
