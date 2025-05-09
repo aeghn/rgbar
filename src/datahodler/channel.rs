@@ -1,5 +1,5 @@
 use async_broadcast::{Receiver, Sender};
-use chin_tools::{ anyhow::aanyhow, AResult};
+use chin_tools::{ aanyhow, AResult};
 
 #[derive(Clone)]
 pub struct DualChannel<OutMsg: Clone, InMsg: Clone> {

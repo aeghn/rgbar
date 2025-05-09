@@ -6,10 +6,9 @@ use std::os::fd::{IntoRawFd, RawFd};
 use std::sync::Mutex;
 use std::thread;
 
-use chin_tools::anyhow::Context as _;
 use async_channel::Sender;
-use chin_tools::anyhow::aanyhow;
-use chin_tools::wrapper::anyhow::AResult;
+use chin_tools::{aanyhow, AnyhowContext};
+use chin_tools::AResult;
 use libc::c_void;
 use pulse::callbacks::ListResult;
 use pulse::context::{
@@ -160,9 +159,7 @@ impl Connection {
                     break;
                 }
                 PulseState::Failed | PulseState::Terminated => {
-                    return Err(aanyhow!(
-                        "pulseaudio context state failed/terminated"
-                    ));
+                    return Err(aanyhow!("pulseaudio context state failed/terminated"));
                 }
                 _ => {}
             }

@@ -387,26 +387,35 @@ checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 name = "chin-tools"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-trait",
  "bytes",
- "chin-tools-base",
+ "chin-tools-types",
  "chrono",
  "hashbrown",
  "log",
- "niri-ipc",
  "serde",
- "serde_json",
  "strum",
  "uuid",
 ]
 
 [[package]]
-name = "chin-tools-base"
+name = "chin-tools-types"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "serde",
  "smol_str",
+]
+
+[[package]]
+name = "chin-wayland-utils"
+version = "0.1.0"
+dependencies = [
+ "chin-tools",
+ "log",
+ "niri-ipc",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1048,9 +1057,9 @@ checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
 
 [[package]]
 name = "itoa"
-version = "1.0.14"
+version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d75a2a4b1b190afb6f5425f10f6a8f959d2ea0b9c2b1d79553551850539e4674"
+checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
 
 [[package]]
 name = "jiff"
@@ -1540,6 +1549,7 @@ dependencies = [
  "async-broadcast",
  "async-channel",
  "chin-tools",
+ "chin-wayland-utils",
  "chinese-lunisolar-calendar",
  "chrono",
  "clap",
@@ -1605,9 +1615,9 @@ checksum = "0e819f2bc632f285be6d7cd36e25940d45b2391dd6d9b939e79de557f7014248"
 
 [[package]]
 name = "ryu"
-version = "1.0.18"
+version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
+checksum = "28d3b2b1366ec20994f1fd18c3c594f05c5dd4bc44d8bb0c1c632c8d6829481f"
 
 [[package]]
 name = "semver"

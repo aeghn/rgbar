@@ -1,5 +1,5 @@
-use chin_tools::wayland::{WLWindow, WLWindowBehaiver, WLWindowId, WLWorkspace, WLWorkspaceId};
-use chin_tools::wrapper::anyhow::AResult;
+use chin_wayland_utils::{WLWindow, WLWindowBehaiver, WLWindowId, WLWorkspace, WLWorkspaceId};
+use chin_tools::AResult;
 
 use std::collections::HashMap;
 use std::ops::Deref;

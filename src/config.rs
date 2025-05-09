@@ -6,7 +6,7 @@ use std::{
 };
 
 use arc_swap::ArcSwap;
-use chin_tools::{anyhow::aanyhow, wrapper::anyhow::AResult, EResult};
+use chin_tools::{aanyhow, AResult, EResult};
 use serde::{Deserialize, Serialize};
 
 lazy_static::lazy_static! {
@@ -43,9 +43,7 @@ pub struct ParsedConfig {
 impl Config {
     pub fn read_from_toml_file<T: AsRef<Path>>(filepath: Option<T>) -> AResult<ParsedConfig> {
         let config_path = match filepath {
-            Some(fp) => {
-                fp.as_ref().to_owned()
-            },
+            Some(fp) => fp.as_ref().to_owned(),
             None => {
                 let config_dir = match env::var("XDG_CONFIG_PATH") {
                     Ok(path) => path,
@@ -53,7 +51,7 @@ impl Config {
                 };
                 let config_path = format!("{}/rgui/rgbar.toml", config_dir);
                 PathBuf::from(config_path)
-            },
+            }
         };
 
         let config_content = std::fs::read_to_string(&config_path)?;
@@ -62,12 +60,15 @@ impl Config {
         let icon_path = if PathBuf::from(config.icon_path.as_str()).is_absolute() {
             config.icon_path.clone().into()
         } else {
-            config_path.parent().ok_or(aanyhow!("Parent dir is none"))?.join(&config.icon_path)
+            config_path
+                .parent()
+                .ok_or(aanyhow!("Parent dir is none"))?
+                .join(&config.icon_path)
         };
 
         let config_content = std::fs::read_to_string(&icon_path)?;
         let icon_config = toml::from_str(&config_content)?;
-        
+
         Ok(ParsedConfig {
             config,
             icon: icon_config,

@@ -1,7 +1,7 @@
 pub mod window_widget;
 pub mod workspace_widget;
 
-use chin_tools::wayland::{WLCompositor, WLCompositorBehavier, WLEvent};
+use chin_wayland_utils::{WLCompositor, WLCompositorBehavier, WLEvent};
 
 use window_widget::WindowContainerManager;
 use workspace_widget::WorkspaceContainer;
@@ -37,7 +37,7 @@ impl Block for WaylandBlock {
 
         std::thread::spawn(move || {
             let mut comp = WLCompositor::new()?;
-            chin_tools::wayland::niri::event_stream::handle_event_stream(|event| {
+            chin_wayland_utils::niri::event_stream::handle_event_stream(|event| {
                 let events = comp.handle_event(event);
                 if let Some(events) = events {
                     for ele in events {

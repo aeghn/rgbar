@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use chin_tools::wayland::{WLWorkspace, WLWorkspaceBehaiver, WLWorkspaceId};
-use chin_tools::wrapper::anyhow::AResult;
+use chin_wayland_utils::{WLWorkspace, WLWorkspaceBehaiver, WLWorkspaceId};
+use chin_tools::AResult;
 pub use gtk::traits::{BoxExt, LabelExt, StyleContextExt, WidgetExt};
 
 #[derive(Debug, PartialEq)]
