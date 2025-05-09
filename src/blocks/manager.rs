@@ -26,7 +26,7 @@ impl BlockManager {
         let mut cpu_block = CpuBlock::new();
         cpu_block.run()?;
 
-        let mut battery_block = BatteryBlock::new();
+        let mut battery_block = BatteryBlock::new()?;
         battery_block.run()?;
 
         let mut memory_block = MemoryBlock::new();

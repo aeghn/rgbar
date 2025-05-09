@@ -15,8 +15,6 @@ use batdiff::seconds_now;
 use batdiff::BatDiff;
 use chin_tools::AResult;
 
-use gtk::glib::timeout_add_seconds_local_once;
-
 mod batdiff;
 mod common;
 #[cfg(feature = "ideapad")]
@@ -72,13 +70,18 @@ pub enum BatteryIn {}
 
 pub struct BatteryBlock {
     dualchannel: DualChannel<BatteryOut, BatteryIn>,
+    init_bat_info: BatteryInfo,
 }
 
 impl BatteryBlock {
-    pub fn new() -> Self {
+    pub fn new() -> AResult<Self> {
         let dualchannel = DualChannel::new(100);
+        let init_bat_info = get_battery_info()?;
 
-        Self { dualchannel }
+        Ok(Self {
+            dualchannel,
+            init_bat_info,
+        })
     }
 }
 
@@ -89,42 +92,24 @@ impl Block for BatteryBlock {
     fn run(&mut self) -> AResult<()> {
         let sender = self.dualchannel.get_out_sender();
 
-        macro_rules! begin_fetch {
-            ($sender:expr) => {
-                match get_battery_info() {
-                    Ok(info) => $sender
-                        .send(Self::Out::BatteryInfo(info))
-                        .expect("send battery info message"),
-                    Err(_) => $sender
-                        .send(Self::Out::UnknownBatteryInfo)
-                        .expect("send battery info message"),
-                };
-
-                #[cfg(feature = "ideapad")]
-                $sender
-                    .send(BatteryOut::ConvervationMode(get_conservation_mode()))
-                    .unwrap();
-            };
-        }
-
-        let sender1 = sender.clone();
-        timeout_add_seconds_local_once(
-            1,
-            clone!(
-                @strong sender1 =>
-                move || {
-                    begin_fetch!(sender1);
-                }
-            ),
-        );
-
-        let sender2 = sender.clone();
         timeout_add_seconds(
             2,
             clone!(
-                @strong sender2 =>
+                @strong sender =>
                 move || {
-                    begin_fetch!(sender2);
+                    match get_battery_info() {
+                        Ok(info) => sender
+                            .send(Self::Out::BatteryInfo(info))
+                            .expect("send battery info message"),
+                        Err(_) => sender
+                            .send(Self::Out::UnknownBatteryInfo)
+                            .expect("send battery info message"),
+                    };
+
+                    #[cfg(feature = "ideapad")]
+                    sender
+                        .send(BatteryOut::ConvervationMode(get_conservation_mode()))
+                        .unwrap();
                     ControlFlow::Continue
                 }
             ),
@@ -138,22 +123,20 @@ impl Block for BatteryBlock {
             .orientation(gtk::Orientation::Horizontal)
             .build();
 
-        let battery_status_icon = gtk_icon_loader::load_fixed_status_image(StatusName::BatteryMid);
-        battery_status_icon.style_context().add_class("f-20");
-
+        let percent_icon = gtk::Image::new();
+        let power_status_icon = gtk::Image::new();
         let percent_label = gtk::Label::builder().build();
-        percent_label.style_context().add_class("battery-label");
         let remain_time_label = gtk::Label::builder().build();
+
+        percent_icon.style_context().add_class("f-20");
+        percent_label.style_context().add_class("battery-label");
         remain_time_label.style_context().add_class("battery-label");
 
         #[cfg(feature = "ideapad")]
         let convervation_icon =
             gtk_icon_loader::load_fixed_status_image(StatusName::BatteryConservationOff);
 
-        let power_status_icon =
-            gtk_icon_loader::load_fixed_status_image(StatusName::BatteryPowerDisconnected);
-
-        holder.pack_start(&battery_status_icon, false, false, 0);
+        holder.pack_start(&percent_icon, false, false, 0);
         holder.pack_start(&power_status_icon, false, false, 0);
         #[cfg(feature = "ideapad")]
         holder.pack_start(&convervation_icon, false, false, 0);
@@ -163,10 +146,27 @@ impl Block for BatteryBlock {
         #[cfg(feature = "ideapad")]
         let mut cm_status = ConvervationMode::Unknown;
 
+        let mut bat_diff = BatDiff {
+            last_power_status: PowerStatus::Unknown,
+            last_percent: 0,
+            energy_diff: 0,
+            time_diff: 0,
+            last_record_seconds: seconds_now(),
+            last_record_energy: self.init_bat_info.energy_now as usize,
+            last_remain_time_notify_sec: 0,
+            last_remain_time_label_time: seconds_now(),
+        };
+
+        bat_diff.check_percent(&self.init_bat_info, |percent, mapped| {
+            percent_label.set_label(&format!("{}%", percent));
+            percent_icon.set_from_surface(load_fixed_status_surface(mapped).as_ref());
+        });
+
+        bat_diff.check_power_status(&self.init_bat_info, |mapped| {
+            power_status_icon.set_from_surface(load_fixed_status_surface(mapped).as_ref());
+        });
+
         let mut receiver = self.dualchannel.get_out_receiver();
-
-        let mut batdiff: Option<BatDiff> = None;
-
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
                 if let Ok(msg) = receiver.recv().await {
@@ -187,40 +187,26 @@ impl Block for BatteryBlock {
                             }
                         }
                         BatteryOut::BatteryInfo(bi) => {
-                            if let Some(bd) = batdiff.as_mut() {
-                                bd.check_percent(&bi, |percent, mapped| {
-                                    percent_label.set_label(&format!("{}%", percent));
-                                    battery_status_icon.set_from_surface(
-                                        load_fixed_status_surface(mapped).as_ref(),
-                                    );
-                                });
+                            bat_diff.check_percent(&bi, |percent, mapped| {
+                                tracing::info!("set battery");
+                                percent_label.set_label(&format!("{}%", percent));
+                                percent_icon
+                                    .set_from_surface(load_fixed_status_surface(mapped).as_ref());
+                            });
 
-                                bd.check_power_status(&bi, |mapped| {
-                                    power_status_icon.set_from_surface(
-                                        load_fixed_status_surface(mapped).as_ref(),
-                                    );
-                                });
+                            bat_diff.check_power_status(&bi, |mapped| {
+                                power_status_icon
+                                    .set_from_surface(load_fixed_status_surface(mapped).as_ref());
+                            });
 
-                                bd.check_remain_time(&bi, |mapped| {
-                                    if let Some(time) = mapped {
-                                        remain_time_label
-                                            .set_label(&format!("({})", second_to_human(time)));
-                                    } else {
-                                        remain_time_label.set_label("");
-                                    }
-                                });
-                            } else {
-                                batdiff.replace(BatDiff {
-                                    last_power_status: PowerStatus::Unknown,
-                                    last_percent: 0,
-                                    energy_diff: 0,
-                                    time_diff: 0,
-                                    last_record_seconds: seconds_now(),
-                                    last_record_energy: bi.energy_now as usize,
-                                    last_remain_time_notify_sec: 0,
-                                    last_remain_time_label_time: seconds_now(),
-                                });
-                            }
+                            bat_diff.check_remain_time(&bi, |mapped| {
+                                if let Some(time) = mapped {
+                                    remain_time_label
+                                        .set_label(&format!("({})", second_to_human(time)));
+                                } else {
+                                    remain_time_label.set_label("");
+                                }
+                            });
                         }
                         BatteryOut::UnknownBatteryInfo => {}
                     }

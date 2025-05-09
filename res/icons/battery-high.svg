@@ -12,7 +12,7 @@
    version="1.1"
    id="svg4"
    sodipodi:docname="battery-high.svg"
-   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   inkscape:version="1.4.1 (93de688d07, 2025-03-30)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -28,55 +28,37 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="22.708333"
-     inkscape:cx="12"
-     inkscape:cy="12.242202"
-     inkscape:window-width="1282"
-     inkscape:window-height="1025"
+     inkscape:zoom="12.520298"
+     inkscape:cx="17.05231"
+     inkscape:cy="8.5061873"
+     inkscape:window-width="1900"
+     inkscape:window-height="1020"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
-     inkscape:current-layer="svg4" />
+     inkscape:current-layer="rect2" />
+  <rect
+     width="23.272728"
+     height="14.545455"
+     x="3.454545"
+     y="4.7272725"
+     rx="2.909091"
+     ry="2.909091"
+     id="rect1"
+     style="stroke-width:1.5;stroke-dasharray:none" />
+  <line
+     x1="32.545456"
+     x2="32.545456"
+     y1="10.545454"
+     y2="13.454546"
+     id="line1"
+     style="stroke-width:1.5;stroke-dasharray:none" />
   <g
-     id="g4"
-     transform="matrix(1.4545455,0,0,1.4545455,0.545454,-5.454546)"
-     style="stroke-width:1.03124997;stroke-dasharray:none">
-    <rect
-       width="16"
-       height="10"
-       x="2"
-       y="7"
-       rx="2"
-       ry="2"
-       id="rect1"
-       style="stroke-width:1.03124997;stroke-dasharray:none" />
-    <line
-       x1="22"
-       x2="22"
-       y1="11"
-       y2="13"
-       id="line1"
-       style="stroke-width:1.03124997;stroke-dasharray:none" />
-    <line
-       x1="6"
-       x2="6"
-       y1="11"
-       y2="13"
-       id="line2"
-       style="stroke-width:1.03124997;stroke-dasharray:none" />
-    <line
-       x1="10"
-       x2="10"
-       y1="11"
-       y2="13"
-       id="line3"
-       style="stroke-width:1.03124997;stroke-dasharray:none" />
-    <line
-       x1="14"
-       x2="14"
-       y1="11"
-       y2="13"
-       id="line4"
-       style="stroke-width:1.03124997;stroke-dasharray:none" />
+     id="rect2"
+     style="opacity:1">
+    <path
+       style="baseline-shift:baseline;display:inline;overflow:visible;fill:#00a000;fill-opacity:1;stroke:#000000;stroke-width:0.953627;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+       d="M 8.1782783,7.8508627 H 20.454283 c 0.767391,0 1.385184,0.6869939 1.385184,1.5403451 v 5.2175852 c 0,0.85335 -0.617793,1.540344 -1.385184,1.540344 H 8.1782783 c -0.7673922,0 -1.3851844,-0.686994 -1.3851844,-1.540344 V 9.3912078 c 0,-0.8533512 0.6177922,-1.5403451 1.3851844,-1.5403451 z"
+       id="path1" />
   </g>
 </svg>

@@ -8,19 +8,19 @@
    stroke-width="2"
    stroke-linecap="round"
    stroke-linejoin="round"
-   class="lucide lucide-battery"
+   class="lucide lucide-battery-full"
    version="1.1"
-   id="svg1"
+   id="svg4"
    sodipodi:docname="battery-empty.svg"
-   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   inkscape:version="1.4.1 (93de688d07, 2025-03-30)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
   <defs
-     id="defs1" />
+     id="defs4" />
   <sodipodi:namedview
-     id="namedview1"
+     id="namedview4"
      pagecolor="#ffffff"
      bordercolor="#000000"
      borderopacity="0.25"
@@ -28,34 +28,37 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="14.958333"
-     inkscape:cx="17.749304"
-     inkscape:cy="11.966574"
-     inkscape:window-width="1282"
-     inkscape:window-height="1025"
+     inkscape:zoom="12.520298"
+     inkscape:cx="17.05231"
+     inkscape:cy="8.8256685"
+     inkscape:window-width="1900"
+     inkscape:window-height="1020"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
-     inkscape:current-layer="svg1" />
-  <g
-     id="g1"
-     transform="matrix(1.4545455,0,0,1.4545455,0.545454,-5.454546)"
-     style="stroke-width:1.03124997;stroke-dasharray:none">
-    <rect
-       width="16"
-       height="10"
-       x="2"
-       y="7"
-       rx="2"
-       ry="2"
-       id="rect1"
-       style="stroke-width:1.03124997;stroke-dasharray:none" />
-    <line
-       x1="22"
-       x2="22"
-       y1="11"
-       y2="13"
-       id="line1"
-       style="stroke-width:1.03124997;stroke-dasharray:none" />
-  </g>
+     inkscape:current-layer="svg4" />
+  <rect
+     width="23.272728"
+     height="14.545455"
+     x="3.454545"
+     y="4.7272725"
+     rx="2.909091"
+     ry="2.909091"
+     id="rect1"
+     style="stroke-width:1.5;stroke-dasharray:none" />
+  <line
+     x1="32.545456"
+     x2="32.545456"
+     y1="10.545454"
+     y2="13.454546"
+     id="line1"
+     style="stroke-width:1.5;stroke-dasharray:none" />
+  <rect
+     style="fill:#ff0000;stroke-width:2.194;stroke-linecap:round;fill-opacity:1;stroke-dasharray:none;stroke:#ff0000;stroke-opacity:1"
+     id="rect2"
+     width="16.638283"
+     height="8.2519016"
+     x="6.8162804"
+     y="7.8740492"
+     rx="1.5317372" />
 </svg>

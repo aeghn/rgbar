@@ -46,7 +46,6 @@ impl BatDiff {
                 61..=99 => StatusName::BatteryHigh,
                 _ => StatusName::BatteryFull,
             };
-
             callback(percent, mapped);
 
             self.last_percent = percent;
