@@ -1,17 +1,28 @@
-use chin_tools::wayland::{WLCompositor, WLWindow};
+use chin_tools::wayland::{WLWindow, WLWindowBehaiver, WLWindowId, WLWorkspace, WLWorkspaceId};
 use chin_tools::wrapper::anyhow::AResult;
 
-
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::ops::Deref;
+use std::rc::Rc;
 
-use crate::util;
 use crate::prelude::*;
+use crate::util;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct WindowWidget {
     pub window: WLWindow,
-    pub container: gtk::Box,
+    pub gbox: gtk::Box,
     pub title: Label,
+    pub dirty: bool,
+}
+
+impl Deref for WindowWidget {
+    type Target = WLWindow;
+
+    fn deref(&self) -> &Self::Target {
+        &self.window
+    }
 }
 
 impl WindowWidget {
@@ -28,12 +39,7 @@ impl WindowWidget {
         let title = gtk::Label::builder().build();
         title.style_context().add_class("wmw-title");
         if window.is_focused() {
-            title.set_label(
-                window
-                    .get_title()
-                    .unwrap_or("Unknown Title".to_string())
-                    .as_str(),
-            );
+            title.set_label(window.get_title().unwrap_or("Unknown Title"));
         }
 
         title.set_single_line_mode(true);
@@ -67,47 +73,59 @@ impl WindowWidget {
 
         Self {
             window,
-            container,
+            gbox: container,
             title,
+            dirty: true,
         }
     }
 
-    pub fn update_window(&mut self, window: WLWindow) {
-        if let Some(title) = window.get_title() {
-            self.title.set_label(&title);
-        }
-        self.window = window;
-    }
-
-    pub fn on_focus(&self, flag: bool) {
-        if flag {
-            self.title.set_label(
-                self.window
-                    .get_title()
-                    .as_ref()
-                    .map_or("Unknown Title", |v| v),
-            );
-            self.title.show();
-            self.container.style_context().add_class("wmw-focus")
+    pub fn update_data(&mut self, window: WLWindow) -> bool {
+        if self.window != window {
+            self.window = window;
+            self.dirty = true;
+            true
         } else {
-            self.title.set_label("");
-            self.title.hide();
-            self.container.style_context().remove_class("wmw-focus")
+            false
+        }
+    }
+
+    pub fn update_view(&mut self) {
+        if self.dirty {
+            if let Some(title) = self.window.get_title() {
+                self.title.set_label(&title);
+            }
+            if self.window.is_focused() {
+                self.title.set_label(
+                    self.window
+                        .get_title()
+                        .as_ref()
+                        .map_or("Unknown Title", |v| v),
+                );
+                self.title.show();
+                self.gbox.style_context().add_class("wmw-focus")
+            } else {
+                self.title.set_text("");
+                self.title.hide();
+                self.gbox.style_context().remove_class("wmw-focus")
+            }
+            self.dirty = false;
         }
     }
 }
 
 #[derive(Debug)]
 pub struct WindowContainer {
-    pub workspace_id: usize,
-    pub widget_map: HashMap<usize, WindowWidget>,
-    pub container: gtk::Box,
-    pub focused_id: Option<usize>,
-    pub icon_loader: GtkIconLoader,
+    pub workspace_id: WLWindowId,
+    pub widget_map: HashMap<WLWindowId, WindowWidget>,
+    pub gbox: gtk::Box,
+    focused_id: Option<WLWindowId>,
+    icon_loader: GtkIconLoader,
+    dirty: bool,
+    to_remove: Vec<gtk::Box>,
 }
 
 impl WindowContainer {
-    pub fn new(workspace_id: usize) -> Self {
+    pub fn new(workspace_id: WLWindowId) -> Self {
         let container = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .build();
@@ -116,93 +134,63 @@ impl WindowContainer {
         container.show_all();
         Self {
             widget_map: Default::default(),
-            container,
+            gbox: container,
             focused_id: None,
             icon_loader: util::gtk_icon_loader::GtkIconLoader::new(),
             workspace_id,
+            dirty: true,
+            to_remove: Default::default(),
         }
     }
 
-    pub fn on_window_overwrite(&mut self, window: WLWindow) {
-        tracing::debug!("{:?}", window);
-        let mut change_focus = None;
+    pub fn on_window_overwrite(&mut self, window: WLWindow) -> bool {
         if let Some(win) = self.widget_map.get_mut(&window.get_id()) {
-            if window.is_focused() && !win.window.is_focused() {
-                change_focus = Some(window.get_id())
-            }
-            if win.window.get_title() != window.get_title() {
-                win.update_window(window);
-            }
+            let dirty = win.update_data(window);
+            self.dirty = self.dirty || dirty;
+            return self.dirty;
         } else {
-            if window.is_focused() {
-                change_focus = Some(window.get_id())
+            let ww = WindowWidget::new(window, &self.icon_loader);
+            self.gbox.add(&ww.gbox);
+            self.widget_map.insert(ww.get_id(), ww);
+
+            return true;
+        }
+    }
+
+    pub fn on_window_delete(&mut self, window: WLWindowId) -> bool {
+        if let Some(win) = self.widget_map.remove(&window) {
+            self.dirty = true;
+            self.to_remove.push(win.gbox);
+            return true;
+        }
+        false
+    }
+
+    pub fn update_view(&mut self) {
+        if self.dirty {
+            let mut wws: Vec<&mut WindowWidget> = self.widget_map.iter_mut().map(|(_, w)| w).collect();
+
+            for r in &self.to_remove {
+                self.gbox.remove(r);
             }
-            let window_widget = WindowWidget::new(window, &self.icon_loader);
-            self.container.add(&window_widget.container);
-            self.widget_map
-                .insert(window_widget.window.get_id(), window_widget);
 
-            self.on_reorder()
-        }
+            wws.sort_by(|e1, e2| e1.get_title().cmp(&e2.get_title()));
 
-        if change_focus.is_some() {
-            self.on_change_focus(change_focus)
-        }
-    }
-
-    pub fn on_window_delete(&mut self, window: usize) {
-        tracing::debug!("{:?}", window);
-        if let Some(window) = self.widget_map.remove(&window) {
-            self.container.remove(&window.container);
-        }
-    }
-
-    pub fn on_change_focus(&mut self, id: Option<usize>) {
-        if self.focused_id != id {
-            if let Some(id) = self.focused_id {
-                if let Some(w) = self.widget_map.get(&id) {
-                    w.on_focus(false);
-                }
+            for (id, ww) in wws.into_iter().enumerate() {
+                ww.update_view();
+                self.gbox.reorder_child(&ww.gbox, id as i32);
             }
-        }
-        if let Some(id) = id {
-            if let Some(w) = self.widget_map.get(&id) {
-                w.on_focus(true);
-            }
-        }
-        self.focused_id = id;
-    }
+            self.gbox.show_all();
 
-    pub fn on_reorder(&self) {
-        tracing::debug!("reorder");
-        let mut ids: Vec<(usize, &gtk::Box)> = self
-            .widget_map
-            .iter()
-            .map(|(i, w)| (*i, &w.container))
-            .collect();
-
-        ids.sort_by(|e1, e2| e1.0.cmp(&e2.0));
-
-        for (id, (_, b)) in ids.into_iter().enumerate() {
-            self.container.reorder_child(b, id as i32);
-        }
-    }
-
-    pub fn deal_with_window_id<F>(&self, id: usize, func: F)
-    where
-        F: Fn(&WindowWidget),
-    {
-        if let Some(win) = self.widget_map.get(&id) {
-            func(win)
+            self.dirty = false;
         }
     }
 }
 
 pub struct WindowContainerManager {
     pub stack: gtk::Stack,
-    pub workspace_containers: HashMap<usize, WindowContainer>,
-    pub current_window_id: Option<usize>,
-    pub current_workspace_id: i64,
+    pub workspace_containers: HashMap<WLWorkspaceId, WindowContainer>,
+    current_workspace_id: Option<WLWorkspaceId>,
 }
 
 impl WindowContainerManager {
@@ -214,131 +202,70 @@ impl WindowContainerManager {
             "missing",
         );
 
-        let current_window_id = None;
-        let containers: HashMap<usize, WindowContainer> = Default::default();
+        let containers: HashMap<WLWindowId, WindowContainer> = Default::default();
 
         Ok(Self {
             stack,
             workspace_containers: containers,
-            current_window_id,
-            current_workspace_id: -1,
+            current_workspace_id: Default::default(),
         })
     }
-
-    pub fn init(mut self, workspace_ids: Vec<usize>) -> AResult<Self> {
-        let mut current_window_id = None;
-        let mut containers: HashMap<usize, WindowContainer> = Default::default();
-
-        for window in WLCompositor::current()?.get_all_windows()? {
-            if let Some(wsid) = window.get_workspace_id() {
-                if window.is_focused() {
-                    current_window_id.replace(window.get_id());
-                }
-                containers
-                    .entry(wsid)
-                    .or_insert(WindowContainer::new(wsid))
-                    .on_window_overwrite(window);
-            }
+    pub fn on_workspace_overwrite(&mut self, workspace: &WLWorkspace) {
+        if workspace.is_focused {
+            self.current_workspace_id.replace(workspace.id);
         }
-
-        for wsid in workspace_ids {
-            if !containers.contains_key(&wsid) {
-                containers.insert(wsid, WindowContainer::new(wsid));
-            }
-        }
-
-        self.current_window_id = current_window_id;
-        for (_, w) in containers.into_iter() {
-            self.on_workspace_overwrite(w);
-        }
-
-        Ok(self)
     }
 
-    pub fn on_workspace_overwrite(&mut self, container: WindowContainer) {
-        tracing::debug!("[WIN] workspace overwrite {:?}", container.workspace_id);
-        let cont = container.container.clone();
-        let wsid = container.workspace_id;
-        let stack = self.stack.clone();
-
-        stack.add_named(&cont, wsid.to_string().as_str());
-
-        self.workspace_containers
-            .insert(container.workspace_id, container);
-    }
-
-    pub fn on_workspace_delete(&mut self, workspace_id: usize) {
-        tracing::debug!("[WIN] workspace delete {:?}", workspace_id);
+    pub fn on_workspace_delete(&mut self, workspace_id: &WLWindowId) {
         if let Some(old) = self.workspace_containers.remove(&workspace_id) {
-            self.stack.remove(&old.container);
+            self.stack.remove(&old.gbox);
         }
     }
 
-    pub fn on_workspace_change(&mut self, workspace_id: usize) {
-        tracing::debug!("workspace change {:?}", workspace_id);
-        if self.current_workspace_id != workspace_id as i64 {
-            if !self.workspace_containers.contains_key(&workspace_id) {
-                tracing::warn!(
-                    "A workspace should create first before visit it {}",
-                    workspace_id
-                );
-
-                self.on_workspace_overwrite(WindowContainer::new(workspace_id));
-            }
-
-            if let Some(_) = self.workspace_containers.get(&workspace_id) {
-                let stack = self.stack.clone();
-                idle_add_local_once(move || {
-                    tracing::debug!("[WIN] set visble child: {}", workspace_id);
-                    stack.set_visible_child_name(&workspace_id.to_string().as_str());
-                });
-                self.current_workspace_id = workspace_id as i64;
+    pub fn on_window_overwrite(&mut self, window: &WLWindow) {
+        if window.is_focused {
+            if let Some(id) = window.workspace_id {
+                self.current_workspace_id.replace(id);
             }
         }
-    }
-
-    pub fn on_window_delete(&mut self, window_id: usize) {
-        tracing::debug!("{:?}", window_id);
-
-        for (_, wc) in self.workspace_containers.iter_mut() {
-            wc.on_window_delete(window_id);
-        }
-    }
-
-    pub fn on_window_overwrite(&mut self, window: WLWindow) {
-        tracing::debug!("{:?}", window);
-
         if let Some(wc) = window
             .get_workspace_id()
             .and_then(|w| self.workspace_containers.get_mut(&w))
         {
-            wc.on_window_overwrite(window);
+            wc.on_window_overwrite(window.clone());
         } else {
             let mut container = WindowContainer::new(window.get_id());
-            container.on_window_overwrite(window);
-            self.on_workspace_overwrite(container);
+            container.on_window_overwrite(window.clone());
+            if let Some(id) = window.get_workspace_id() {
+                self.stack.add_named(&container.gbox, &id.to_string());
+                self.workspace_containers.insert(id, container);
+            }
         }
     }
 
-    pub fn on_window_change_focus(&mut self, window: Option<WLWindow>) {
-        tracing::debug!("{:?}", window);
-
+    pub fn on_window_delete(&mut self, window_id: &WLWindowId) {
         for (_, wc) in self.workspace_containers.iter_mut() {
-            self.current_window_id.map(|id| {
-                wc.deal_with_window_id(id, |e| {
-                    e.on_focus(false);
-                })
-            });
+            wc.on_window_delete(window_id.clone());
         }
+    }
 
-        if let Some(win) = window {
-            if let Some(wsid) = win.get_workspace_id() {
-                self.workspace_containers
-                    .get_mut(&wsid)
-                    .map(|e| e.on_change_focus(Some(win.get_id())));
-                self.on_workspace_change(wsid);
-            }
-            self.current_window_id.replace(win.get_id());
-        }
+    pub fn update_view(&mut self) {
+        let stack = self.stack.clone();
+
+        if let Some(wc) = self
+            .current_workspace_id
+            .and_then(|e| self.workspace_containers.get_mut(&e))
+        {
+            wc.update_view();
+            let container = wc.gbox.clone();
+            idle_add_local_once(move || {
+                stack.set_visible_child(&container);
+                stack.show_all();
+            });
+        } else {
+            idle_add_local_once(move || {
+                stack.hide();
+            });
+        };
     }
 }
