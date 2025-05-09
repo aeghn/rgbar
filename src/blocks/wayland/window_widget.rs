@@ -1,10 +1,8 @@
 use chin_tools::wayland::{WLWindow, WLWindowBehaiver, WLWindowId, WLWorkspace, WLWorkspaceId};
 use chin_tools::wrapper::anyhow::AResult;
 
-use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::rc::Rc;
 
 use crate::prelude::*;
 use crate::util;
@@ -114,8 +112,9 @@ impl WindowWidget {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct WindowContainer {
-    pub workspace_id: WLWindowId,
+    pub workspace_id: WLWorkspaceId,
     pub widget_map: HashMap<WLWindowId, WindowWidget>,
     pub gbox: gtk::Box,
     focused_id: Option<WLWindowId>,

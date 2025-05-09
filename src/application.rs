@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -13,7 +12,6 @@ use crate::window::RGBWindow;
 use crate::blocks::manager::BlockManager;
 
 pub struct RGBApplication {
-    window_map: Rc<RefCell<HashMap<i32, RGBWindow>>>,
     application: gtk::Application,
     block_manager: BlockManager,
 }
@@ -30,7 +28,6 @@ impl RGBApplication {
         let block_manager = BlockManager::launch()?;
 
         Ok(RGBApplication {
-            window_map: Default::default(),
             application: application.clone(),
             block_manager,
         })

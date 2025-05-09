@@ -17,10 +17,7 @@ pub struct RGBWindow {
 }
 
 impl RGBWindow {
-    pub(crate) fn new(
-        application: &Application,
-        monitor_info: &MonitorInfo,
-    ) -> AResult<Self> {
+    pub(crate) fn new(application: &Application, monitor_info: &MonitorInfo) -> AResult<Self> {
         let window = ApplicationWindow::new(application);
 
         window.init_layer_shell();
@@ -54,7 +51,11 @@ impl RGBWindow {
 
     pub(crate) fn inject_widgets(&self, bm: &BlockManager) {
         let share_info = &self.share_info;
-        log::info!("create bar window for monitor-{:?}", share_info.plug_name);
+        log::info!(
+            "create bar window for monitor-{} {:?}",
+            self.monitor_info.num,
+            share_info.plug_name
+        );
 
         let bar = gtk::Box::new(Orientation::Horizontal, 10);
 
@@ -93,14 +94,6 @@ impl RGBWindow {
         let window = self.window.clone();
         idle_add_local_once(move || {
             window.show();
-        });
-    }
-
-    pub fn close(&self) {
-        log::info!("destroy window: {}, {:?}", 1, self.share_info.plug_name);
-        let win = self.window.clone();
-        idle_add_local_once(move || {
-            win.close();
         });
     }
 }

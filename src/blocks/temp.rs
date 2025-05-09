@@ -4,7 +4,7 @@ use std::{
     path::PathBuf,
 };
 
-use chin_tools::{anyhow, eanyhow, AResult};
+use chin_tools::{anyhow, AResult};
 use glob::glob;
 
 pub fn match_type_dir(type_name: &str) -> AResult<PathBuf> {

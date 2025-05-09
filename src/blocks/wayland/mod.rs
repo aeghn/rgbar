@@ -3,7 +3,7 @@ pub mod workspace_widget;
 
 use chin_tools::wayland::{WLCompositor, WLCompositorBehavier, WLEvent};
 
-use window_widget::{WindowContainer, WindowContainerManager};
+use window_widget::WindowContainerManager;
 use workspace_widget::WorkspaceContainer;
 
 use crate::datahodler::channel::DualChannel;
@@ -103,8 +103,8 @@ impl Block for WaylandBlock {
                                     WLEvent::WindowOverwrite(window) => {
                                         window_container.on_window_overwrite(&window);
                                     }
-                                    WLEvent::MonitorDelete(id) => {}
-                                    WLEvent::MonitorOverwrite(output) => {}
+                                    WLEvent::MonitorDelete(_) => {}
+                                    WLEvent::MonitorOverwrite(_) => {}
                                 }
                             }
                         }

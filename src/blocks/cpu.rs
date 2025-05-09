@@ -1,6 +1,6 @@
 use std::{fs, str::FromStr, time::Duration};
 
-use chin_tools::{eanyhow, AResult};
+use chin_tools::AResult;
 
 use crate::prelude::*;
 use crate::util::gtk_icon_loader::StatusName;

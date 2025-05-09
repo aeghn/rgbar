@@ -1,6 +1,3 @@
-use std::time::SystemTime;
-use std::time::UNIX_EPOCH;
-
 use crate::datahodler::channel::DualChannel;
 
 use crate::util::gtk_icon_loader::load_fixed_status_surface;
