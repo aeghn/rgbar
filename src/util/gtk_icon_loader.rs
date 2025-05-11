@@ -168,7 +168,7 @@ fn load_fixed_status_pixbuf(status_name: StatusName) -> Pixbuf {
             include_surface!("battery-empty", BASE_SIZE * 11 / 7, BASE_SIZE)
         }
         StatusName::BattetyPowerCharging => {
-            include_surface!("battery-charging", BASE_SIZE * 11 / 7, BASE_SIZE)
+            include_surface!("battery-charging", BASE_SIZE, BASE_SIZE)
         }
         StatusName::BatteryPowerNotCharging => {
             include_surface!("battery-connected", BASE_SIZE, BASE_SIZE)

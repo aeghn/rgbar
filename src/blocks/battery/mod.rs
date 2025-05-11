@@ -183,7 +183,7 @@ impl Block for BatteryBlock {
                                     }
                                 };
                                 convervation_icon
-                                    .set_from_pixbuf(Some(&load_fixed_from_svg(mapped)))
+                                    .set_from_surface(load_fixed_status_surface(mapped).as_ref())
                             }
                         }
                         BatteryOut::BatteryInfo(bi) => {
