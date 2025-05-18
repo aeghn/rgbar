@@ -177,10 +177,10 @@ fn load_fixed_status_pixbuf(status_name: StatusName) -> Pixbuf {
             include_surface!("battery-disconnected", BASE_SIZE, BASE_SIZE)
         }
         StatusName::BatteryPowerFull => {
-            include_surface!("cpu", BASE_SIZE, BASE_SIZE)
+            include_surface!("battery-connected", BASE_SIZE, BASE_SIZE)
         }
         StatusName::BatteryPowerUnknown => {
-            include_surface!("cpu", BASE_SIZE, BASE_SIZE)
+            include_surface!("battery-disconnected", BASE_SIZE, BASE_SIZE)
         }
         StatusName::BatteryConservationOn => {
             include_surface!("battery-conser", BASE_SIZE, BASE_SIZE)
