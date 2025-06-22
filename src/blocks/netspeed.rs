@@ -134,8 +134,8 @@ impl Block for NetspeedBlock {
         let speed_label: gtk::Label = gtk::Label::builder().hexpand(false).xalign(1.0).build();
         speed_label.style_context().add_class("netspeed-label");
 
-        let up_color = RGBA::new(0.4, 0.4, 0.2, 0.6);
-        let down_color = RGBA::new(0.3, 0.3, 0.8, 0.6);
+        let up_color = RGBA::new(0.4, 0.4, 0.3, 0.6);
+        let down_color = RGBA::new(0.3, 0.4, 0.1, 0.6);
         let up_columns = Column::new("up", 2_000_000.0, 60, up_color.clone())
             .with_baseline(BaselineType::FixedPercent(0.5))
             .with_height_percent(0.50);

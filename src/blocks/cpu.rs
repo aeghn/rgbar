@@ -126,7 +126,7 @@ impl Block for CpuBlock {
 
         right_holder.pack_start(&label_holder, false, false, 0);
 
-        let user_column = Column::new("cpu_user", 100., 50, RGBA::new(0.5, 0.2, 0.2, 0.6));
+        let user_column = Column::new("cpu_user", 100., 50, RGBA::new(0.4, 0.2, 0.2, 0.6));
         let system_column = Column::new("cpu_system", 100., 50, RGBA::new(0.7, 0.2, 0.1, 0.6));
 
         let chart = Chart::builder()
