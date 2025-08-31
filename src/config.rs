@@ -55,7 +55,7 @@ impl Config {
         };
 
         let config_content = std::fs::read_to_string(&config_path)?;
-        let config: Self = toml::from_str(&config_content.as_str())?;
+        let config: Self = toml::from_str(config_content.as_str())?;
 
         let icon_path = if PathBuf::from(config.icon_path.as_str()).is_absolute() {
             config.icon_path.clone().into()

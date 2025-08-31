@@ -40,7 +40,7 @@ fn main() -> EResult {
         let screen = Screen::default().expect("Failed to get the default screen.");
         load_css(&screen);
 
-        RGBApplication::monitor_monitors(&screen, &app).unwrap();
+        RGBApplication::monitor_monitors(&screen, app).unwrap();
     });
     info!("hold on.");
     let _holder = application.hold();

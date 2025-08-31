@@ -17,10 +17,7 @@ pub fn match_type_dir(type_name: &str) -> AResult<PathBuf> {
         s.clear();
         let _content_size = reader.read_to_string(&mut s);
         if s.trim_end() == type_name {
-            match pathbuf.parent() {
-                Some(p) => return Ok(p.to_owned()),
-                None => {}
-            }
+            if let Some(p) = pathbuf.parent() { return Ok(p.to_owned()) }
         }
     }
     Err(aanyhow!("unable to get dir"))
@@ -28,7 +25,7 @@ pub fn match_type_dir(type_name: &str) -> AResult<PathBuf> {
 
 pub fn read_type_temp(temp_file: &PathBuf) -> AResult<f64> {
     let mut s = String::new();
-    let file = File::open(&temp_file)?;
+    let file = File::open(temp_file)?;
     let mut reader = BufReader::new(file);
 
     let _content_size = reader.read_to_string(&mut s)?;

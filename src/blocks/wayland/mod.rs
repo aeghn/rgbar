@@ -63,7 +63,7 @@ impl Block for WaylandBlock {
         let output_name = share_info
             .plug_name
             .as_ref()
-            .map_or_else(|| id_util::generate_uuid(), |s| s.to_owned());
+            .map_or_else(id_util::generate_uuid, |s| s.to_owned());
 
         let mut workspace_container = WorkspaceContainer::new(output_name.clone()).unwrap();
 

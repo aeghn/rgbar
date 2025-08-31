@@ -3,7 +3,6 @@ use std::fs::read_to_string;
 use std::rc::Rc;
 use std::{cell::RefCell, path::PathBuf};
 
-
 use log::info;
 
 use crate::prelude::*;
@@ -83,7 +82,6 @@ impl GtkIconLoader {
             })
             .nth(0)
             .unwrap_or(name);
-            
 
         let icon = config
             .icon
@@ -101,16 +99,11 @@ impl GtkIconLoader {
             })
             .nth(0);
 
-        if let Some(pbf) = icon.and_then(|pbf| Some(pbf.clone())) {
+        if let Some(pbf) = icon {
             self.cache
                 .borrow_mut()
                 .insert(name.to_lowercase(), pbf.clone());
-            match self.cache.borrow().get(name) {
-                None => None,
-                Some(pbf) => {
-                    return Some(pbf.clone());
-                }
-            }
+            self.cache.borrow().get(name).cloned()
         } else {
             None
         }
@@ -130,8 +123,7 @@ fn load_svg_into_pixbuf(
         256,
         true,
         None::<&gtk::gio::Cancellable>,
-    )?; 
-
+    )?;
 
     let pixbuf = pixbuf
         .scale_simple(width * 2, height * 2, InterpType::Bilinear)
@@ -150,7 +142,8 @@ macro_rules! include_surface {
 
 fn load_fixed_status_pixbuf(status_name: StatusName) -> Pixbuf {
     const BASE_SIZE: i32 = 18;
-    let pixbuf = match status_name {
+
+    match status_name {
         StatusName::CPU => include_surface!("cpu", BASE_SIZE, BASE_SIZE),
         StatusName::RAM => include_surface!("memory", BASE_SIZE * 6 / 5, BASE_SIZE * 6 / 5),
         StatusName::WIFI => include_surface!("wifi", BASE_SIZE, BASE_SIZE),
@@ -209,13 +202,15 @@ fn load_fixed_status_pixbuf(status_name: StatusName) -> Pixbuf {
         StatusName::VolumeMute => {
             include_surface!("audio-volume-muted", BASE_SIZE, BASE_SIZE)
         }
-    };
-    pixbuf
+    }
 }
 
 pub fn load_fixed_status_image(icon_name: StatusName) -> gtk::Image {
-    gtk::Image::from_surface(load_fixed_status_pixbuf(icon_name).create_surface(2, None::<&Window>).as_ref())
-    
+    gtk::Image::from_surface(
+        load_fixed_status_pixbuf(icon_name)
+            .create_surface(2, None::<&Window>)
+            .as_ref(),
+    )
 }
 
 pub fn load_fixed_status_surface(status_name: StatusName) -> Option<gtk::cairo::Surface> {

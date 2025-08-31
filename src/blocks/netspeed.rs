@@ -4,10 +4,10 @@ use chin_tools::AResult;
 use human_bytes::human_bytes;
 use regex::Regex;
 
-use crate::window::WidgetShareInfo;
 use crate::util::gtk_icon_loader::StatusName;
 use crate::util::{fileutil, gtk_icon_loader};
 use crate::widgets::chart::{BaselineType, Chart, Column};
+use crate::window::WidgetShareInfo;
 
 use super::Block;
 
@@ -38,47 +38,45 @@ impl NetspeedBlock {
 
         if let Ok(lines) = fileutil::read_lines(NET_DEV) {
             // Consumes the iterator, returns an (Optional) String
-            for x in lines {
-                if let Ok(line) = x {
-                    let fields = Regex::new(r"\s+")
-                        .expect("Invalid regex")
-                        .split(line.trim())
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>();
-                    // line.trim().split(" ").collect::<Vec<&str>>();
-                    if fields.len() <= 10 {
-                        continue;
-                    }
-
-                    if !Regex::new(r"^[0-9]+$").unwrap().is_match(&fields[1]) {
-                        continue;
-                    }
-
-                    let cidb: usize = fields[1].parse().unwrap();
-                    let diub: usize = fields[9].parse().unwrap();
-
-                    let interface = &fields[0];
-                    if Regex::new(r"^lo:?").unwrap().is_match(&interface) ||
-                        // Created by python-based bandwidth manager "traffictoll".
-                        Regex::new(r"^ifb[0-9]+:?").unwrap().is_match(&interface) ||
-                        // Created by lxd container manager.
-                        Regex::new(r"^lxdbr[0-9]+:?").unwrap().is_match(&interface) ||
-                        Regex::new(r"^virbr[0-9]+:?").unwrap().is_match(&interface) ||
-                        Regex::new(r"^br[0-9]+:?").unwrap().is_match(&interface) ||
-                        Regex::new(r"^vnet[0-9]+:?").unwrap().is_match(&interface) ||
-                        Regex::new(r"^tun[0-9]+:?").unwrap().is_match(&interface) ||
-                        Regex::new(r"^tap[0-9]+:?").unwrap().is_match(&interface)
-                    {
-                        continue;
-                    }
-
-                    total_download = total_download + cidb;
-                    total_upload = total_upload + diub;
+            let reg = Regex::new(r"\s+").expect("Invalid regex");
+            for line in lines.map_while(Result::ok) {
+                let fields = reg
+                    .split(line.trim())
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>();
+                // line.trim().split(" ").collect::<Vec<&str>>();
+                if fields.len() <= 10 {
+                    continue;
                 }
+
+                if !Regex::new(r"^[0-9]+$").unwrap().is_match(&fields[1]) {
+                    continue;
+                }
+
+                let cidb: usize = fields[1].parse().unwrap();
+                let diub: usize = fields[9].parse().unwrap();
+
+                let interface = &fields[0];
+                if Regex::new(r"^lo:?").unwrap().is_match(interface) ||
+                    // Created by python-based bandwidth manager "traffictoll".
+                    Regex::new(r"^ifb[0-9]+:?").unwrap().is_match(interface) ||
+                    // Created by lxd container manager.
+                    Regex::new(r"^lxdbr[0-9]+:?").unwrap().is_match(interface) ||
+                    Regex::new(r"^virbr[0-9]+:?").unwrap().is_match(interface) ||
+                    Regex::new(r"^br[0-9]+:?").unwrap().is_match(interface) ||
+                    Regex::new(r"^vnet[0-9]+:?").unwrap().is_match(interface) ||
+                    Regex::new(r"^tun[0-9]+:?").unwrap().is_match(interface) ||
+                    Regex::new(r"^tap[0-9]+:?").unwrap().is_match(interface)
+                {
+                    continue;
+                }
+
+                total_download += cidb;
+                total_upload += diub;
             }
         }
 
-        return (total_download, total_upload);
+        (total_download, total_upload)
     }
 }
 
@@ -136,10 +134,10 @@ impl Block for NetspeedBlock {
 
         let up_color = RGBA::new(0.4, 0.4, 0.3, 0.6);
         let down_color = RGBA::new(0.3, 0.4, 0.1, 0.6);
-        let up_columns = Column::new("up", 2_000_000.0, 60, up_color.clone())
+        let up_columns = Column::new("up", 2_000_000.0, 60, up_color)
             .with_baseline(BaselineType::FixedPercent(0.5))
             .with_height_percent(0.50);
-        let down_columns = Column::new("down", 2_000_000.0, 60, down_color.clone())
+        let down_columns = Column::new("down", 2_000_000.0, 60, down_color)
             .with_baseline(BaselineType::FixedPercent(0.48))
             .with_height_percent(-0.45);
 
@@ -159,17 +157,16 @@ impl Block for NetspeedBlock {
         let mut mreceiver = self.dualchannel.get_out_receiver();
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
-                match mreceiver.recv().await {
-                    Ok(msg) => match msg {
+                if let Ok(msg) = mreceiver.recv().await {
+                    match msg {
                         NetspeedOut::NetspeedDiff(up, down) => {
-                            up_columns.add_value(up.clone());
-                            down_columns.add_value(down.clone());
+                            up_columns.add_value(up);
+                            down_columns.add_value(down);
                             speed_label.set_label(
                                 format!("{}\n{} ", human_bytes(up), human_bytes(down)).as_str(),
                             );
                         }
-                    },
-                    Err(_) => {}
+                    }
                 }
             }
         });

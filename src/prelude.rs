@@ -2,7 +2,6 @@ pub use chin_tools::*;
 
 pub use crate::datahodler::channel::DualChannel;
 
-pub use crate::util::gtk_icon_loader;
 pub use crate::util::gtk_icon_loader::StatusName;
 pub use gtk::prelude::*;
 pub use gtk::glib::{timeout_add_seconds_local, Cast, ControlFlow, MainContext};

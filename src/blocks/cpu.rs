@@ -68,7 +68,6 @@ impl Block for CpuBlock {
                 .send(CpuOut::UtilizationAvg(utilization_avg.0, utilization_avg.1))
                 .unwrap();
             let mut utilizations = Vec::new();
-            if new_cputime.1.len() != cores {}
             for i in 0..cores {
                 utilizations.push(new_cputime.1[i].utilization(cputime.1[i]));
             }

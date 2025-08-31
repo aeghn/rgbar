@@ -255,7 +255,7 @@ impl WindowContainerManager {
 
     pub fn on_window_delete(&mut self, window_id: &WLWindowId) {
         for (_, wc) in self.workspace_containers.iter_mut() {
-            wc.on_window_delete(window_id.clone());
+            wc.on_window_delete(*window_id);
         }
     }
 

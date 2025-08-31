@@ -145,46 +145,43 @@ impl Block for PulseBlock {
         let mut last_time = SystemTime::now();
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
-                match receiver.recv().await {
-                    Ok(msg) => match msg {
-                        PulseBM::ToggleMute => {
+                if let Ok(msg) = receiver.recv().await { match msg {
+                    PulseBM::ToggleMute => {
+                        let sink = default_sink.borrow();
+                        let _ = sink.toggle().await;
+                    }
+                    PulseBM::SetVolume(_) => {}
+                    PulseBM::Increase(v) => {
+                        let now = SystemTime::now();
+
+                        if now.duration_since(last_time).unwrap_or_default()
+                            > Duration::from_millis(100)
+                        {
                             let sink = default_sink.borrow();
-                            let _ = sink.toggle().await;
+                            let _ = sink
+                                .set_volume(v as i32, Some(150))
+                                .map_err(|e| log::info!("error: {e}"));
+                            last_time = now;
                         }
-                        PulseBM::SetVolume(_) => {}
-                        PulseBM::Increase(v) => {
-                            let now = SystemTime::now();
+                    }
+                    PulseBM::Decrease(v) => {
+                        let now = SystemTime::now();
 
-                            if now.duration_since(last_time).unwrap_or_default()
-                                > Duration::from_millis(100)
-                            {
-                                let sink = default_sink.borrow();
-                                let _ = sink
-                                    .set_volume(v as i32, Some(150))
-                                    .map_err(|e| log::info!("error: {e}"));
-                                last_time = now;
-                            }
+                        if now.duration_since(last_time).unwrap_or_default()
+                            > Duration::from_millis(100)
+                        {
+                            let sink = default_sink.borrow();
+                            let _ = sink
+                                .set_volume(-(v as i32), Some(150))
+                                .map_err(|e| log::info!("error: {e}"));
+                            last_time = now;
                         }
-                        PulseBM::Decrease(v) => {
-                            let now = SystemTime::now();
-
-                            if now.duration_since(last_time).unwrap_or_default()
-                                > Duration::from_millis(100)
-                            {
-                                let sink = default_sink.borrow();
-                                let _ = sink
-                                    .set_volume(-1 * v as i32, Some(150))
-                                    .map_err(|e| log::info!("error: {e}"));
-                                last_time = now;
-                            }
-                        }
-                        PulseBM::GetVolume => {
-                            default_sink.borrow_mut().get_info().await.unwrap();
-                            Self::vol_changed(&sender, &default_sink.borrow())
-                        }
-                    },
-                    Err(_) => {}
-                }
+                    }
+                    PulseBM::GetVolume => {
+                        default_sink.borrow_mut().get_info().await.unwrap();
+                        Self::vol_changed(&sender, &default_sink.borrow())
+                    }
+                } }
             }
         });
 
@@ -210,43 +207,40 @@ impl Block for PulseBlock {
         let mut receiver = self.dualchannel.get_out_receiver();
         MainContext::ref_thread_default().spawn_local(async move {
             loop {
-                match receiver.recv().await {
-                    Ok(msg) => {
-                        if let PulseWM::Full {
-                            muted,
-                            vol,
-                            device_type,
-                        } = msg
-                        {
-                            match device_type {
-                                DeviceType::Headset => {
-                                    headset_icon.show();
-                                    headphone_icon.hide();
-                                }
-                                DeviceType::Headphone => {
-                                    headset_icon.hide();
-                                    headphone_icon.show();
-                                }
-                                _ => {
-                                    headset_icon.hide();
-                                    headphone_icon.hide();
-                                }
+                if let Ok(msg) = receiver.recv().await {
+                    if let PulseWM::Full {
+                        muted,
+                        vol,
+                        device_type,
+                    } = msg
+                    {
+                        match device_type {
+                            DeviceType::Headset => {
+                                headset_icon.show();
+                                headphone_icon.hide();
                             }
+                            DeviceType::Headphone => {
+                                headset_icon.hide();
+                                headphone_icon.show();
+                            }
+                            _ => {
+                                headset_icon.hide();
+                                headphone_icon.hide();
+                            }
+                        }
 
-                            let mapped = if muted {
-                                StatusName::VolumeMute
-                            } else {
-                                match vol {
-                                    0..=30 => StatusName::VolumeLow,
-                                    31..=65 => StatusName::VolumeMedium,
-                                    31.. => StatusName::VolumeHigh,
-                                }
-                            };
-                            vol_icon.set_from_surface(load_fixed_status_surface(mapped).as_ref());
-                            volume.set_text(format!(" {}%", vol).as_str());
+                        let mapped = if muted {
+                            StatusName::VolumeMute
+                        } else {
+                            match vol {
+                                0..=30 => StatusName::VolumeLow,
+                                31..=65 => StatusName::VolumeMedium,
+                                31.. => StatusName::VolumeHigh,
+                            }
                         };
-                    }
-                    Err(_) => {}
+                        vol_icon.set_from_surface(load_fixed_status_surface(mapped).as_ref());
+                        volume.set_text(format!(" {}%", vol).as_str());
+                    };
                 }
             }
         });
@@ -257,10 +251,10 @@ impl Block for PulseBlock {
             if let Some((_, v)) = v.scroll_deltas() {
                 if v > 0.02 {
                     let _ = sender.send_blocking(PulseBM::Increase(3));
-                    return Propagation::Stop;
+                    Propagation::Stop
                 } else if v < -0.02 {
                     let _ = sender.send_blocking(PulseBM::Decrease(3));
-                    return Propagation::Stop;
+                    Propagation::Stop
                 } else {
                     Propagation::Proceed
                 }

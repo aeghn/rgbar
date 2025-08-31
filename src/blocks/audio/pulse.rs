@@ -31,7 +31,7 @@ pub use std::time::Duration;
 static CLIENT: LazyLock<AResult<Client>> = LazyLock::new(Client::new);
 static EVENT_LISTENER: Mutex<Vec<Sender<PulseBM>>> = Mutex::new(Vec::new());
 static DEVICES: LazyLock<Mutex<HashMap<(DeviceKind, String), VolInfo>>> =
-    LazyLock::new(|| Default::default());
+    LazyLock::new(Default::default);
 
 // Default device names
 pub(super) static DEFAULT_SOURCE: Mutex<Cow<'static, str>> =

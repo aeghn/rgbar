@@ -55,7 +55,7 @@ impl WorkspaceContainer {
     }
 
     pub fn on_workspace_delete(&mut self, id: &WLWorkspaceId) {
-        self.workspace_widget_map.remove(&id);
+        self.workspace_widget_map.remove(id);
         self.update_view();
     }
 

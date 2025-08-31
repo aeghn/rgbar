@@ -111,19 +111,16 @@ impl Block for TimeBlock {
             let mut mreceiver = self.dualchannel.get_out_receiver();
             MainContext::ref_thread_default().spawn_local(async move {
                 loop {
-                    match mreceiver.recv().await {
-                        Ok(msg) => match msg {
-                            #[cfg(feature = "chinese")]
-                            TimeOut::Chinese { year, month, day } => {
-                                let cn_date = format!("{year}年 {month} {day}");
-                                wes_date.set_tooltip_text(Some(cn_date.as_str()));
-                            }
-                            TimeOut::Westen(d, t) => {
-                                wes_date.set_label(format!("{} {}", d, t).as_str());
-                            }
-                        },
-                        Err(_) => {}
-                    }
+                    if let Ok(msg) = mreceiver.recv().await { match msg {
+                        #[cfg(feature = "chinese")]
+                        TimeOut::Chinese { year, month, day } => {
+                            let cn_date = format!("{year}年 {month} {day}");
+                            wes_date.set_tooltip_text(Some(cn_date.as_str()));
+                        }
+                        TimeOut::Westen(d, t) => {
+                            wes_date.set_label(format!("{} {}", d, t).as_str());
+                        }
+                    } }
                 }
             });
         }

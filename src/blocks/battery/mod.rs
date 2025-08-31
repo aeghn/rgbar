@@ -53,7 +53,7 @@ pub struct BatteryInfo {
 impl BatteryInfo {
     pub fn get_percent(&self) -> u8 {
         // (self.energy_now * 100 / self.energy_full).try_into().unwrap()
-        return self.capacity;
+        self.capacity
     }
 }
 

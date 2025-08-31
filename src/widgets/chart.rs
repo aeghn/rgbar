@@ -3,8 +3,6 @@ use std::marker::PhantomData;
 
 use crate::prelude::*;
 
-
-
 use crate::datahodler::ring::Ring;
 
 #[derive(Clone, PartialEq, Eq)]
@@ -89,7 +87,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
 
     pub fn draw_in_seconds(&self, secs: u32) {
         let columns = self.columns.clone();
-        let line_width = self.line_width.clone();
+        let line_width = self.line_width;
         self.drawing_area.connect_draw(clone!(
             @strong columns,
             @strong line_width =>
@@ -107,12 +105,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         });
     }
 
-    fn draw(
-        columns: &Vec<Column<E>>,
-        line_width: f64,
-        da: &DrawingArea,
-        cr: &gtk::cairo::Context,
-    ) {
+    fn draw(columns: &Vec<Column<E>>, line_width: f64, da: &DrawingArea, cr: &gtk::cairo::Context) {
         let alloc = da.allocation();
 
         let alloc_w = alloc.width();
@@ -129,7 +122,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
         let mut prev_alloc_ys: Option<Vec<(f64, f64)>> = None;
 
         for column in columns {
-            let (ys, _max_y) = Self::scale(&column);
+            let (ys, _max_y) = Self::scale(column);
 
             if ys.len() <= 1 {
                 continue;
@@ -160,7 +153,6 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
                     } else {
                         0.
                     };
-
                     for x in last_x..=(alloc_x as usize) {
                         sum_heights_percent[x] = last_y + (x - last_x) as f64 * step;
                         curx = x;
@@ -215,7 +207,7 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
                             }
                         }
 
-                        if let Some((x, y)) = alloc_ys.get(0) {
+                        if let Some((x, y)) = alloc_ys.first() {
                             cr.line_to(*x, *y);
                         }
                     }
@@ -276,10 +268,8 @@ impl<E: Into<f64> + Clone + 'static> Chart<E> {
     }
 
     pub fn with_columns(mut self, columns: Column<E>) -> Self {
-        if !self.columns.is_empty() {
-            if self.columns[0].ring.size != columns.ring.size {
-                log::warn!("the columns should have same sizes.");
-            }
+        if !self.columns.is_empty() && self.columns[0].ring.size != columns.ring.size {
+            log::warn!("the columns should have same sizes.");
         }
 
         self.columns.push(columns);

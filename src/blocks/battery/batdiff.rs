@@ -35,7 +35,7 @@ pub fn seconds_now() -> usize {
 impl BatDiff {
     pub fn check_percent<F>(&mut self, battery_info: &BatteryInfo, callback: F)
     where
-        F: Fn(u8, StatusName) -> (),
+        F: Fn(u8, StatusName),
     {
         let percent = battery_info.get_percent();
         if percent != self.last_percent {
@@ -54,7 +54,7 @@ impl BatDiff {
 
     pub fn check_power_status<F>(&mut self, battery_info: &BatteryInfo, callback: F)
     where
-        F: Fn(StatusName) -> (),
+        F: Fn(StatusName),
     {
         let status = battery_info.status;
         if self.last_power_status != status {
@@ -73,7 +73,7 @@ impl BatDiff {
     }
     pub fn check_remain_time<F>(&mut self, battery_info: &BatteryInfo, callback: F)
     where
-        F: Fn(Option<usize>) -> (),
+        F: Fn(Option<usize>),
     {
         let status = battery_info.status;
 
@@ -82,7 +82,7 @@ impl BatDiff {
             return;
         }
 
-        let seconds_now = seconds_now() as usize;
+        let seconds_now = seconds_now();
 
         let time_cost = seconds_now - self.last_record_seconds;
         self.last_record_seconds = seconds_now;
