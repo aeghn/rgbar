@@ -1,5 +1,5 @@
-use chin_wayland_utils::{WLWindow, WLWindowBehaiver, WLWindowId, WLWorkspace, WLWorkspaceId};
 use chin_tools::AResult;
+use chin_wayland_utils::{WLWindow, WLWindowBehaiver, WLWindowId, WLWorkspace, WLWorkspaceId};
 
 use std::collections::HashMap;
 use std::ops::Deref;
@@ -51,7 +51,7 @@ impl WindowWidget {
         container.show_all();
 
         if let Some(app_id) = window.get_app_id() {
-            if let Some(img) = icon_loader.load_named_pixbuf(&app_id) {
+            if let Some(img) = icon_loader.load_named_pixbuf(app_id) {
                 icon.set_from_surface(img.create_surface(2, None::<&Window>).as_ref());
             } else {
                 log::warn!("unable to get icon for {}", app_id);
@@ -90,7 +90,7 @@ impl WindowWidget {
     pub fn update_view(&mut self) {
         if self.dirty {
             if let Some(title) = self.window.get_title() {
-                self.title.set_label(&title);
+                self.title.set_label(title);
             }
             if self.window.is_focused() {
                 self.title.set_label(
@@ -105,6 +105,17 @@ impl WindowWidget {
                 self.title.set_text("");
                 self.title.hide();
                 self.gbox.style_context().remove_class("wmw-focus")
+            }
+            if self.window.is_floating() {
+                self.gbox.style_context().add_class("wmw-floating")
+            } else {
+                self.gbox.style_context().remove_class("wmw-floating")
+            }
+
+            if self.window.is_urgent() {
+                self.gbox.style_context().add_class("wmw-urgent")
+            } else {
+                self.gbox.style_context().remove_class("wmw-urgent")
             }
             self.dirty = false;
         }
@@ -146,13 +157,13 @@ impl WindowContainer {
         if let Some(win) = self.widget_map.get_mut(&window.get_id()) {
             let dirty = win.update_data(window);
             self.dirty = self.dirty || dirty;
-            return self.dirty;
+            self.dirty
         } else {
             let ww = WindowWidget::new(window, &self.icon_loader);
             self.gbox.add(&ww.gbox);
             self.widget_map.insert(ww.get_id(), ww);
 
-            return true;
+            true
         }
     }
 
@@ -167,14 +178,14 @@ impl WindowContainer {
 
     pub fn update_view(&mut self) {
         if self.dirty {
-            let mut wws: Vec<&mut WindowWidget> = self.widget_map.iter_mut().map(|(_, w)| w).collect();
+            let mut wws: Vec<&mut WindowWidget> =
+                self.widget_map.iter_mut().map(|(_, w)| w).collect();
 
             for r in &self.to_remove {
                 self.gbox.remove(r);
             }
 
-            wws.sort_by(|e1, e2| e1.get_title().cmp(&e2.get_title()));
-
+            wws.sort_by_key(|e1| e1.get_x());
             for (id, ww) in wws.into_iter().enumerate() {
                 ww.update_view();
                 self.gbox.reorder_child(&ww.gbox, id as i32);
@@ -216,7 +227,7 @@ impl WindowContainerManager {
     }
 
     pub fn on_workspace_delete(&mut self, workspace_id: &WLWindowId) {
-        if let Some(old) = self.workspace_containers.remove(&workspace_id) {
+        if let Some(old) = self.workspace_containers.remove(workspace_id) {
             self.stack.remove(&old.gbox);
         }
     }
@@ -227,11 +238,11 @@ impl WindowContainerManager {
                 self.current_workspace_id.replace(id);
             }
         }
-        if let Some(wc) = window
+        if let Some(container) = window
             .get_workspace_id()
             .and_then(|w| self.workspace_containers.get_mut(&w))
         {
-            wc.on_window_overwrite(window.clone());
+            container.on_window_overwrite(window.clone());
         } else {
             let mut container = WindowContainer::new(window.get_id());
             container.on_window_overwrite(window.clone());
