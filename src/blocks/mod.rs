@@ -12,8 +12,6 @@ pub mod manager;
 pub mod memory;
 pub mod netspeed;
 
-#[cfg(feature = "hyprland")]
-pub mod hyprstatus;
 pub mod temp;
 pub mod time;
 pub mod wayland;
